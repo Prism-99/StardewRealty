@@ -1,0 +1,14 @@
+﻿PFM - Expanded Casks - *****
+Shop Tile Framework - *****
+Shop Overhaul Compilation - *****
+Farm Tractor Mod - *****
+Automate - *****
+[JA] Strange Machines - *****
+DeluxeGrabber (Original) - *****
+DeluxeGrabber (Redux) - not compatable (only works on base Farm)
+DeluxeGrabber & Automate - does not work, add a chest in the chain
+NPC Map Locations - breaks world map displaying SDR locations
+Pond Paint - *****
+Modest Farm Map - *****
+Better Junimo - not compatible
+

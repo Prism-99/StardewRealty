@@ -1,0 +1,10 @@
+﻿- put map and png in data\assets\buildings\buildingname
+- create ICustomBuilding class for the building
+- create GameLocation class for the building
+- add custom load code to FEFramework.Load
+- add code to remove custom location in FEFramewrok.OnSaving
+- add ICustomBuilding class to available linst in CustomBuildings.AddBuildingHooks
+
+=pre 1.6
+- if custom location type add custom code to FEConstruction.buildStructure
+

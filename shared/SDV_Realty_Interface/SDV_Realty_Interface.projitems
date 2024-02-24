@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>d5d3ef10-9d0d-4071-a3d3-277f6b996261</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>SDV_Realty_Interface</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)ArtifactData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ExpansionDetails.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FishAreaDetails.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FishStockData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ForageData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IStardewRealtyAPI.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SDRCustomization.cs" />
+  </ItemGroup>
+</Project>

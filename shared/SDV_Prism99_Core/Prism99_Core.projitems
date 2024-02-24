@@ -1,0 +1,53 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>ed5fbd23-2ec8-4faf-be7d-97d4225a1d0f</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>
+    </Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Abstractions\Buildings\prism_Building.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Abstractions\Objects\prism_Chest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Abstractions\prism_Crop.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Abstractions\prism_GameLocation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Abstractions\TerrainFeatures\prism_FruitTree.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Abstractions\TerrainFeatures\prism_HoeDirt.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\Building_Ext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\ICollection_Ext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\modData_Ext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\NetCollection_Ext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\NetVector2Dictionary_Ext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\OverlaidDictionary_Ext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\String_Ext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Extensions\Warp_Ext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Multiplayer\ChatConnector.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Multiplayer\IMultiPlayerInterface.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Multiplayer\P99Core_MultiPlayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Multiplayer\NetPlayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Multiplayer\Sniffer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NaturalText\DateOnly.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NaturalText\Reminder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NaturalText\TimeOnly.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Objects\ChatBoxCommandDelegate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Objects\ChatBoxCommands.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Objects\SerializableDicitionary.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PatchingFramework\GamePatch.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)PatchingFramework\GamePatches.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SMAPIEventSubscrption\EventSubscribers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SMAPIEventSubscrption\GameEvent.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SMAPIEventSubscrption\IEventSubcriber.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)NaturalText\ReminderParser.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\SDVEnvironment.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\SDVLogger.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\SDVModVersion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\SDVPathUtilities.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Utilities\SDVUtilities.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)CommonData\" />
+  </ItemGroup>
+</Project>

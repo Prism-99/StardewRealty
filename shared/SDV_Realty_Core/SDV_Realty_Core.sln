@@ -1,0 +1,18 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31702.278
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SDV_Realty_Core", "SDV_Realty_Core.shproj", "{2AC72BB4-F71B-4ADB-9B27-6A1DFD37AD6C}"
+EndProject
+Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		SDV_Realty_Core.projitems*{2ac72bb4-f71b-4adb-9b27-6a1dfd37ad6c}*SharedItemsImports = 13
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F1B11E6B-01D6-4FFF-8E13-E1A54AE6318D}
+	EndGlobalSection
+EndGlobal

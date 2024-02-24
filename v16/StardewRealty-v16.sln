@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31613.86
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FarmExpansionFramework", "FarmExpansionFramework.csproj", "{0C88A030-C212-4938-9E36-3E88104896AD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{C3847311-BE03-43BF-AA3F-6A1F218F638A}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SDV_Realty_Core", "..\shared\SDV_Realty_Core\SDV_Realty_Core.shproj", "{2AC72BB4-F71B-4ADB-9B27-6A1DFD37AD6C}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SDV_Realty_Interface", "..\shared\SDV_Realty_Interface\SDV_Realty_Interface.shproj", "{D5D3EF10-9D0D-4071-A3D3-277F6B996261}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SDV_StardewBitmap", "..\shared\SDV_StardewBitmap\SDV_StardewBitmap.shproj", "{C3338739-F026-41B9-BB8D-E3E15573F19A}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SDV_StardewWeb_Interface", "..\shared\SDV_StardewWeb-IAPI\SDV_StardewWeb_Interface.shproj", "{9A65AD51-31A3-4A9A-8AF3-629956DDEB81}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SDV_xTile", "..\shared\SDV_xTile\SDV_xTile.shproj", "{483D70D9-7CE5-4D3B-B6CD-A8066F8831C2}"
+EndProject
+Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\shared\SDV_Realty_Core\SDV_Realty_Core.projitems*{0c88a030-c212-4938-9e36-3e88104896ad}*SharedItemsImports = 5
+		..\shared\SDV_Realty_Interface\SDV_Realty_Interface.projitems*{0c88a030-c212-4938-9e36-3e88104896ad}*SharedItemsImports = 5
+		..\shared\SDV_StardewBitmap\SDV_StardewBitmap.projitems*{0c88a030-c212-4938-9e36-3e88104896ad}*SharedItemsImports = 5
+		..\shared\SDV_StardewWeb-IAPI\SDV_StardewWeb_Interface.projitems*{0c88a030-c212-4938-9e36-3e88104896ad}*SharedItemsImports = 5
+		..\shared\SDV_xTile\SDV_xTile.projitems*{0c88a030-c212-4938-9e36-3e88104896ad}*SharedItemsImports = 5
+		..\shared\SDV_Realty_Core\SDV_Realty_Core.projitems*{2ac72bb4-f71b-4adb-9b27-6a1dfd37ad6c}*SharedItemsImports = 13
+		..\shared\SDV_xTile\SDV_xTile.projitems*{483d70d9-7ce5-4d3b-b6cd-a8066f8831c2}*SharedItemsImports = 13
+		..\shared\SDV_StardewWeb-IAPI\SDV_StardewWeb_Interface.projitems*{9a65ad51-31a3-4a9a-8af3-629956ddeb81}*SharedItemsImports = 13
+		..\shared\SDV_StardewBitmap\SDV_StardewBitmap.projitems*{c3338739-f026-41b9-bb8d-e3e15573f19a}*SharedItemsImports = 13
+		..\shared\SDV_Realty_Interface\SDV_Realty_Interface.projitems*{d5d3ef10-9d0d-4071-a3d3-277f6b996261}*SharedItemsImports = 13
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0C88A030-C212-4938-9E36-3E88104896AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C88A030-C212-4938-9E36-3E88104896AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C88A030-C212-4938-9E36-3E88104896AD}.Debug|x64.ActiveCfg = Debug|x64
+		{0C88A030-C212-4938-9E36-3E88104896AD}.Debug|x64.Build.0 = Debug|x64
+		{0C88A030-C212-4938-9E36-3E88104896AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C88A030-C212-4938-9E36-3E88104896AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C88A030-C212-4938-9E36-3E88104896AD}.Release|x64.ActiveCfg = Release|x64
+		{0C88A030-C212-4938-9E36-3E88104896AD}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{2AC72BB4-F71B-4ADB-9B27-6A1DFD37AD6C} = {C3847311-BE03-43BF-AA3F-6A1F218F638A}
+		{D5D3EF10-9D0D-4071-A3D3-277F6B996261} = {C3847311-BE03-43BF-AA3F-6A1F218F638A}
+		{C3338739-F026-41B9-BB8D-E3E15573F19A} = {C3847311-BE03-43BF-AA3F-6A1F218F638A}
+		{9A65AD51-31A3-4A9A-8AF3-629956DDEB81} = {C3847311-BE03-43BF-AA3F-6A1F218F638A}
+		{483D70D9-7CE5-4D3B-B6CD-A8066F8831C2} = {C3847311-BE03-43BF-AA3F-6A1F218F638A}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {84268FB7-1A7A-4F8D-8217-076B9C2D6FF5}
+	EndGlobalSection
+EndGlobal

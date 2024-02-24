@@ -1,0 +1,91 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Platforms>AnyCPU;x64</Platforms>
+    <RootNamespace>StardewRealty</RootNamespace>
+    <AssemblyName>StardewRealty</AssemblyName>
+  </PropertyGroup>
+	<PropertyGroup>
+		<EnableHarmony>true</EnableHarmony>
+	</PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>$(DefineConstants);v2;v16;SKIA;Current</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DefineConstants>$(DefineConstants);v2;v16;SKIA;Current</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>$(DefineConstants);Current,SKIA;v16;v2</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DefineConstants>$(DefineConstants);Current,SKIA;v16;v2</DefineConstants>
+  </PropertyGroup>
+	<ItemGroup>
+		<Using Include="StardewValley" />
+		<Using Include="StardewModdingAPI" />
+		<Using Include="System.Diagnostics.CodeAnalysis" />
+		<Using Include="Microsoft.Xna.Framework" />
+		<Using Alias="NotNullAttribute" Include="System.Diagnostics.CodeAnalysis.NotNullAttribute" />
+		<Using Alias="Object" Include="System.Object" />
+		<Using Alias="SDObject" Include="StardewValley.Object" />
+		<using Alias="Rectangle" Include="Microsoft.Xna.Framework.Rectangle" />
+		<using Alias="XSize" Include="xTile.Dimensions.Size" />
+	</ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Common\**" />
+    <Compile Remove="Shared\**" />
+    <EmbeddedResource Remove="Common\**" />
+    <EmbeddedResource Remove="Shared\**" />
+    <None Remove="Common\**" />
+    <None Remove="Shared\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+  
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>Y:\smapi-internal\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  
+    <Reference Include="SkiaSharp">
+      <HintPath>Y:\SkiaSharp.dll</HintPath>
+      <CopyLocal>False</CopyLocal>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="manifest.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Import Project="..\shared\SDV_Realty_Core\SDV_Realty_Core.projitems" Label="Shared" />
+
+  <Import Project="..\shared\SDV_Realty_Interface\SDV_Realty_Interface.projitems" Label="Shared" />
+
+  <Import Project="..\shared\SDV_StardewBitmap\SDV_StardewBitmap.projitems" Label="Shared" />
+
+  <Import Project="..\shared\SDV_StardewWeb-IAPI\SDV_StardewWeb_Interface.projitems" Label="Shared" />
+
+  <Import Project="..\shared\SDV_xTile\SDV_xTile.projitems" Label="Shared" />
+
+  <Import Project="..\shared\SDV_Prism99_Core\Prism99_Core.projitems" Label="Shared" />
+
+  <Import Project="..\shared\v1.6_Components\v1.6_Components.projitems" Label="Shared" />
+
+  <Import Project="..\shared\locationDataDisplay\locationDataDisplay.projitems" Label="Shared" />
+
+  <Import Project="..\shared\LumberJack\LumberJack.projitems" Label="Shared" />
+
+  <Import Project="..\v1.6 Base Content Packs\v1.6 Base Content Packs.projitems" Label="Shared" />
+
+</Project>

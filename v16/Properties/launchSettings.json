@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "StardewRealty-v16": {
+      "commandName": "Project"
+    },
+    "Profile 1": {
+      "commandName": "Executable",
+      "executablePath": "Y:\\StardewModdingAPI.exe",
+      "commandLineArgs": "--mods-path \"Mods-min\"",
+      "workingDirectory": "y:\\"
+    }
+  }
+}

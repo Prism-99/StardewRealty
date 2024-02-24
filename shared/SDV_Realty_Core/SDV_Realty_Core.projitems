@@ -1,0 +1,172 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>2ac72bb4-f71b-4adb-9b27-6a1dfd37ad6c</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>SDV_Realty_Core</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\ExpansionPack.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ISDRContentPack.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\FileManagement\FileManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\SignDetails.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\Helpers\IOHelpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\MapUtililities\AutoMapTokenDelegate.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\MapUtililities\AutoMapTokens.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\MapUtililities\MapToken.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\AssetUtils\SDRContentManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\BuildingItem.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\GenericBuilding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\NightLight.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\LegacyObjects\FromagerieLocation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\LegacyObjects\GreenhouseInterior.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\LegacyObjects\GreenhouseLocation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\LegacyObjects\LargeGreenhoseInterior.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\LegacyObjects\LargeGreenhouseLocation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\Backwoods.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\ChairTilesDataProviders.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\EventsDataProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\MailDataProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\NPCGiftTastesDataProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\StringsFromMapsDataProviders.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\SDRChatboxCommands.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IStardewRealty.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IStaticClassService.cs" />
+    <Compile Include="..\shared\SDV_Realty_Core\Framework\DataProviders\ChairTilesDataProviders.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\DataProviderManager.cs" />
+    <Compile Include="..\shared\SDV_Realty_Core\Framework\DataProviders\EventsDataProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\IGameDataProvider.cs" />
+    <Compile Include="..\shared\SDV_Realty_Core\Framework\DataProviders\MailDataProvider.cs" />
+    <Compile Include="..\shared\SDV_Realty_Core\Framework\DataProviders\NPCGiftTastesDataProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\ObjectInformation.cs" />
+    <Compile Include="..\shared\SDV_Realty_Core\Framework\DataProviders\StringsFromMapsDataProviders.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IConsoleCommandsService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IFrameworkService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\CustomizationDetails.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\ExpansionDetails.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\ModApi.cs" />
+    <Compile Include="..\shared\SDV_Realty_Core\Framework\Objects\SDRChatboxCommands.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\GameLocation_Ext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\OneTimeRandom.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\PerfMonData.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\SeasonalUtils.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\CGCM_Integration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\IGenericModConfigMenuApi.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\ICustomBuilding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Menus\FEListbox.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Menus\FEListButton.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Menus\FEMineCartMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\SDRMultiplayer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Patches\GameLocationPatches.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)i18n\I18n.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\IncreaseAnimalHouseMaxPop.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\JSONAssets.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\SDExpanded.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\TextScroller.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\WarpSign.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Patches\Tools\FEPickaxe.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\IExtendedMineCartsAPI.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\EntranceDetails.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\EntrancePatch.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\EntranceWarp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\FarmDetails.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\FarmEntrance.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\InsertRule.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ContentPackLoader.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\MapEdit.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\MapWarp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\PatchingDetails.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\ExpansionCustomizations.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\FEConfig.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\FEForSale.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\StardewObjects\CustomJunimoHarvester.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\StardewObjects\CustomJunimoHut.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\FEModDataKeys.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Menus\FEForSaleMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Menus\FETreeTransplantMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\Objects\FESign.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\Objects\Requirements.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\Utilities\ConsoleCommands.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\Utilities\FEConstants.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\IBetterFarmAnimalVarietyApi.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\SDRCustomization.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap_ComingSoon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap_ForFuture.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap_ForSale.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\release_notes - 1.6.txt">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+    <None Include="$(MSBuildThisFileDirectory)data\mappatchs\backwood_patch_0.tmx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)data\mappatchs\farm_patch_0.tmx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)data\mappatchs\farm_patch_1.tmx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)data\mappatchs\warproom.tmx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)data\Maps\sdr_warproom\warproom.tmx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\farms.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\farm_mod_blacklist.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\sdr_warproom\warpring.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\sdr_warproom\warp_room_signs.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\others.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\release_notes.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\compatability.txt" />
+    <Content Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\how-to-make-a-abuilding.txt" />
+    <Content Include="$(MSBuildThisFileDirectory)i18n\default.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)i18n\fr.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\" />
+    <Folder Include="$(MSBuildThisFileDirectory)data\assets\images\" />
+    <Folder Include="$(MSBuildThisFileDirectory)data\assets\machines\bigkeg\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\Integrations\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\Locations\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\Characters\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\Buildings\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\Menus\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\Tools\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\" />
+  </ItemGroup>
+</Project>
