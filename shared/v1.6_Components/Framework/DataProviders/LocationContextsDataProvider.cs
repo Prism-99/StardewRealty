@@ -2,6 +2,8 @@
 using StardewValley.GameData.LocationContexts;
 using SDV_Realty_Core.Framework.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
+using System.Collections.Generic;
+
 
 namespace SDV_Realty_Core.Framework.DataProviders
 {
@@ -28,30 +30,8 @@ namespace SDV_Realty_Core.Framework.DataProviders
         {
             e.Edit(asset =>
             {
-                var contextData = asset.AsDictionary<string, LocationContextData>().Data;
-                //
-                //  fix winter condition
-                //  didn't do anything
-                //var winter= contextData["Default"].WeatherConditions.Where(p => p.Condition.StartsWith("SEASON winter")).First();
-
-                //winter.Condition = winter.Condition.Replace("SEASON winter", "LOCATION_SEASON Here winter");
-                //
-                //  add all expansions to the Default context
-                //
-                //foreach (string exp in FEFramework.farmExpansions.Keys)
-                //{
-                //    contextData["Default"].PlantableLocations.Add(exp);
-                //}
-                //
-                //  add greenhouses
-                //
-                //foreach (var building in CustomBuildingManager.CustomBuildings)
-                //{
-                //    if (building.Value.IsGreenhouse)
-                //    {
-                //        contextData["Default"].PlantableLocations.Add(building.Value.Name);
-                //    }
-                //}
+                IDictionary<string, LocationContextData> contextData = asset.AsDictionary<string, LocationContextData>().Data;
+               
                 //
                 //  add custom LocationContexts
                 //

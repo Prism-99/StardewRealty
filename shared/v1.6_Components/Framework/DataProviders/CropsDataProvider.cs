@@ -1,8 +1,11 @@
 ﻿using StardewModdingAPI.Events;
 using System.Linq;
+using System.Collections.Generic;
 using StardewValley.GameData.Crops;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using SDV_Realty_Core.Framework.CustomEntities.Crops;
+
 
 namespace SDV_Realty_Core.Framework.DataProviders
 {
@@ -23,12 +26,12 @@ namespace SDV_Realty_Core.Framework.DataProviders
             //
             //  get a list of potential activations
             //
-            var potential = customCropService.Crops.Values.Where(p => !p.Added && !string.IsNullOrEmpty(p.Conditions)).ToList();
+            List<CustomCropData> potential = customCropService.Crops.Values.Where(p => !p.Added && !string.IsNullOrEmpty(p.Conditions)).ToList();
             bool haveNew = false;
             //
             //  check candidates to see if they can be activated
             //
-            foreach (var crop in potential)
+            foreach (CustomCropData crop in potential)
             {
                 if (Game1.hasLoadedGame && GameStateQuery.CheckConditions(crop.Conditions))
                 {

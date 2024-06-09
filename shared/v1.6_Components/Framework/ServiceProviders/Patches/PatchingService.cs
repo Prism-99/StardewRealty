@@ -19,7 +19,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Patches
         {
             typeof(IGameLocationPatchService)
 #if DEBUG
-            ,typeof(IDebugPatchService)
+            //,typeof(IDebugPatchService)
 #endif
         };
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -41,24 +41,14 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Patches
 
             events.AddSubscription(IGameEventsService.EventTypes.ContentLoaded, ApplyPatches);
         }
-        internal void ApplyPatches()
+        internal override void ApplyPatches()
         {
-            //
-            //  passive logging for DayUpdate profiling
-            //
-#if DEBUG
-            patches.AddPatch(true, typeof(GameLocation), "DayUpdate",
-                new Type[] { typeof(int) }, typeof(GameLocationPatches),
-                nameof(GameLocationPatches.DayUpdate), "Capture DayUpdate calls.",
-                "Debug");
-
-            patches.AddPatch(false, typeof(GameLocation), "DayUpdate",
-                new Type[] { typeof(int) }, typeof(GameLocationPatches),
-                nameof(GameLocationPatches.DayUpdate_Post), "Capture DayUpdate calls.",
-                "Debug");
-#endif
-
             patches.ApplyPatches(null);
+
+        }
+        internal override void ApplyPatches(string patchGroup)
+        {
+            patches.ApplyPatches(patchGroup);
 
         }
     }

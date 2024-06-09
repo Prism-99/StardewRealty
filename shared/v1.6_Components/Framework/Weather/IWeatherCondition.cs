@@ -15,5 +15,8 @@ namespace SDV_Realty_Core.Framework.Weather
         public abstract void Update(GameTime time,ref WeatherManager.CurrentWeather cw);
         public abstract void OneSecondUpdateTicked(OneSecondUpdateTickedEventArgs e,ref WeatherManager.CurrentWeather cw);
         public abstract void TenMinuteUpdateTicked(ref WeatherManager.CurrentWeather cw);
+        public abstract void UpdateTicked(ref WeatherManager.CurrentWeather cw);
+        public virtual bool IsRaining() =>false;
+        public virtual bool IsSnowing() => false;
     }
 }

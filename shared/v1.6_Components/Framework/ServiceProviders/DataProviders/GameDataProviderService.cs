@@ -2,7 +2,6 @@
 using SDV_Realty_Core.Framework.AssetUtils;
 using SDV_Realty_Core.Framework.DataProviders;
 using SDV_Realty_Core.Framework.Objects;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Configuration;
 using SDV_Realty_Core.Framework.ServiceInterfaces.DataProviders;
@@ -12,7 +11,7 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
 using System;
 using System.Collections.Generic;
-
+using StardewModdingAPI.Events;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.DataProviders
 {
@@ -20,9 +19,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.DataProviders
     {
         private ChairTilesDataProviders chairTiles;
         private NPCGiftTastesDataProvider NPCTastes;
-        //private IFrameworkService _frameworkService;
         private IExpansionManager _expansionManager;
-        private IUtilitiesService _UtilitiesService;
+        private IUtilitiesService _utilitiesService;
         private ILandManager _landManager;
         private IGridManager _gridManager;
         private IExitsService _exitsService;
@@ -36,7 +34,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.DataProviders
             typeof(IExpansionManager),typeof(IUtilitiesService),
             typeof(ILandManager), typeof(IGridManager),
             typeof(IModDataService),typeof(ICustomMovieService)
-            
+
         };
         public override object ToType(Type conversionType, IFormatProvider provider)
         {
@@ -49,47 +47,64 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.DataProviders
         internal override void Initialize(ILoggerService logger, object[] args)
         {
             this.logger = logger;
-            SDRContentManager contentManager = ((IContentManagerService)args[0]).contentManager;
-            FEConfig config = ((IConfigService)args[1]).config;
+            IContentManagerService contentManagerService = (IContentManagerService)args[0];
+            SDRContentManager contentManager = contentManagerService.contentManager;
+            IConfigService configService = (IConfigService)args[1];
+            
             IContentPackService contentPackService = (IContentPackService)args[2];
-            IModHelper helper = ((IModHelperService)args[3]).modHelper;
+            IModHelperService modHelperService = ((IModHelperService)args[3]);
+            IModHelper helper = modHelperService.modHelper;
             ICustomEntitiesServices customEntitiesServices = (ICustomEntitiesServices)args[4];
             _exitsService = (IExitsService)args[5];
             _expansionManager = (IExpansionManager)args[6];
-            _UtilitiesService = (IUtilitiesService)args[7];
+            _utilitiesService = (IUtilitiesService)args[7];
             _landManager = (ILandManager)args[8];
             _gridManager = (IGridManager)args[9];
             IModDataService modDataService = (IModDataService)args[10];
-            ICustomMovieService customMovieService= (ICustomMovieService)args[11];
+            ICustomMovieService customMovieService = (ICustomMovieService)args[11];
 
-                       ContentPackLoader contentPacks = contentPackService.contentPackLoader;
-            chairTiles = new ChairTilesDataProviders(config.AddBridgeSeat, contentManager);
+            ContentPackLoader contentPacks = contentPackService.contentPackLoader;
+            chairTiles = new ChairTilesDataProviders(_utilitiesService, contentManager);
             NPCTastes = new NPCGiftTastesDataProvider(contentManager);
 
+            //_utilitiesService.ModHelperService.modHelper.Events.Specialized.LoadStageChanged += Specialized_LoadStageChanged; 
+            _utilitiesService.GameEventsService.AddSubscription(new LoadStageChangedEventArgs(0, 0), HandleLoadStageChanged);
 
             dataProviders = new List<IGameDataProvider>
             {
                 chairTiles,
                 NPCTastes,
                 new MailDataProvider(contentPackService.contentPackLoader),
-                //new Backwoods(),
                 new StringsFromMapsDataProviders( contentManager.stringFromMaps),
                 new EventsDataProvider(modDataService),
                 new BigCraftablesDataProvider(customEntitiesServices.customBigCraftableService),
-                new BuildingsDataProvider(customEntitiesServices.customBuildingService.CustomBuildings, config.SkipBuildingConditions),
-                new CraftingRecipesDataProvider(customEntitiesServices, _UtilitiesService),
+                new BuildingsDataProvider(customEntitiesServices.customBuildingService.CustomBuildings, _utilitiesService),
+                new CraftingRecipesDataProvider(customEntitiesServices, _utilitiesService),
                 new LocationContextsDataProvider(customEntitiesServices.customLocationContextService),
                 new LocationsDataProvider(customEntitiesServices.customBuildingService,modDataService),
-                new MachinesDataProvider(customEntitiesServices.customMachineDataService,_UtilitiesService),
-                new MineCartsDataProvider(modDataService,_UtilitiesService),
-                new WorldMapDataProvider(contentPacks,_expansionManager,_landManager,_gridManager,_exitsService),
+                new MachinesDataProvider(customEntitiesServices.customMachineDataService,_utilitiesService),
+                new MineCartsDataProvider(modDataService,_utilitiesService),
+                new WorldMapDataProvider(contentPacks,_expansionManager,_landManager,_gridManager,_exitsService,contentManagerService,modHelperService),
                 new ObjectsDataProvider(customEntitiesServices.customObjectService),
                 new AudioChangesDataProviders(),
-                new CropsDataProvider(customEntitiesServices.customCropService,customEntitiesServices.customObjectService,_UtilitiesService),
+                new CropsDataProvider(customEntitiesServices.customCropService,customEntitiesServices.customObjectService,_utilitiesService),
                 new MoviesDataProvider(customMovieService),
-                new SDRDataProvider(contentPacks, helper, contentManager.ExternalReferences, contentManager.localizationStrings),
-                new MapsDataProvider(contentManager,_UtilitiesService,_expansionManager,modDataService)
+                new SDRDataProvider(contentPacks, helper, contentManager.ExternalReferences, modDataService.TranslationDict),
+                new MapsDataProvider(contentManager,_utilitiesService,_expansionManager,modDataService)
             };
+        }
+
+        private void HandleLoadStageChanged(EventArgs e)
+        {
+            LoadStageChangedEventArgs stageChangedEventArgs = (LoadStageChangedEventArgs)e;
+
+            if(stageChangedEventArgs.NewStage==  StardewModdingAPI.Enums.LoadStage.SaveParsed)
+            {
+                foreach(var provider in dataProviders)
+                {
+                    provider.OnGameLaunched();
+                }
+            }
         }
     }
 }

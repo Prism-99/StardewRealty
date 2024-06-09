@@ -1,5 +1,4 @@
-﻿using Prism99_Core.Utilities;
-using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+﻿using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.Utilities;
 using StardewValley.Mods;
@@ -31,7 +30,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             IExpansionManager expansionManager= (IExpansionManager)args[1];
 
             SeasonalUtils = new SeasonalUtils();
-            SeasonalUtils.Initialize(utilitiesService.ConfigService.config, (SDVLogger)logger.CustomLogger,expansionManager);
+            SeasonalUtils.Initialize(utilitiesService.ConfigService.config, logger,expansionManager);
         }
         public override bool isWinter(ModDataDictionary modData)
         {

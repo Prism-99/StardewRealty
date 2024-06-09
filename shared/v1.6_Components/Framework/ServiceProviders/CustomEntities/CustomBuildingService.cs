@@ -38,5 +38,6 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
         {
             customBuildingManager.LoadDefinitions();
         }
+        
     }
 }

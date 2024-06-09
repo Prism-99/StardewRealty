@@ -17,6 +17,7 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.Services
         public abstract Type ServiceType { get; }
         public abstract Type[] InitArgs { get; } 
         public virtual Type[] Dependants { get; } = null;
+        public virtual bool UnitTest() { return true; }
         public TypeCode GetTypeCode()
         {
             return TypeCode.Object;

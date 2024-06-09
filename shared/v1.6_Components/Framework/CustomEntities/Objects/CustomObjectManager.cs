@@ -24,7 +24,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Objects
         /// <summary>
         /// Load objects bundled with SDR
         /// </summary>
-        public  void LoadObjectDefinitions()
+        public void LoadObjectDefinitions()
         {
             try
             {
@@ -42,7 +42,6 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Objects
                             CustomObjectData nObject = JsonConvert.DeserializeObject<CustomObjectData>(fileContent);
                             nObject.ModPath = Path.GetDirectoryName(defin);
                             nObject.translations = helper.Translation;
-                            //nBuilding.LoadExternalReferences();
                             AddObjectDefinition(nObject);
                         }
                         catch (Exception ex)
@@ -53,12 +52,12 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Objects
                 }
                 else
                 {
-                    logger.Log($"Missing custom object directory '{customObjectRoot}'", LogLevel.Warn);
+                    logger.Log($"Missing custom object directory '{customObjectRoot}'", LogLevel.Debug);
                 }
             }
             catch(Exception ex)
             {
-
+                logger.Log($"Error loading object defintion: {ex}", LogLevel.Error);
             }
         }
         public  void AddObjectDefinition(CustomObjectData nObject)

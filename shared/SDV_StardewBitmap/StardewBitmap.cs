@@ -133,14 +133,15 @@ namespace StardewModHelpers
         #endregion
 
         #region "public methods"
-        public void DrawRectangle(xColor cLine, int iLeft, int iTop, int iWidth, int iHeight)
+        public void DrawRectangle(xColor cLine, int iLeft, int iTop, int iWidth, int iHeight, int strokeWidth = 1)
         {
             var canvas = new SKCanvas(SourceImage);
             var rect = SKRect.Create(iLeft, iTop, iWidth, iHeight);
             var paint = new SKPaint
             {
                 Style = SKPaintStyle.Stroke,
-                Color = ConvertColor(cLine)
+                Color = ConvertColor(cLine),
+                StrokeWidth = strokeWidth,
             };
 
             canvas.DrawRect(rect, paint);
@@ -170,8 +171,8 @@ namespace StardewModHelpers
             using (var data = image.Encode(format, 80))
             {
                 // save the data to a stream
-            
-                    data.SaveTo(sourceStream);
+
+                data.SaveTo(sourceStream);
             }
         }
         public void Save(string sFilename, SKEncodedImageFormat format)
@@ -188,7 +189,7 @@ namespace StardewModHelpers
         }
         public void Save(string sFilename)
         {
-           Save(sFilename,SKEncodedImageFormat.Png);
+            Save(sFilename, SKEncodedImageFormat.Png);
         }
         public void FillRectangle(xColor cFill, int iLeft, int iTop, int iWidth, int iHeight)
         {
@@ -244,7 +245,7 @@ namespace StardewModHelpers
 #else
                 txOutput = Texture2D.FromStream(Game1.graphics.GraphicsDevice, SourceStream());
 #endif
-             }
+            }
 #if LOG_DEBUG
             //SDV_Logger.DumpObject("txOutput", txOutput);
 #endif
@@ -268,12 +269,12 @@ namespace StardewModHelpers
             canvas.Flush();
             canvas.Save();
         }
-        public  Vector2 getTextCenterToDraw(string text, Rectangle region, SKPaint paint)
+        public Vector2 getTextCenterToDraw(string text, Rectangle region, SKPaint paint)
         {
             SKRect textBounds = new SKRect();
-            paint.MeasureText(text,ref textBounds);
-            float x = region.Width/2- textBounds.Width * 0.4f;
-            float y = region.Height/2 + textBounds.Height * 0.4f;
+            paint.MeasureText(text, ref textBounds);
+            float x = region.Width / 2 - textBounds.Width * 0.4f;
+            float y = region.Height / 2 + textBounds.Height * 0.4f;
             return new Vector2(x, y);
         }
         public void DrawString(string text, int x, int y)
@@ -282,13 +283,17 @@ namespace StardewModHelpers
         }
         public void DrawString(string text, string sFontName, float fFontSize, xColor cFontColor, int x, int y)
         {
+            DrawString(text, SKTextAlign.Center, sFontName, fFontSize, cFontColor, x, y);
+        }
+        public void DrawString(string text, SKTextAlign textAlign, string sFontName, float fFontSize, xColor cFontColor, int x, int y)
+        {
             var canvas = new SKCanvas(SourceImage);
             var font = SKTypeface.FromFamilyName(sFontName);
             var brush = new SKPaint
             {
                 Typeface = font,
                 TextSize = fFontSize,
-                TextAlign = SKTextAlign.Center,
+                TextAlign = textAlign,
                 IsAntialias = false,
                 Color = ConvertColor(cFontColor)
             };
@@ -323,9 +328,9 @@ namespace StardewModHelpers
         {
             SourceImage = SourceImage.Resize(new SKImageInfo(width, height), SKFilterQuality.Medium);
         }
-#endregion
+        #endregion
 
-                #region "private methods"
+        #region "private methods"
 
         public static SKColor ConvertColor(xColor cColor)
         {
@@ -340,7 +345,7 @@ namespace StardewModHelpers
         {
             return SKBitmap.Decode(source.SourceStream());
         }
-                #endregion
+        #endregion
     }
 
 #endif

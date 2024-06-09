@@ -67,7 +67,10 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Machines
                     logger.Log($"Missing custom Machine directory '{machineRootPath}'", LogLevel.Warn);
                 }
             }
-            catch(Exception ex) { }
+            catch(Exception ex)
+            {
+                logger.LogError("CustomMachineManager.LoadDefinitions", ex);
+            }
         }
 
         public void AddMachine(CustomMachine machine)

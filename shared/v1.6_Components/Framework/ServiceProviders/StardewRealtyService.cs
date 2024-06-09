@@ -48,7 +48,10 @@ namespace SDV_Realty_Core.Framework.ServiceProviders
             typeof(IThreadSafeLoaderService),typeof(IAutoMapperService),
             typeof(IConfigService),typeof(ICustomEventsService),
             typeof(IValleyStatsService),typeof(IMapRendererService),
-            typeof(IGameFixesService),typeof(IChatBoxCommandsService)
+            typeof(IGameFixesService),typeof(IChatBoxCommandsService),
+            typeof(ILocationDisplayService),typeof(ILocationDataProvider),
+            typeof(ITreasureManager),typeof(IWordMapMenuService),
+            typeof(IWorldMapPatch)
 #if DEBUG
             ,typeof(IDebugPatchService)
 #endif

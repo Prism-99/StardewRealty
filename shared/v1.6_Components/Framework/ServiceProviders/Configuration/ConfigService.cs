@@ -15,7 +15,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Configuration
 
         public override Type[] InitArgs => new Type[] 
         {
-            typeof(IModHelperService) ,typeof(ICustomEventsService)
+            typeof(IModHelperService) 
         };
 
         public override object ToType(Type conversionType, IFormatProvider provider)

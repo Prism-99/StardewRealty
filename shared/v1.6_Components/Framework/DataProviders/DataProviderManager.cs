@@ -1,6 +1,7 @@
 ﻿using SDV_Realty_Core.Framework.Locations;
 using StardewModdingAPI.Events;
 using System.IO;
+using System;
 using StardewModHelpers;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks;
 using SDV_Realty_Core.Framework.ServiceInterfaces.DataProviders;
@@ -19,13 +20,15 @@ namespace SDV_Realty_Core.Framework.DataProviders
         //
         //  1.6 code
         //
-        private LocalizationStrings localizationStrings;
+        //private LocalizationStrings localizationStrings;
         private IGameDataProviderService gameDataProviderService;
-        internal void Initialize(ContentPackLoader cPacks, SDRContentManager conManager, FEConfig modConfig, IModHelper helper, ILoggerService olog, IGameDataProviderService gameDataService)
+        private IUtilitiesService utilitiesService;
+        internal void Initialize(ContentPackLoader cPacks, SDRContentManager conManager, IUtilitiesService utilitiesService, ILoggerService olog, IGameDataProviderService gameDataService)
         {
+            this.utilitiesService = utilitiesService;
             logger = olog;
-            config = modConfig;
-            this.helper = helper;
+            //config = modConfig;
+            //this.helper = helper;
             gameDataProviderService = gameDataService;
             contentManager = conManager;
             externalReferences = conManager.ExternalReferences;
@@ -35,62 +38,47 @@ namespace SDV_Realty_Core.Framework.DataProviders
             contentPacks = cPacks;
             //stringFromMaps = conManager.stringFromMaps;   
 
-            chairTiles = new ChairTilesDataProviders(config.AddBridgeSeat, conManager);
+            //chairTiles = new ChairTilesDataProviders(config.AddBridgeSeat, conManager);
             NPCTastes = new NPCGiftTastesDataProvider(conManager);
-
-
 
             AddVersionSpecificProviders();
             //
             //  set game lore flag
             //
-            foreach (var provider in dataProviders)
+            foreach (IGameDataProvider provider in dataProviders)
             {
-                provider.UseLore = config.UseLore;
+                provider.UseLore =utilitiesService.ConfigService.config.UseLore;
                 provider.SetLogger(logger);
             }
 
-            helper.Events.GameLoop.GameLaunched += On_GameLaunched;
-#if v16
-            helper.Events.Content.AssetRequested += Content_AssetRequested;
-#endif
+            utilitiesService.GameEventsService.AddSubscription(new GameLaunchedEventArgs(), On_GameLaunched);
+            utilitiesService.GameEventsService.AddSubscription( "AssetRequestedEventArgs", Content_AssetRequested);
+
+            //helper.Events.GameLoop.GameLaunched += On_GameLaunched;
+            //helper.Events.Content.AssetRequested += Content_AssetRequested;
         }
 
-        internal void SetLocalizationString(LocalizationStrings locStrings)
-        {
-            localizationStrings = locStrings;
-        }
+        //internal void SetLocalizationString(LocalizationStrings locStrings)
+        //{
+        //    //localizationStrings = locStrings;
+        //}
         internal void AddVersionSpecificProviders()
         {
             // added for Services
-            localizationStrings = new LocalizationStrings();
-            localizationStrings.Intialize(helper.Translation);
+            //localizationStrings = new LocalizationStrings();
+            //localizationStrings.Intialize(utilitiesService.ModHelperService.Translation);
 
             dataProviders = gameDataProviderService.dataProviders;
-
-            //dataProviders.Add(new BigCraftablesDataProvider());
-            //dataProviders.Add(new BuildingsDataProvider(CustomBuildingManager.CustomBuildings,config.SkipBuildingConditions));
-            //dataProviders.Add(new CraftingRecipesDataProvider());
-            //dataProviders.Add(new LocationContextsDataProvider());
-            //dataProviders.Add(new LocationsDataProvider());
-            //dataProviders.Add(new MachinesDataProvider());
-            //dataProviders.Add(new MineCartsDataProvider());
-            //dataProviders.Add(new WorldMapDataProvider(contentPacks));
-            //dataProviders.Add(new ObjectsDataProvider());
-            //dataProviders.Add(new AudioChangesDataProviders());
-            //dataProviders.Add(new CropsDataProvider());
-            //dataProviders.Add(new MoviesDataProvider());
-            //dataProviders.Add(new SDRDataProvider(contentPacks, helper, externalReferences, localizationStrings));
-            //dataProviders.Add( new MapsDataProvider(contentManager));
-         }
+          }
         /// <summary>
         /// Adds required data managers for data providers
         /// </summary>
         internal void SetCustomObjects()
         {
           }
-        private void Content_AssetRequested(object? sender, AssetRequestedEventArgs e)
+        private void Content_AssetRequested( EventArgs ea)
         {
+            AssetRequestedEventArgs e = (AssetRequestedEventArgs)ea;
             //
             //  edit handled by standard handlers
             //
@@ -165,8 +153,8 @@ namespace SDV_Realty_Core.Framework.DataProviders
                                     e.LoadFrom(() => { return contentPacks.ExpansionMaps[mapName]; }, AssetLoadPriority.Medium);
                                 }
                                 break;
-                            case "Images":
-                                string imagePath = Path.Combine(helper.DirectoryPath, "data", "assets", "Images", urlParts[2]);
+                            case "images":
+                                string imagePath = Path.Combine(utilitiesService.GameEnvironment.ModPath, "data", "assets", "images", urlParts[2]);
                                 if (File.Exists(imagePath))
                                 {
                                     e.LoadFrom(() => { return new StardewBitmap(imagePath).Texture(); }, AssetLoadPriority.Medium);
@@ -179,7 +167,8 @@ namespace SDV_Realty_Core.Framework.DataProviders
                                 }
                                 break;
                             case "Strings":
-                                localizationStrings.HandleEdit(e);
+                                //localizationStrings.HandleEdit(e);
+                                int xx = 1;
                                 break;
                             case "movies":
                                 if (contentManager.ExternalReferences.ContainsKey(sdr_item))

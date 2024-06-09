@@ -13,13 +13,13 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Crops
     internal class CustomCropManager
     {
         private ILoggerService logger;
-         private IModHelperService modHelperService;
+        private IModHelperService modHelperService;
         public readonly Dictionary<string, CustomCropData> Crops = new Dictionary<string, CustomCropData>();
-        public Dictionary<string, object> ExternalReferences=new();
+        public Dictionary<string, object> ExternalReferences = new();
         public CustomCropManager(ILoggerService ologger, IModHelperService helper)
         {
             logger = ologger;
-             modHelperService = helper;
+            modHelperService = helper;
         }
         public void LoadObjectDefinitions()
         {
@@ -44,7 +44,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Crops
                         catch (Exception ex)
                         {
                             logger.Log($"Error loading crop defintion: {defin}", LogLevel.Error);
-                            logger.Log($"Error: {ex}", LogLevel.Error);
+                            logger.LogError(ex);
                         }
                     }
                 }
@@ -75,7 +75,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Crops
             catch (Exception ex)
             {
                 logger.Log($"Error loading texture for custom crop {nObject.CropId}", LogLevel.Error);
-
+                logger.LogError(ex);
             }
         }
     }

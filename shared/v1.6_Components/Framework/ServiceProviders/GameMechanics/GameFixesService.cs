@@ -6,6 +6,7 @@ using StardewModdingAPI.Events;
 using StardewValley.Extensions;
 using StardewValley.Locations;
 using StardewValley.Objects;
+using StardewValley.Buildings;
 using System;
 using System.Linq;
 using xTile.Layers;
@@ -17,7 +18,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
         private static IGameEventsService _gameEventsService;
         public override Type[] InitArgs => new Type[]
         {
-            typeof(IGameEventsService),typeof(IPatchingService)
+            typeof(IGameEventsService),typeof(IPatchingService),
+            typeof(IUtilitiesService)
         };
 
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -34,41 +36,50 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 
             _gameEventsService = (IGameEventsService)args[0];
             IPatchingService patchingService = (IPatchingService)args[1];
+            IUtilitiesService utilitiesService = (IUtilitiesService)args[2];
 
             //
             //  convert new buildng chests from objects to chest
-            _gameEventsService.AddSubscription(typeof( BuildingListChangedEventArgs).Name, FixBuildingChests);
+            _gameEventsService.AddSubscription(typeof(BuildingListChangedEventArgs).Name, FixBuildingChests);
 
             // stop weeds from spawning on path tiles
             patchingService.patches.AddPatch(true, typeof(GameLocation), "loadWeeds",
     null, typeof(GameFixesService), nameof(loadWeeds_prefix),
     "Stop weeds at start of year of spawning on paths", "Gamelocation");
-
             //
-            //  change ChestAnywhere from using Name to DisplayName, when possible
+            //  Check to see if Chests Anywhere is installed
+            //  -added in 1.4.3
             //
-            Type chestFactory = Type.GetType("Pathoschild.Stardew.ChestsAnywhere.ChestFactory,ChestsAnywhere");
-            patchingService.patches.AddPatch(true, chestFactory, "GetCategory",
-              new Type[] { typeof(GameLocation) }, typeof(GameFixesService)
-              , nameof(GetCategory), "Fix default ChestsAnywhere category",
-              "Mechanics");
-
+            //if (utilitiesService.ModHelperService.modHelper.ModRegistry.IsLoaded("Pathoschild.ChestsAnywhere"))
+            //{
+            //    //
+            //    //  change ChestAnywhere from using Name to DisplayName, when possible
+            //    //
+            //    //Type chestFactory = Type.GetType("Pathoschild.Stardew.ChestsAnywhere.ChestFactory,ChestsAnywhere");
+            //    //patchingService.patches.AddPatch(true, chestFactory, "GetCategory",
+            //    //  new Type[] { typeof(GameLocation) }, typeof(GameFixesService)
+            //    //  , nameof(GetCategory), "Fix default ChestsAnywhere category",
+            //    //  "Mechanics");
+            //}
         }
         private void FixBuildingChests(EventArgs ep)
         {
-            BuildingListChangedEventArgs e=(BuildingListChangedEventArgs)ep;
-            if (e.Added != null)
+            if (Game1.IsMasterGame)
             {
-                foreach (var buildingAdded in e.Added)
+                BuildingListChangedEventArgs e = (BuildingListChangedEventArgs)ep;
+                if (e.Added != null)
                 {
-                    if (buildingAdded.indoors.Value != null)
+                    foreach (Building buildingAdded in e.Added)
                     {
-                        var chests = buildingAdded.indoors.Value.Objects.Values.Where(p => p.ItemId == "130" && p is not Chest).ToList();
-
-                        foreach (var chest in chests)
+                        if (buildingAdded.indoors.Value != null)
                         {
-                            buildingAdded.indoors.Value.objects.Remove(chest.TileLocation);
-                            buildingAdded.indoors.Value.objects.Add(chest.TileLocation, new Chest(true, chest.TileLocation));
+                            var chests = buildingAdded.indoors.Value.Objects.Values.Where(p => p.ItemId == "130" && p is not Chest).ToList();
+
+                            foreach (SDObject chest in chests)
+                            {
+                                buildingAdded.indoors.Value.objects.Remove(chest.TileLocation);
+                                buildingAdded.indoors.Value.objects.Add(chest.TileLocation, new Chest(true, chest.TileLocation));
+                            }
                         }
                     }
                 }
@@ -76,6 +87,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
         }
         public static bool loadWeeds_prefix(GameLocation __instance)
         {
+            if (!Game1.IsMasterGame)
+                return true;
+
             //logger.Log($"loadWeeds called.", LogLevel.Debug);
             if ((bool)_gameEventsService.GetProxyValue("IsExpansion", new object[] { __instance.Name }))
             {

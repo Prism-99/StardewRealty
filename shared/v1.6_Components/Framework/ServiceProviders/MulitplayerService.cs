@@ -39,9 +39,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders
             IExpansionManager expansionManager = (IExpansionManager)args[3];
  
             Multiplayer = new SDRMultiplayer();
-            Multiplayer.Initialize((SDVLogger)logger.CustomLogger, utilitiesService.ModHelperService.modHelper,   expansionManager, landManager, exitsService);
+            Multiplayer.Initialize(logger, utilitiesService.ModHelperService.modHelper,   expansionManager, landManager, exitsService, utilitiesService);
 
-            utilitiesService.GameEventsService.AddSubscription(new SaveLoadedEventArgs(), Multiplayer.AddHooks);
+            utilitiesService.GameEventsService.AddSubscription(new LoadStageChangedEventArgs(0,0), Multiplayer.AddHooks);
             RegisterEventHandler("SendFarmHandPurchase", SendFarmHandPurchase);
         }
         private void SendFarmHandPurchase(object[] args)

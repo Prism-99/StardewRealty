@@ -1,7 +1,7 @@
 ﻿using Prism99_Core.Abstractions;
-using Prism99_Core.Utilities;
 using SDV_Realty_Core.Framework.Objects;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using StardewModdingAPI.Utilities;
 using StardewValley.Mods;
 using System.Collections.Generic;
@@ -12,9 +12,9 @@ namespace SDV_Realty_Core.Framework.Utilities
     internal  class SeasonalUtils
     {
         private  FEConfig config;
-        private  SDVLogger logger;
+        private  ILoggerService logger;
         private IExpansionManager expansionManager;
-        public  void Initialize(FEConfig oconfig,SDVLogger olog, IExpansionManager expansionManager)
+        public  void Initialize(FEConfig oconfig, ILoggerService olog, IExpansionManager expansionManager)
         {
             config = oconfig;
             logger = olog;
@@ -23,9 +23,9 @@ namespace SDV_Realty_Core.Framework.Utilities
         public  bool isWinter(ModDataDictionary modData)
         {
             bool isWinter = Game1.IsWinter;
-            if (modData.ContainsKey(FEModDataKeys.FELocationName))
+            if (modData.ContainsKey(IModDataKeysService.FELocationName))
             {
-                isWinter = Game1.getLocationFromName(modData[FEModDataKeys.FELocationName]).GetSeason() == Season.Winter;
+                isWinter = Game1.getLocationFromName(modData[IModDataKeysService.FELocationName]).GetSeason() == Season.Winter;
             }
 
             return isWinter;
@@ -77,18 +77,7 @@ namespace SDV_Realty_Core.Framework.Utilities
         }
         public  bool IsCropInGracePeriod(GameLocation location, Crop crop)
         {
-
-#if v16
             return crop.IsInSeason(location);
-#else
-            if (crop.seasonsToGrowIn != null && crop.seasonsToGrowIn.Count > 0)
-            {
-                return IsCropInGracePeriod(location, crop.seasonsToGrowIn.ToList());
-            }
-            
-            return true;
-#endif
-            
         }
         public  bool IsCropInGracePeriod(GameLocation loc, List<string> seasonsToGrowIn)
         {
@@ -98,16 +87,16 @@ namespace SDV_Realty_Core.Framework.Utilities
             //
             //  check for greenhouse
             //
-            if (loc.IsGreenhouse || loc.SeedsIgnoreSeasonsHere() || loc.modData.ContainsKey(FEModDataKeys.FEGreenhouse) || loc.modData.ContainsKey(FEModDataKeys.FELargeGreenhouse))
+            if (loc.IsGreenhouse || loc.SeedsIgnoreSeasonsHere() || loc.modData.ContainsKey(IModDataKeysService.FEGreenhouse) || loc.modData.ContainsKey(IModDataKeysService.FELargeGreenhouse))
             {
                 return true;
             }
 
             prism_GameLocation ploc = new prism_GameLocation(loc);
             string locName = loc.NameOrUniqueName;
-            if (loc.modData.ContainsKey(FEModDataKeys.FELocationName))
+            if (loc.modData.ContainsKey(IModDataKeysService.FELocationName))
             {
-                locName = loc.modData[FEModDataKeys.FELocationName];
+                locName = loc.modData[IModDataKeysService.FELocationName];
             }
             string customSeason = expansionManager.expansionManager.GetExpansionSeasonalOverride(locName);
 

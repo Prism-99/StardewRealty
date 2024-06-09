@@ -72,7 +72,7 @@ namespace Prism99_Core.NaturalText
             List<string> arTextPart = new List<string> { };
             string[] arSourceText = text.Split(' ');
             string dateArg = "";
-            string rptArg = "";
+            //string rptArg = "";
             List<string> rptParts = new List<string> { };
             List<string> dateParts = new List<string> { };
             string timeArg = "";

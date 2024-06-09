@@ -1,7 +1,6 @@
 ﻿using Prism99_Core.Utilities;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -51,9 +50,6 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             environment = new SDVEnvironment();
             environment.Initialize(helper, logger);
  
-            //helper.Events.GameLoop.GameLaunched += GameLoop_GameLaunched;
-            //helper.Events.GameLoop.SaveLoaded += GameLoop_SaveLoaded;
-
             eventsService.AddSubscription(new GameLaunchedEventArgs(), GameLaunched, 1000);
             eventsService.AddSubscription(new LoadStageChangedEventArgs(0, 0), LoadStageChanged,1000);
         }
@@ -64,7 +60,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
         /// <returns></returns>
         public override FarmDetails GetFarmDetails(int farmId)
         {
-            var olist = GameFarms?.Where(p => p.FarmType == farmId);
+            IEnumerable<FarmDetails> olist = GameFarms?.Where(p => p.FarmType == farmId);
 
             if (olist != null && olist.Any())
             {
@@ -147,7 +143,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             }
             catch (Exception ex)
             {
-                logger?.Log("error: " + ex.ToString(), LogLevel.Error);
+                logger.Log("error: " + ex.ToString(), LogLevel.Error);
                 GameFarms = new List<FarmDetails> { };
             }
 
@@ -162,7 +158,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             }
             catch (Exception ex)
             {
-                logger?.Log("error: " + ex.ToString(), LogLevel.Error);
+                logger.Log("error: " + ex.ToString(), LogLevel.Error);
                 OtherLocations = new Dictionary<string, FarmDetails> { };
             }
             //
@@ -176,7 +172,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             }
             catch (Exception ex)
             {
-                logger?.Log("error: " + ex.ToString(), LogLevel.Error);
+                logger.Log("error: " + ex.ToString(), LogLevel.Error);
                 BlackListedFarmMods = new List<string> { };
             }
         }

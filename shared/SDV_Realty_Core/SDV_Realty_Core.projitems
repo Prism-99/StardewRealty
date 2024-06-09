@@ -32,23 +32,19 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\MailDataProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\NPCGiftTastesDataProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\StringsFromMapsDataProviders.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Menus\SDRWorldMapMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ModFixes\IModFix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ModFixes\SmallerFishPonds.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\SDRChatboxCommands.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IStardewRealty.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IStaticClassService.cs" />
-    <Compile Include="..\shared\SDV_Realty_Core\Framework\DataProviders\ChairTilesDataProviders.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\DataProviderManager.cs" />
-    <Compile Include="..\shared\SDV_Realty_Core\Framework\DataProviders\EventsDataProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\IGameDataProvider.cs" />
-    <Compile Include="..\shared\SDV_Realty_Core\Framework\DataProviders\MailDataProvider.cs" />
-    <Compile Include="..\shared\SDV_Realty_Core\Framework\DataProviders\NPCGiftTastesDataProvider.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\ObjectInformation.cs" />
-    <Compile Include="..\shared\SDV_Realty_Core\Framework\DataProviders\StringsFromMapsDataProviders.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IConsoleCommandsService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IFrameworkService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\CustomizationDetails.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\ExpansionDetails.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\ModApi.cs" />
-    <Compile Include="..\shared\SDV_Realty_Core\Framework\Objects\SDRChatboxCommands.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\GameLocation_Ext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\OneTimeRandom.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\PerfMonData.cs" />
@@ -67,7 +63,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Integrations\SDExpanded.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\TextScroller.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\WarpSign.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Framework\Patches\Tools\FEPickaxe.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Integrations\IExtendedMineCartsAPI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\EntranceDetails.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\EntrancePatch.cs" />
@@ -84,17 +79,27 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\FEForSale.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\StardewObjects\CustomJunimoHarvester.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\StardewObjects\CustomJunimoHut.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\FEModDataKeys.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Menus\FEForSaleMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Menus\FETreeTransplantMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\Objects\FESign.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\Objects\Requirements.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\Utilities\ConsoleCommands.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)ContentPackFramework\Utilities\FEConstants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Integrations\IBetterFarmAnimalVarietyApi.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Integrations\SDRCustomization.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\land_frame.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\meadows_valley_area.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\meadow_menu_background.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\world map image.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap_ComingSoon.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -102,6 +107,36 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap_ForSale.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\locationcontexts\always_rain\locationcontext.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\locationcontexts\always_snow\locationcontext.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\locationcontexts\always_summer\locationcontext.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\locationcontexts\always_sunny\locationcontext.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\locationcontexts\drizzle\locationcontext.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\locationcontexts\fog\locationcontext.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\locationcontexts\light_rain\locationcontext.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\locationcontexts\storm\locationcontext.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\locationcontexts\wind\locationcontext.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\weather\fog.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="$(MSBuildThisFileDirectory)data\release_notes - 1.6.txt">
@@ -151,12 +186,11 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="$(MSBuildThisFileDirectory)i18n\fr.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\" />
-    <Folder Include="$(MSBuildThisFileDirectory)data\assets\images\" />
     <Folder Include="$(MSBuildThisFileDirectory)data\assets\machines\bigkeg\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\" />

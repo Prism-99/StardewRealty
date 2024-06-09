@@ -9,7 +9,7 @@ namespace Prism99_Core.Utilities
 {
     public class SDVLogger
     {
-        private IMonitor Monitor;
+        public IMonitor Monitor;
 #if DEBUG
         public bool Debug = true;
         public bool CustomLog = true;
@@ -95,11 +95,15 @@ namespace Prism99_Core.Utilities
         private string FormatMessage(string message, LogLevel lLevel, string label, bool detailed)
         {
             string time = GetTimeStamp();
-            string messageWithLabel = (label == "" ? ($"   {message}") : (message == "" ? label : $"{label}: {message}"));
+            string messageWithLabel = (label == "" ? ($"{message}") : (message == "" ? label : $"{label}: {message}"));
             string sid = "";
             if (Context.IsSplitScreen)
             {
                 sid = $"[SID:{Context.ScreenId}] ";
+            }
+            else if (Game1.IsMultiplayer)
+            {
+                sid = $"[{Game1.player.UniqueMultiplayerID}] ";
             }
             if (detailed)
             {

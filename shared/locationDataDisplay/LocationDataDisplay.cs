@@ -6,46 +6,57 @@ using StardewValley.GameData.Locations;
 using Prism99_Core.Utilities;
 using StardewModHelpers;
 using StardewModdingAPI.Utilities;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
+using System.Collections.Generic;
 
 
 namespace locationDataDisplay
 {
-    internal static class LocationDataDisplay
+    internal class LocationDataDisplay
     {
         private static GamePatches patches;
         public static bool Visible;
         private static int iRow = 0;
         private static int iWidest = 0;
+        private static List<string> displayLines;
         private static SpriteFont font = null;
         private static Vector2 lineheight = Vector2.Zero;
         private static KeybindList toggleKey;
-        public static void Initialize(IModHelper helper, SDVLogger olog)
+        public LocationDataDisplay(IModHelperService helper, ILoggerService olog, IGameEventsService gameEventsService)
         {
             toggleKey = new KeybindList(new Keybind(new SButton[] { SButton.O, SButton.LeftControl }));
-
-            patches = new GamePatches();
-            patches.Initialize(helper.ModContent.ModID, olog);
-            patches.AddPatch(false, typeof(GameLocation), "draw",
-            new Type[] { typeof(SpriteBatch) }, typeof(LocationDataDisplay), nameof(draw),
-            ".",
-            "Location");
             Visible = false;
-            patches.ApplyPatches("");
-            helper.Events.Input.ButtonPressed += Input_ButtonPressed;
+
+            //patches = new GamePatches();
+            //patches.Initialize(helper.modHelper.ModContent.ModID, (SDVLogger)olog.CustomLogger);
+            //patches.AddPatch(false, typeof(GameLocation), "draw",
+            //    new Type[] { typeof(SpriteBatch) }, typeof(LocationDataDisplay), nameof(draw),
+            //    ".",
+            //    "Location");
+            //patches.ApplyPatches("");
+
+            gameEventsService.AddSubscription(new RenderedHudEventArgs(), RenderDisplay);
+            gameEventsService.AddSubscription(typeof( ButtonPressedEventArgs).Name, Input_ButtonPressed);
         }
 
-        private static void Input_ButtonPressed(object sender, ButtonPressedEventArgs e)
+        private void RenderDisplay(EventArgs e)
+        {
+            RenderData(Game1.spriteBatch);
+         }
+        private void Input_ButtonPressed(EventArgs e)
         {
             if (toggleKey.JustPressed())
                 Visible = !Visible;
         }
-
-        public static void draw(SpriteBatch b)
+        private static void RenderData(SpriteBatch b)
         {
             if (Game1.player.currentLocation != null && Visible)
             {
-                int iBGLevel = 9;
-                int iTextlevel = 10;
+                float iBGLevel = 5f;
+                int iTextlevel = 4;
+                displayLines = new List<string>();
 
                 if (font == null) font = Game1.smallFont;// ((LocalizedContentManager.CurrentLanguageCode == LocalizedContentManager.LanguageCode.ko) ? Game1.smallFont : Game1.dialogueFont);
                 iRow = 0;
@@ -96,7 +107,17 @@ namespace locationDataDisplay
                 StardewBitmap bitmap = new StardewBitmap(bgWidth, bgHeight);
                 bitmap.FillRectangle(Color.Black, 0, 0, bgWidth, bgHeight);
                 b.Draw(bitmap.Texture(), new Rectangle(10, 10, bgWidth, bgHeight), null, Color.AliceBlue, 0, Vector2.Zero, SpriteEffects.None, iBGLevel);
+                int printLine = 0;
+                foreach(string line in displayLines)
+                {
+                    b.DrawString(font, line, new Vector2(15, 15 + printLine++ * lineheight.Y), Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, iTextlevel);
+                }
             }
+
+        }
+        public static void draw(SpriteBatch b)
+        {
+            RenderData(b);
         }
         private static void Writeline(SpriteBatch b, string text, int iTextlevel)
         {
@@ -109,7 +130,8 @@ namespace locationDataDisplay
             if (textmeasure.X > iWidest)
                 iWidest = (int)textmeasure.X;
 
-            b.DrawString(font, text, new Vector2(15, 15 + iRow * lineheight.Y), Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, iTextlevel);
+            displayLines.Add(text);
+            //b.DrawString(font, text, new Vector2(15, 15 + iRow * lineheight.Y), Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, iTextlevel);
             iRow++;
         }
     }

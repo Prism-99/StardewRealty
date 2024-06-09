@@ -34,7 +34,7 @@ namespace StardewRealty.SDV_Realty_Interface
             Active = active;
             ForSale = forsale;
             BaseDefinition = oPack.LocationDefinition;
-
+            TreasureSpots = oPack.TreasureSpots;
             if (oPack.FishAreas != null)
             {
                 FishAreas = new Dictionary<string, FishAreaDetails> { };

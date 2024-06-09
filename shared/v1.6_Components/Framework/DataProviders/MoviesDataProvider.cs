@@ -25,10 +25,10 @@ namespace SDV_Realty_Core.Framework.DataProviders
         {
             e.Edit(asset =>
             {
-                var movieData =(List<MovieData>) asset.Data;
+                List<MovieData> movieData =(List<MovieData>) asset.Data;
 
                 logger.Log($"movieData is null {movieData==null}", StardewModdingAPI.LogLevel.Debug);
-                foreach (var movie in _customMovieService.Movies)
+                foreach (KeyValuePair<string, CustomMovieData> movie in _customMovieService.Movies)
                 {
                     try
                     {

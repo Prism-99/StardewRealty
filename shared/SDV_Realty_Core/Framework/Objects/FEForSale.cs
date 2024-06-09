@@ -82,7 +82,7 @@ namespace SDV_Realty_Core.Framework.Objects
 
             logger.Log("Check For Sale sign, location: " + sLocation, LogLevel.Debug);
 
-            if (_modDataService.farmExpansions.Where(p => p.Value.Active).Count() > 9)
+            if (_modDataService.farmExpansions.Where(p => p.Value.Active).Count() >=_modDataService.MaximumExpansions)
             {
                 isShowingForSaleBoard = false;
                 logger.Log("All expansion slots full, no for sale sign added.", LogLevel.Debug);

@@ -8,7 +8,11 @@ using SDV_Realty_Core.ContentPackFramework.ContentPacks;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
 using Prism99_Core.Utilities;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
+using System.IO;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
+using StardewValley.Delegates;
+using SDV_Realty_Core.Framework.Locations;
+
 
 namespace SDV_Realty_Core.Framework.DataProviders
 {
@@ -17,41 +21,101 @@ namespace SDV_Realty_Core.Framework.DataProviders
     /// </summary>
     internal class WorldMapDataProvider : IGameDataProvider
     {
-        private ContentPackLoader ContentPacks;
-        private IExpansionManager _expansionManager;
+        private ContentPackLoader _contentPacks;
+        private static IExpansionManager _expansionManager;
         private ILandManager _landManager;
         private IGridManager _gridManager;
         private IExitsService _exitsService;
-        public WorldMapDataProvider(ContentPackLoader cPacks, IExpansionManager expansionManager, ILandManager landManager, IGridManager gridManager, IExitsService exitsService)
+        private IContentManagerService _contentManagerService;
+        private IModHelperService _modHelperService;
+
+        public WorldMapDataProvider(ContentPackLoader cPacks, IExpansionManager expansionManager, ILandManager landManager, IGridManager gridManager, IExitsService exitsService, IContentManagerService contentManagerService, IModHelperService modHelperService)
         {
-            ContentPacks = cPacks;
+            _contentPacks = cPacks;
             _expansionManager = expansionManager;
             _landManager = landManager;
             _gridManager = gridManager;
             _exitsService = exitsService;
+            _contentManagerService = contentManagerService;
+            _modHelperService = modHelperService;
+            //
+            //  add map textures
+            //
+            _contentManagerService.ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap.png", Path.Combine(_modHelperService.DirectoryPath, "data", "assets", "worldmap.png"));
+            _contentManagerService.ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap_ForSale.png", Path.Combine(_modHelperService.DirectoryPath, "data", "assets", "WorldMap_ForSale.png"));
+            _contentManagerService.ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap_ForFuture.png", Path.Combine(_modHelperService.DirectoryPath, "data", "assets", "WorldMap_ForFuture.png"));
+            _contentManagerService.ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap_ComingSoon.png", Path.Combine(_modHelperService.DirectoryPath, "data", "assets", "WorldMap_ComingSoon.png"));
+            _contentManagerService.ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}meadows_valley_area.png", Path.Combine(_modHelperService.DirectoryPath, "data", "assets", "meadows_valley_area.png"));
+            GameStateQuery.Register("prism99.advize.stardewrealty.ismeadows", HandleIsMeadowsQuery);
+
         }
 
         public override string Name => "Data/WorldMap";
 
         public override void CheckForActivations()
         {
-            
+
         }
 
         public override void HandleEdit(AssetRequestedEventArgs e)
         {
             e.Edit(asset =>
             {
+                IDictionary<string, WorldMapRegionData> worldMapData = asset.AsDictionary<string, WorldMapRegionData>().Data;
+                //
+                //  Create a new WorldMapAreaData for the Meadows in
+                //  the Valley WorldMapRegion
+                //
+                //WorldMapAreaData meadowsData = new WorldMapAreaData
+                //{
+                //    Id = "StardewMeadows",
+                //    Condition = "!prism99.advize.stardewrealty.ismeadows",
+                //    ScrollText = "Stardew Meadows",
+                //    PixelArea = new Rectangle(0, 53, 105, 22),
+                //    Textures = new List<WorldMapTextureData>
+                //    {
+                //        new WorldMapTextureData
+                //        {                                 
+                //            //MapPixelArea=new Rectangle(0,39,90,35),
+                //            Id="stardemeadows",
+                //            Texture=  $"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}meadows_valley_area.png"
+                //        }
+                //    },
+
+                //    Tooltips = new List<WorldMapTooltipData>
+                //    {
+                //        new WorldMapTooltipData
+                //        {
+                //            Id="Default",
+                //            Text="Stardew Meadows"
+                //        }
+                //    }
+                //};
+
                 int iForSale = 0;
                 int iTotalForSale = _landManager.LandForSale.Count;
                 int iComingSoon = 0;
                 int iComingSoonTotal = _expansionManager.expansionManager.farmExpansions.Values.Where(p => !p.Active && !_landManager.LandForSale.Contains(p.Name)).Count();
 
+                //
+                //  add new WorldMapRegionData for Stardew Valley Meadows
+                //
+                //  Region is only active when the player is in the Meadows.
+                //  This allows for viewing other farmers in the main map when not
+                //  in the Meadows
+                //
+                //  The Expansions are only visible in the Meadows map when the 
+                //  player is in the Meadows
+                //
+                //  Uses a custom GSQ query (prism99.advize.stardewrealty.ismeadows)
+                //  to check the Condition
+                //
+
                 WorldMapRegionData myRegion = new WorldMapRegionData();
                 myRegion.BaseTexture.Add(new WorldMapTextureData
                 {
                     Id = "stardewrealty.worldmap",
-                    Texture = SDVPathUtilities.NormalizePath($"SDR{FEConstants.AssetDelimiter}Images{FEConstants.AssetDelimiter}WorldMap.png"),
+                    Texture = SDVPathUtilities.NormalizePath($"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap.png"),
                     //Texture = SDVPathUtilities.NormalizePath($"{FEConstants.MapPathPrefix}SDR{FEConstants.AssetDelimiter}WorldMap.png"),
                     MapPixelArea = new Rectangle(0, 0, 300, 180)
                 });
@@ -61,35 +125,66 @@ namespace SDV_Realty_Core.Framework.DataProviders
                     if (_gridManager.MapGrid.ContainsKey(gridId))
                     {
                         string locationKey = _gridManager.MapGrid[gridId];
-                        ExpansionPack contentPack = ContentPacks.ValidContents[locationKey];
-                        string modId = contentPack.Owner.Manifest.UniqueID;
-                        string seasonOverride = _expansionManager.expansionManager.farmExpansions[locationKey].SeasonOverride;
-                        string displayName = contentPack.DisplayName;
+                        if (_contentPacks.ValidContents.TryGetValue(locationKey, out ExpansionPack contentPack))
+                        {
+                            string modId = contentPack.Owner.Manifest.UniqueID;
+                            string seasonOverride = _expansionManager.expansionManager.farmExpansions[locationKey].SeasonOverride;
+                            string displayName = contentPack.DisplayName;
+                            //
+                            //  add Expansion info to main world map, conidional on the
+                            //  Player not being in the Meadows
+                            //
+                            //meadowsData.WorldPositions.Add(new WorldMapAreaPositionData
+                            //{
+                            //    Id = $"{modId}.{locationKey}.mp",
+                            //    Condition = "!prism99.advize.stardewrealty.ismeadows",
+                            //    LocationName = contentPack.LocationName,
+                            //    MapPixelArea = _gridManager.GetExpansionMainMapLocation(gridId, 0, 53),
+                            //    ScrollText = contentPack.DisplayName
 
-                        string leftNeighbour =_exitsService.GetNeighbourExpansionTTId(gridId, EntranceDirection.West) ?? "";
-                        string rightNeighbour = _exitsService.GetNeighbourExpansionTTId(gridId, EntranceDirection.East) ?? "";
-                        string upNeighbour = _exitsService.GetNeighbourExpansionTTId(gridId, EntranceDirection.North) ?? "";
-                        string downNeighbour = _exitsService.GetNeighbourExpansionTTId(gridId, EntranceDirection.South) ?? "";
-                        if (!string.IsNullOrEmpty(seasonOverride))
-                        {
-                            displayName += $"\n[{seasonOverride}]";
-                        }
-                        myRegion.MapAreas.Add(new WorldMapAreaData
-                        {
-                            Id = $"{modId}.{locationKey}",
-                            PixelArea = _gridManager.GetExpansionWorldMapLocation(contentPack.LocationName),
-                            ScrollText = "Stardew Valley Meadows",
-                            Textures = new List<WorldMapTextureData>()
+                            //});
+                            //worldMapData["Valley"].BaseTexture.Add(new WorldMapTextureData
+                            //{
+                            //    Id = contentPack.LocationName,
+                            //    MapPixelArea = _gridManager.GetExpansionMainMapLocation(gridId, 0, 53),
+                            //    SourceRect = new Rectangle(0, 0, 20, 10),
+                            //    Texture = SDVPathUtilities.NormalizePath($"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{locationKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{ContentPacks.ValidContents[locationKey].WorldMapTexture}")
+                            //});
+                            //
+                            //  add Expansion to Stardew Valley Meadows map
+                            //
+
+                            string leftNeighbour = _exitsService.GetNeighbourExpansionTTId(gridId, EntranceDirection.West) ?? "";
+                            string rightNeighbour = _exitsService.GetNeighbourExpansionTTId(gridId, EntranceDirection.East) ?? "";
+                            string upNeighbour = _exitsService.GetNeighbourExpansionTTId(gridId, EntranceDirection.North) ?? "";
+                            string downNeighbour = _exitsService.GetNeighbourExpansionTTId(gridId, EntranceDirection.South) ?? "";
+                            //
+                            //  add any SeasonOverride to the Expansion name
+                            //
+                            if (!string.IsNullOrEmpty(seasonOverride))
+                            {
+                                displayName += $"\n[{seasonOverride}]";
+                            }
+                            //
+                            //  Add area data for the Expansion
+                            //
+                            myRegion.MapAreas.Add(new WorldMapAreaData
+                            {
+                                Id = $"{modId}.{locationKey}",
+                                Condition = "prism99.advize.stardewrealty.ismeadows",
+                                PixelArea = _gridManager.GetExpansionWorldMapLocation(contentPack.LocationName),
+                                ScrollText = "Stardew Meadows",
+                                Textures = new List<WorldMapTextureData>()
                                     {
                                         new WorldMapTextureData
                                         {
                                             Id = $"{modId}.area.{locationKey}.texture",
                                             MapPixelArea = _gridManager.GetExpansionWorldMapLocation(contentPack.LocationName),
-                                            Texture =SDVPathUtilities.NormalizePath($"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{locationKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{ContentPacks.ValidContents[locationKey].WorldMapTexture}")
+                                            Texture =SDVPathUtilities.NormalizePath($"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{locationKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{_contentPacks.ValidContents[locationKey].WorldMapTexture}")
                                             //Texture =SDVPathUtilities.NormalizePath($"{FEConstants.MapPathPrefix}{locationKey}{FEConstants.AssetDelimiter}{ContentPacks.ValidContents[locationKey].WorldMapTexture}")
                                         }
                                     },
-                            Tooltips = new List<WorldMapTooltipData>
+                                Tooltips = new List<WorldMapTooltipData>
                                     {
                                         new WorldMapTooltipData
                                         {
@@ -102,7 +197,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                                               DownNeighbor=downNeighbour
                                         }
                                     },
-                            WorldPositions = new List<WorldMapAreaPositionData>
+                                WorldPositions = new List<WorldMapAreaPositionData>
                                     {
                                         new WorldMapAreaPositionData
                                         {
@@ -111,8 +206,12 @@ namespace SDV_Realty_Core.Framework.DataProviders
                                             MapPixelArea=_gridManager.GetExpansionWorldMapLocation(contentPack.LocationName)
                                         }
                                     }
-                        });
-
+                            });
+                        }
+                        else
+                        {
+                            logger.LogDebug($"Missing grid expansion pack {locationKey}");
+                        }
                     }
                     else if (iForSale < iTotalForSale)
                     {
@@ -122,14 +221,14 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         {
                             Id = $"SDR.FS.{iForSale}",
                             PixelArea = _gridManager.GetExpansionWorldMapLocation(gridId),
-                            ScrollText = "Stardew Valley Meadows",
+                            ScrollText = "Stardew Meadows",
                             Textures = new List<WorldMapTextureData>()
                                     {
                                         new WorldMapTextureData
                                         {
                                             Id = $"SDR.FS.{iForSale}.texture",
                                             MapPixelArea = _gridManager.GetExpansionWorldMapLocation(gridId),
-                                            Texture =$"SDR{FEConstants.AssetDelimiter}Images{FEConstants.AssetDelimiter}WorldMap_ForSale.png"
+                                            Texture =$"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap_ForSale.png"
                                         }
                                     },
                             Tooltips = new List<WorldMapTooltipData>
@@ -137,7 +236,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                                         new WorldMapTooltipData
                                         {
                                             Id=$"SDR.FS.{iForSale}.tt",
-                                            Text="For Sale",
+                                            Text= I18n.CheckMsgBd(),
                                             PixelArea=_gridManager.GetExpansionWorldMapLocation(gridId)
                                         }
                                     }
@@ -161,14 +260,14 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         {
                             Id = $"SDR.CS.{gridId}",
                             PixelArea = _gridManager.GetExpansionWorldMapLocation(gridId),
-                            ScrollText = "Stardew Valley Meadows",
+                            ScrollText = "Stardew Meadows",
                             Textures = new List<WorldMapTextureData>()
                                     {
                                         new WorldMapTextureData
                                         {
                                             Id = $"SDR.CS.{gridId}.texture",
                                             MapPixelArea = _gridManager.GetExpansionWorldMapLocation(gridId),
-                                            Texture =$"SDR{FEConstants.AssetDelimiter}Images{FEConstants.AssetDelimiter}WorldMap_ComingSoon.png"
+                                            Texture =$"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap_ComingSoon.png"
                                         }
                                     },
                             Tooltips = new List<WorldMapTooltipData>
@@ -193,14 +292,14 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         {
                             Id = $"SDR.FG.{gridId}",
                             PixelArea = _gridManager.GetExpansionWorldMapLocation(gridId),
-                            ScrollText = "Stardew Valley Meadows",
+                            ScrollText = "Stardew Meadows",
                             Textures = new List<WorldMapTextureData>()
                                     {
                                         new WorldMapTextureData
                                         {
                                             Id = $"SDR.FG.{gridId}.texture",
                                             MapPixelArea = _gridManager.GetExpansionWorldMapLocation(gridId),
-                                            Texture =$"SDR{FEConstants.AssetDelimiter}Images{FEConstants.AssetDelimiter}WorldMap_ForFuture.png"
+                                            Texture =$"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap_ForFuture.png"
                                         }
                                     },
                             Tooltips = new List<WorldMapTooltipData>
@@ -208,7 +307,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                                         new WorldMapTooltipData
                                         {
                                              Id=$"SDR.FG.{gridId}.tt",
-                                              Text="Future Growth.  Add content packs.",
+                                              Text="Future Growth. Add content packs.",
                                               PixelArea=_gridManager.GetExpansionWorldMapLocation(gridId)
                                         }
                                     }
@@ -216,56 +315,31 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         });
                     }
                 }
-
-                //var expansionList = FEFramework.GetActiveFarmExpansions().Select(p => p.Name).ToList();
-                //logger?.Log($"Loading {expansionList.Count} expansions for mapping.", LogLevel.Debug);
-
-                //foreach (string key in expansionList)
-                //{
-                // }
-                asset.AsDictionary<string, WorldMapRegionData>().Data.Add($"stardewrealty", myRegion);
-                //try
-                //{
-                //    Texture2D? customTexture = null;
-                //    if (oPac.Owner.HasFile(@"assets/WorldMap.png"))
-                //    {
-                //        try
-                //        {
-                //            customTexture = oPac.Owner.ModContent.Load<Texture2D>(@"assets/WorldMap.png");
-                //        }
-                //        catch { }
-                //    }
-                //    if (customTexture == null)
-                //    {
-                //        logger?.Log($"Could not load WorldMap.png for mod '{oPac.LocationName}', using default.", LogLevel.Error);
-                //        customTexture = FEFramework.helper.ModContent.Load<Texture2D>(@"data/assets/WorldMap.png");
-                //    }
-                //    Rectangle rMapLoc = FEFramework.GetExpansionWorldMapLocation(oPac.LocationName);
-                //    if (!rMapLoc.IsEmpty)
-                //    {
-                //        logger?.Log($"rMapLoc for {oPac.LocationName} is {(rMapLoc.IsEmpty ? "Empty" : rMapLoc)}", LogLevel.Debug);
-
-                //        asset.AsImage().PatchImage(customTexture, new Rectangle(0, 0, customTexture.Width, customTexture.Height), new Rectangle(rMapLoc.X, rMapLoc.Y, customTexture.Width, customTexture.Height));
-
-                //    }
-                //}
-
-                //catch (Exception ex)
-                //{
-                //    logger?.Log($"Could not load WorldMap.png from the mod folder, world map will not be patched.\n{ex}", LogLevel.Error);
-                //}
-
-
-
-                //var mdata=   asset.AsDictionary<string, WorldMapRegionData>().Data;
-                //logger?.Log($"{mdata}", LogLevel.Debug);
+                //
+                //  add the Stardew Valley Meadows to the worldMaps
+                //
+                worldMapData.Add($"stardewrealty", myRegion);
+                //
+                //  add Stardew Valley Meadows to the Stardew Valley map
+                //
+                //worldMapData["Valley"].MapAreas.Add(meadowsData);
             });
         }
-
-       
 
         public override void OnGameLaunched()
         {
         }
+
+        public static bool HandleIsMeadowsQuery(string[] query, GameStateQueryContext context)
+        {
+            if (_expansionManager.expansionManager.farmExpansions.ContainsKey(context.Location.Name))
+                return true;
+
+            if (context.Location.Name == WarproomManager.WarpRoomLoacationName)
+                return true;
+
+            return false;
+        }
+
     }
 }

@@ -2,12 +2,12 @@
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.DataProviders;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Configuration;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using SDV_Realty_Core.Framework.ServiceInterfaces.DataProviders;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using StardewModdingAPI.Events;
+using SDV_Realty_Core.Framework.ServiceProviders.Utilities;
 
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.DataProviders
@@ -19,8 +19,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.DataProviders
         public override Type[] InitArgs => new Type[]
         {
             typeof(IContentPackService),typeof(IContentManagerService),
-            typeof(IConfigService),typeof(IModHelperService),
-            typeof(IGameDataProviderService),typeof(IGameEventsService)
+            typeof(IConfigService),typeof(IUtilitiesService),
+            typeof(IGameDataProviderService)
         };
         public override Type[] Dependants => new Type[] {  };
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -37,15 +37,15 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.DataProviders
             IContentPackService contentPackService = (IContentPackService)args[0];
             IContentManagerService contentManager = (IContentManagerService)args[1];
             IConfigService configService = (IConfigService)args[2];
-            IModHelperService modHelperService = (IModHelperService)args[3];
+            IUtilitiesService utilitiesService = (IUtilitiesService)args[3];
             IGameDataProviderService gameDataProviderService = (IGameDataProviderService)args[4];
-            IGameEventsService eventsService = (IGameEventsService)args[5];
 
             dataProviderManager = new DataProviderManager();
-            dataProviderManager.Initialize(contentPackService.contentPackLoader, contentManager.contentManager, configService.config, modHelperService.modHelper, logger, gameDataProviderService);
+            dataProviderManager.Initialize(contentPackService.contentPackLoader, contentManager.contentManager, utilitiesService, logger, gameDataProviderService);
 
-            eventsService.AddSubscription(new SaveLoadedEventArgs(), dataProviderManager.CheckForActivations);
-            eventsService.AddSubscription(new DayStartedEventArgs(), dataProviderManager.CheckForActivations);
+            utilitiesService.GameEventsService.AddSubscription(new SaveLoadedEventArgs(), dataProviderManager.CheckForActivations);
+            utilitiesService.GameEventsService.AddSubscription(new DayStartedEventArgs(), dataProviderManager.CheckForActivations);
+            utilitiesService.CustomEventsService.AddModEventSubscription(ICustomEventsService.ModEvents.ConfigChanged, dataProviderManager.ConfigurationChanged);
         }
     }
 }

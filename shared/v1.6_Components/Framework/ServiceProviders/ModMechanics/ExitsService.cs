@@ -89,21 +89,25 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
 
         public override void AddFarmExits()
         {
+            if (!_modDataService.farmExpansions.Any())
+            {
+                logger.Log("No expansions loaded, skipping Farm exits", LogLevel.Debug);
+                return;
+            }
             logger.Log("Adding Farm exits", LogLevel.Debug);
 
             List<Tuple<string, KeyValuePair<string, EntrancePatch>>> lExitsToMap = new List<Tuple<string, KeyValuePair<string, EntrancePatch>>> { };
-
 
             switch (Game1.whichFarm)
             {
                 case int iFarm when iFarm < 9:
                     if (_utilitiesService.GameEnvironment.ActiveFarmProfile.PatchFarmExits)
                     {
-                        logger?.Log("Adding farm side exits.", LogLevel.Debug);
+                        logger.Log("Adding farm side exits.", LogLevel.Debug);
                         //
                         //  add farm map exits
                         //
-                        foreach (var oPatches in _utilitiesService.GameEnvironment.GetFarmDetails(iFarm).PathPatches.ToList())
+                        foreach (KeyValuePair<string, EntrancePatch> oPatches in _utilitiesService.GameEnvironment.GetFarmDetails(iFarm).PathPatches.ToList())
                         {
                             lExitsToMap.Add(Tuple.Create(_utilitiesService.GameEnvironment.GetFarmDetails(iFarm).MapName, oPatches));
                         }
@@ -117,7 +121,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             {
                 if (oExitPatch.Item2.Key == "0" && _utilitiesService.ConfigService.config.useNorthWestEntrance || oExitPatch.Item2.Key == "1" && _utilitiesService.ConfigService.config.useSouthWestEntrance)
                 {
-                    logger?.Log($"Adding exits to '{oExitPatch.Item1}'", LogLevel.Debug);
+                    logger.Log($"Adding exits to '{oExitPatch.Item1}'", LogLevel.Debug);
                     Map mExitPatchMap = _utilitiesService.MapLoaderService.LoadMap( Path.Combine(_utilitiesService.GameEnvironment.ModPath, "data", "mappatchs", oExitPatch.Item2.Value.PatchMapName), "patchmap", false);
                     GameLocation glExitFarm = Game1.getLocationFromName(oExitPatch.Item1);
                     _mapUtilities.PatchInMap(glExitFarm, mExitPatchMap, new Vector2(oExitPatch.Item2.Value.MapPatchPointX, oExitPatch.Item2.Value.MapPatchPointY));

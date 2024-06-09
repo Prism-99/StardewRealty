@@ -70,10 +70,13 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
                 }
                 // AddTestMovie(translations);
             }
-            catch (Exception ex) { }
+            catch (Exception ex)
+            {
+                logger.Log($"Error loading movie defintion: {ex}", LogLevel.Error);
+            }
 
         }
-        public void AddMovieDefinition(string movieKey, CustomMovieData movie)
+        public override void AddMovieDefinition(string movieKey, CustomMovieData movie)
         {
             if (!string.IsNullOrEmpty(movie.MovieData.Texture))
             {

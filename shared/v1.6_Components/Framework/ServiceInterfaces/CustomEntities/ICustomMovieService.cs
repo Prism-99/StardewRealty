@@ -11,5 +11,7 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities
         public abstract Dictionary<string, CustomMovieData> Movies { get; }
         public abstract Dictionary<string, object> ExternalReferences { get; }
         public abstract void LoadDefinitions();
+        public abstract void AddMovieDefinition(string movieKey, CustomMovieData movie);
+
     }
 }

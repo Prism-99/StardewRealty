@@ -1,6 +1,7 @@
 ﻿using StardewModdingAPI.Events;
 using StardewValley.GameData.BigCraftables;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
+using SDV_Realty_Core.Framework.CustomEntities.BigCraftables;
 
 namespace SDV_Realty_Core.Framework.DataProviders
 {
@@ -26,12 +27,12 @@ namespace SDV_Realty_Core.Framework.DataProviders
         {
             e.Edit(asset =>
             {
-                var bigCraftables = asset.AsDictionary<string, BigCraftableData>();
+                IAssetDataForDictionary<string, BigCraftableData> bigCraftables = asset.AsDictionary<string, BigCraftableData>();
                 //
                 //  bigcraftables are always added, their crafting recipe
                 //  is gated
                 //
-                foreach (var bigCraftable in customBigCraftableService.BigCraftables.Values)
+                foreach (CustomBigCraftableData bigCraftable in customBigCraftableService.BigCraftables.Values)
                 {
                     bigCraftables.Data.Add(bigCraftable.Id, bigCraftable.BigCraftableData);
                 }

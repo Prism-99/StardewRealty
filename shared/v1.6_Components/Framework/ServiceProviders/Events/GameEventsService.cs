@@ -32,7 +32,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
             eventSubscriptions = new Dictionary<EventTypes, List<Action>>();
             actionSubscriptions = new Dictionary<string, List<Tuple<int, Action<EventArgs>>>>();
         }
-         internal override void AddSubscription(string eventType, Action<EventArgs> fnc, int priority = 0)
+        internal override void AddSubscription(string eventType, Action<EventArgs> fnc, int priority = 0)
         {
             logger.Log($"Adding GameEvent subscription for {eventType}", LogLevel.Debug);
             if (actionSubscriptions.ContainsKey(eventType))
@@ -62,7 +62,16 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
         {
             switch (eventType)
             {
-                 case "ObjectListChangedEventArgs":
+                case "WindowResizedEventArgs":
+                    helper.Events.Display.WindowResized += GameEvent;
+                    break;
+                 case "AssetRequestedEventArgs":
+                    helper.Events.Content.AssetRequested += GameEvent;
+                    break;
+                case "ButtonPressedEventArgs":
+                    helper.Events.Input.ButtonPressed += GameEvent;
+                    break;
+                case "ObjectListChangedEventArgs":
                     helper.Events.World.ObjectListChanged += GameEvent;
                     break;
                 case "TimeChangedEventArgs":
@@ -123,6 +132,12 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
         {
             switch (eventType)
             {
+                case UpdateTickedEventArgs:
+                    helper.Events.GameLoop.UpdateTicked += GameEvent;
+                    break;
+                case RenderedHudEventArgs:
+                    helper.Events.Display.RenderedHud += GameEvent;
+                    break;
                 case OneSecondUpdateTickedEventArgs:
                     helper.Events.GameLoop.OneSecondUpdateTicked += GameEvent;
                     break;
@@ -177,7 +192,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
         {
             if (actionSubscriptions.TryGetValue(e.GetType().Name, out List<Tuple<int, Action<EventArgs>>> actions))
             {
-                foreach (var action in actions.OrderByDescending(p => p.Item1))
+                foreach (Tuple<int, Action<EventArgs>> action in actions.OrderByDescending(p => p.Item1))
                 {
                     action.Item2(e);
                 }
@@ -199,7 +214,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
         {
             if (eventSubscriptions.TryGetValue(eventType, out List<Action> actions))
             {
-                foreach (var action in actions)
+                foreach (Action action in actions)
                 {
                     action();
                 }
@@ -208,37 +223,35 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
 
         internal override void DumpSubscriptions()
         {
-            logger.Log($"Game Event Subscriptions", LogLevel.Debug);
-            logger.Log($"------------------------", LogLevel.Debug);
+            logger.Log($"Game Event Subscriptions", LogLevel.Info);
+            logger.Log($"------------------------", LogLevel.Info);
 
-            foreach (var key in actionSubscriptions.Keys.OrderBy(p => p))
+            foreach (string key in actionSubscriptions.Keys.OrderBy(p => p))
             {
                 logger.Log($"{key}", LogLevel.Debug);
-                foreach (var action in actionSubscriptions[key].OrderByDescending(p => p.Item1))
+                foreach (Tuple<int, Action<EventArgs>> action in actionSubscriptions[key].OrderByDescending(p => p.Item1))
                 {
-                    logger.Log($"   =>{action.Item2.Target.GetType().Name}.{action.Item2.Method.Name} [{action.Item1}]", LogLevel.Debug);
+                    logger.Log($"   =>{action.Item2.Target.GetType().Name}.{action.Item2.Method.Name} [{action.Item1}]", LogLevel.Info);
                 }
             }
-            logger.Log("", LogLevel.Debug);
-            logger.Log($"Mod Event Subscriptions", LogLevel.Debug);
-            logger.Log($"------------------------", LogLevel.Debug);
-            foreach (var key in eventSubscriptions.Keys.OrderBy(p => p))
+            logger.Log("", LogLevel.Info);
+            logger.Log($"Mod Event Subscriptions", LogLevel.Info);
+            logger.Log($"------------------------", LogLevel.Info);
+            foreach (EventTypes key in eventSubscriptions.Keys.OrderBy(p => p))
             {
-                logger.Log($"{key}", LogLevel.Debug);
-                foreach (var action in eventSubscriptions[key])
+                logger.Log($"{key}", LogLevel.Info);
+                foreach (Action action in eventSubscriptions[key])
                 {
-                    logger.Log($"   =>{action.Target.GetType().Name}.{action.Method.Name}", LogLevel.Debug);
+                    logger.Log($"   =>{action.Target.GetType().Name}.{action.Method.Name}", LogLevel.Info);
                 }
             }
-            logger.Log("", LogLevel.Debug);
-            logger.Log($"Proxy Servers", LogLevel.Debug);
-            logger.Log($"------------------------", LogLevel.Debug);
-            foreach (var prox in proxyServers)
+            logger.Log("", LogLevel.Info);
+            logger.Log($"Proxy Servers", LogLevel.Info);
+            logger.Log($"------------------------", LogLevel.Info);
+            foreach (KeyValuePair<string, Func<object[], object>> prox in proxyServers)
             {
-                logger.Log($"{prox.Key} => {prox.Value.Method.DeclaringType.Name}.{prox.Value.Method.Name}", LogLevel.Debug);
-
+                logger.Log($"{prox.Key} => {prox.Value.Method.DeclaringType.Name}.{prox.Value.Method.Name}", LogLevel.Info);
             }
-         
         }
 
         internal override object GetProxyValue(string eventType, object[] args)

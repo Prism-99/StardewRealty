@@ -17,6 +17,8 @@ using SDV_Realty_Core.Framework.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using StardewModdingAPI.Enums;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
+using SDV_Realty_Core.Framework.ServiceProviders.ModData;
 
 namespace SDV_Realty_Core.Framework.Locations
 {
@@ -44,7 +46,7 @@ namespace SDV_Realty_Core.Framework.Locations
         private static IExpansionManager _expansionManager;
         private IContentPackService contentPackService;
 
-        public static Dictionary<string, Tuple<string, EntranceDetails>> CaveEntrances = new Dictionary<string, Tuple<string, EntranceDetails>>();
+        public static Dictionary<string, Tuple<string, EntranceDetails>> CaveEntrances = new();
 
         public WarproomManager(ILoggerService errorLogger, SDRContentManager cManager, IUtilitiesService utilitiesService, IMultiplayerService multiplayerService, IExpansionManager expansionManager, IContentPackService contentPackService)
         {
@@ -54,25 +56,46 @@ namespace SDV_Realty_Core.Framework.Locations
             _utilitiesService = utilitiesService;
             _expansionManager = expansionManager;
             this.contentPackService = contentPackService;
-            utilitiesService.GameEventsService.AddSubscription("WarpedEventArgs", Player_Warped);
-            utilitiesService.GameEventsService.AddSubscription(new UpdateTickingEventArgs(), GameLoop_UpdateTicking);
-            utilitiesService.GameEventsService.AddSubscription(new SaveLoadedEventArgs(), GameLoop_SaveLoaded);
-            utilitiesService.GameEventsService.AddSubscription(new SavedEventArgs(), GameLoop_SaveLoaded);
-            utilitiesService.GameEventsService.AddSubscription(new LoadStageChangedEventArgs(0, 0), LoadStageChanged);
-            utilitiesService.GameEventsService.AddSubscription(new ReturnedToTitleEventArgs(), ReturnToTitle);
-            //helper.Events.Player.Warped += Player_Warped;
-            //helper.Events.GameLoop.UpdateTicking += GameLoop_UpdateTicking;
-            //helper.Events.GameLoop.SaveLoaded += GameLoop_SaveLoaded;
-            Config = utilitiesService.ConfigService.config;
-            //
-            // warp  room patch
-            //
-            utilitiesService.PatchingService.patches.AddPatch(true, typeof(GameLocation), "isCollidingWithWarp",
-                new Type[] { typeof(Rectangle), typeof(Character) }, typeof(WarproomManager), nameof(isCollidingWithWarp_Prefix),
-                "Check warproom availability.",
-                "Warps");
-        }
 
+            _utilitiesService.GameEventsService.AddSubscription(IGameEventsService.EventTypes.ContentLoaded, HandleContentLoaded);
+            _utilitiesService.GameEventsService.AddSubscription(new ReturnedToTitleEventArgs(), ReturnToTitle);
+            Config = _utilitiesService.ConfigService.config;
+        }
+        private void HandleContentLoaded()
+        {
+            //
+            //  only add warproom if any expansion loaded
+            //
+            if (_utilitiesService.HaveExpansions)
+            {
+                _utilitiesService.GameEventsService.AddSubscription("WarpedEventArgs", HandlePlayerWarped);
+                _utilitiesService.GameEventsService.AddSubscription(new UpdateTickingEventArgs(), GameLoop_UpdateTicking);
+                _utilitiesService.GameEventsService.AddSubscription(new SaveLoadedEventArgs(), GameLoop_SaveLoaded);
+                _utilitiesService.GameEventsService.AddSubscription(new SavedEventArgs(), GameLoop_SaveLoaded);
+                _utilitiesService.GameEventsService.AddSubscription(new LoadStageChangedEventArgs(0, 0), LoadStageChanged);
+ 
+                _utilitiesService.CustomEventsService.AddCustomSubscription("ClientDisconnected", ClientDisconnected);
+                //
+                // warp room patch
+                //
+                _utilitiesService.PatchingService.patches.AddPatch(true, typeof(GameLocation), "isCollidingWithWarp",
+                    new Type[] { typeof(Rectangle), typeof(Character) }, typeof(WarproomManager), nameof(isCollidingWithWarp_Prefix),
+                    "Check warproom availability.",
+                    "Warps");
+
+                _utilitiesService.PatchingService.ApplyPatches("Warps");
+            }
+        }
+        private void ClientDisconnected(object[] args)
+        {
+            //
+            //  unlock warproom if disconnected player had it locked
+            //
+            if (WarpRoomInUse && PlayerInWarpRoom == (long)args[0])
+            {
+                SetWarpRoomStatus(false);
+            }
+        }
         private void GameLoop_SaveLoaded(EventArgs e)
         {
             AddHomeWarpRoomLocations();
@@ -131,11 +154,13 @@ namespace SDV_Realty_Core.Framework.Locations
         public void AddWarpRoom()
         {
 
-            logger?.Log("Adding Warproom", LogLevel.Debug);
-            logger?.Log($"  Game Location loaded: {Game1.getLocationFromName(WarpRoomLoacationName) != null}", LogLevel.Debug);
-            logger?.Log($"  Warproom cached: {WarpRoom != null}", LogLevel.Debug);
-            logger?.Log($"  Master game: {Game1.IsMasterGame}", LogLevel.Debug);
-            logger?.Log($"  Split screen: {Context.IsSplitScreen}", LogLevel.Debug);
+#if DEBUG
+            logger.LogDebug("Adding Warproom");
+            logger.LogDebug($"  Game Location loaded: {Game1.getLocationFromName(WarpRoomLoacationName) != null}");
+            logger.LogDebug($"  Warproom cached: {WarpRoom != null}");
+            logger.LogDebug($"  Master game: {Game1.IsMasterGame}");
+            logger.LogDebug($"  Split screen: {Context.IsSplitScreen}");
+#endif
             //
             //  added isplitscreen for mplayer support
             //
@@ -150,7 +175,7 @@ namespace SDV_Realty_Core.Framework.Locations
                 }
                 else
                 {
-                    Map warpmap = _utilitiesService.MapLoaderService.LoadMap( Path.Combine(_utilitiesService.GameEnvironment.ModPath, "data", "Maps", WarpRoomLoacationName, "warproom.tmx").Replace(_utilitiesService.GameEnvironment.GamePath, ""), "realtywarproom", false, false);
+                    Map warpmap = _utilitiesService.MapLoaderService.LoadMap(Path.Combine(_utilitiesService.GameEnvironment.ModPath, "data", "Maps", WarpRoomLoacationName, "warproom.tmx").Replace(_utilitiesService.GameEnvironment.GamePath, ""), "realtywarproom", false, false);
                     string assetPath = SDVPathUtilities.AssertAndNormalizeAssetName(Path.Combine("SDR", WarpRoomLoacationName, "warproom.tmx"));
 
                     //
@@ -167,7 +192,7 @@ namespace SDV_Realty_Core.Framework.Locations
                     ////
                     foreach (TileSheet oLayer in warpmap.TileSheets)
                     {
-                        oLayer.ImageSource = oLayer.ImageSource.Replace("\\", "/");
+                        oLayer.ImageSource = oLayer.ImageSource.Replace("\\", FEConstants.AssetDelimiter);
                         if (!string.IsNullOrEmpty(oLayer.ImageSource) && oLayer.ImageSource.StartsWith($"SDR{FEConstants.AssetDelimiter}{WarpRoomLoacationName}"))
                         {
                             string sFilename = Path.GetFileName(oLayer.ImageSource);
@@ -187,7 +212,7 @@ namespace SDV_Realty_Core.Framework.Locations
                     //  start of the game
                     //
                     GameLocation glWarpRoom = new GameLocation(assetPath, WarpRoomLoacationName);
-                    glWarpRoom.modData.Add(FEModDataKeys.FEExpansionDisplayName, "Warp Room");
+                    glWarpRoom.modData.Add(IModDataKeysService.FEExpansionDisplayName, "Warp Room");
                     _expansionManager.expansionManager.AddGameLocation(glWarpRoom, "AddWarpRoom");
                     AddWarpRoomCustomizations();
                     WarpRoom = glWarpRoom;
@@ -212,7 +237,7 @@ namespace SDV_Realty_Core.Framework.Locations
                 //glWarpRoom.reloadMap();
                 //glWarpRoom.loadObjects();
 
-                glWarpRoom.objects.Add(vWarpRoomSignLocation, new WarpSign(vWarpRoomSignLocation, CaveEntrances ) { Name = "warpsign", Text = "Warp Room" });
+                glWarpRoom.objects.Add(vWarpRoomSignLocation, new WarpSign(vWarpRoomSignLocation, CaveEntrances) { Name = "warpsign", Text = "Warp Room" });
                 glWarpRoom.IsOutdoors = false;
                 //FEFramework.ParseMapProperties(glWarpRoom.Map, glWarpRoom);
                 glWarpRoom.setTileProperty(13, 1, "Buildings", "Action", "GoBuilder");
@@ -225,16 +250,16 @@ namespace SDV_Realty_Core.Framework.Locations
         public void AddWarpRoomDefinition()
         {
 
-            logger.Log("Adding Warp Room definition", LogLevel.Debug);
+            logger.LogDebug("Adding Warp Room definition");
             //
             //  added isplitscreen for mplayer support
             //
-            if (Game1.getLocationFromName(WarpRoomLoacationName) == null && (Game1.IsMasterGame || Context.IsSplitScreen))
+            if ((Game1.IsMasterGame || Context.IsSplitScreen) && Game1.getLocationFromName(WarpRoomLoacationName) == null)
             {
                 //
                 //  add warproom map
                 //
-                Map warpmap = _utilitiesService.MapLoaderService.LoadMap( Path.Combine(_utilitiesService.GameEnvironment.ModPath, "data", "Maps", WarpRoomLoacationName, "warproom.tmx"), "realtywarproom", false, false, false);
+                Map warpmap = _utilitiesService.MapLoaderService.LoadMap(Path.Combine(_utilitiesService.GameEnvironment.ModPath, "data", "Maps", WarpRoomLoacationName, "warproom.tmx"), "realtywarproom", false, false, false);
                 string assetPath = SDVPathUtilities.AssertAndNormalizeAssetName(Path.Combine("SDR", WarpRoomLoacationName, "warproom.tmx"));
 
                 if (ContentManager.ExternalReferences.ContainsKey(WarpRoomLoacationName))
@@ -267,7 +292,7 @@ namespace SDV_Realty_Core.Framework.Locations
         {
             if (Game1.getLocationFromName(WarpRoomLoacationName) != null)
             {
-                logger.Log($"   Warproom removed.", LogLevel.Debug);
+                logger.LogDebug($"   Warproom removed.");
                 if (WarpRoom == null)
                 {
                     WarpRoom = Game1.getLocationFromName(WarpRoomLoacationName);
@@ -277,7 +302,7 @@ namespace SDV_Realty_Core.Framework.Locations
                 SetWarpRoomStatus(false);
             }
         }
-        private void Player_Warped(EventArgs eParam)
+        private void HandlePlayerWarped(EventArgs eParam)
         {
             WarpedEventArgs e = (WarpedEventArgs)eParam;
             if (Context.IsMultiplayer && WarpRoomInUse && e.NewLocation.Name != WarpRoomLoacationName && e.Player.UniqueMultiplayerID == PlayerInWarpRoom)
@@ -300,7 +325,6 @@ namespace SDV_Realty_Core.Framework.Locations
 
             if (e.IsLocalPlayer)
             {
-
                 if (e.NewLocation.Name == WarpRoomLoacationName && e.OldLocation.Name != WarpRoomLoacationName)
                 {
                     //  Player warped into the Warproom
@@ -332,7 +356,7 @@ namespace SDV_Realty_Core.Framework.Locations
 
                     if (oWarps.Any())
                     {
-                        foreach (var p in oWarps)
+                        foreach (Warp p in oWarps)
                         {
                             warpRoom.warps.Remove(p);
                         }
@@ -350,7 +374,7 @@ namespace SDV_Realty_Core.Framework.Locations
             //
             if (_expansionManager.expansionManager.farmExpansions.ContainsKey(__instance.Name))
             {
-                var targetwarp = __instance.warps.Where(p => p.TargetName == WarpRoomLoacationName && (p.X == (int)Math.Floor((double)position.Left / 64.0) || p.X == (int)Math.Floor((double)position.Right / 64.0)) && (p.Y == (int)Math.Floor((double)position.Top / 64.0) || p.Y == (int)Math.Floor((double)position.Bottom / 64.0)));
+                IEnumerable<Warp> targetwarp = __instance.warps.Where(p => p.TargetName == WarpRoomLoacationName && (p.X == (int)Math.Floor((double)position.Left / 64.0) || p.X == (int)Math.Floor((double)position.Right / 64.0)) && (p.Y == (int)Math.Floor((double)position.Top / 64.0) || p.Y == (int)Math.Floor((double)position.Bottom / 64.0)));
 
                 if (targetwarp.Any())
                 {
@@ -416,11 +440,7 @@ namespace SDV_Realty_Core.Framework.Locations
                 }
                 else
                 {
-#if v16
                     lastPlayerPoint = Game1.player.Tile;
-#else
-                    lastPlayerPoint = Game1.player.getTileLocation();
-#endif
                     if (Context.IsMultiplayer)
                         SetWarpRoomStatus(true);
 

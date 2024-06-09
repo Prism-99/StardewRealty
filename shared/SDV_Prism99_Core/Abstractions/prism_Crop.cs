@@ -34,14 +34,14 @@ namespace Prism99_Core.Abstractions
             }
             set
             {
-                instance.GetData().HarvestMethod =(HarvestMethod) value;
+                instance.GetData().HarvestMethod = (HarvestMethod)value;
             }
         }
         public double chanceForExtraCrops
         {
             get
             {
-                return instance.GetData()?.ExtraHarvestChance??0;
+                return instance.GetData()?.ExtraHarvestChance ?? 0;
             }
             set
             {
@@ -53,7 +53,7 @@ namespace Prism99_Core.Abstractions
         {
             get
             {
-                return instance.GetData()?.HarvestMaxIncreasePerFarmingLevel??0;
+                return instance.GetData()?.HarvestMaxIncreasePerFarmingLevel ?? 0;
             }
             set
             {
@@ -65,7 +65,7 @@ namespace Prism99_Core.Abstractions
         {
             get
             {
-                return instance.GetData()?.HarvestMinStack??1;
+                return instance.GetData()?.HarvestMinStack ?? 1;
             }
             set
             {
@@ -77,7 +77,7 @@ namespace Prism99_Core.Abstractions
         {
             get
             {
-                return instance.GetData()?.HarvestMaxStack??1;//return instance.ha
+                return instance.GetData()?.HarvestMaxStack ?? 1;//return instance.ha
             }
             set
             {
@@ -99,7 +99,8 @@ namespace Prism99_Core.Abstractions
 
         public int RegrowAfterHarvest
         {
-            get { return instance.GetData()?.RegrowDays??0; }
+
+            get { return instance.GetData()?.RegrowDays ?? -1; }
             set
             {
                 instance.GetData().RegrowDays = value;

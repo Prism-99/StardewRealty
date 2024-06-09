@@ -26,7 +26,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             this.logger = logger;
             IModHelperService modHelperService = (IModHelperService)args[0];
 
-            FEModDataKeys.Initialize(modHelperService.ModRegistry.ModID);
+            ModKey = modHelperService.ModRegistry.ModID;
+            //FEModDataKeys.Initialize(modHelperService.ModRegistry.ModID);
 
         }
     }

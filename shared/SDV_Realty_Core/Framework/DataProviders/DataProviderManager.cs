@@ -18,39 +18,33 @@ namespace SDV_Realty_Core.Framework.DataProviders
         private List<IGameDataProvider> dataProviders;
         private ContentPackLoader contentPacks;
         private Dictionary<string, object> externalReferences;
-        //private Dictionary<string, string> stringFromMaps;
-        //public Maps mapDataProvider;
-        private ChairTilesDataProviders chairTiles;
         private NPCGiftTastesDataProvider NPCTastes;
         private ILoggerService logger;
-        private FEConfig config;
-        private IModHelper helper;
+        //private FEConfig config;
+        //private IModHelper helper;
         private SDRContentManager contentManager;
- 
 
-        public void On_GameLaunched(Object sender, GameLaunchedEventArgs e)
+
+        public void On_GameLaunched(EventArgs e)
         {
             foreach (var provider in dataProviders)
             {
                 provider.OnGameLaunched();
             }
         }
-      
-        public void AddChairTile(string tileRef, string seatDetails)
+        internal void ConfigurationChanged(object[] args)
         {
-            chairTiles.AddSeatTile(tileRef, seatDetails);
+            foreach (IGameDataProvider provider in dataProviders)
+            {
+                provider.ConfigChanged();
+            }
         }
-        //public void AddMap(string mapPath, Map sourceMap)
-        //{
-        //    mapDataProvider.AddMap(mapPath, sourceMap);
-        //}
-
         /// <summary>
         /// Calls data providers to check for activations
         /// </summary>
         internal void CheckForActivations(EventArgs e)
         {
-            foreach (var provider in dataProviders)
+            foreach (IGameDataProvider provider in dataProviders)
             {
                 provider.CheckForActivations();
             }
@@ -60,7 +54,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
             //
             //  main entry point for game call
             //
-            var handler = GetGameDataProvider(e.NameWithoutLocale.Name);
+            IGameDataProvider handler = GetGameDataProvider(e.NameWithoutLocale.Name);
 
             if (handler == null)
                 return false;
@@ -76,7 +70,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
             //
             //  return null if none found
             //
-            var handler = dataProviders.Where(p => p.Handles(dataType));
+            IEnumerable<IGameDataProvider> handler = dataProviders.Where(p => p.Handles(dataType));
             if (handler.Any())
                 return handler.First();
 

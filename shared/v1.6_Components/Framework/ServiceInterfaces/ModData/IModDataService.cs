@@ -15,10 +15,14 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.ModData
         public readonly Dictionary<string, ExpansionDetails> expDetails = new();
         public readonly Dictionary<string, ExpansionPack> validContents = new();
         public readonly Dictionary<string, string> stringFromMaps = new();
-        public readonly Dictionary<string, Map> ExpansionMaps = new ();
+        public readonly Dictionary<string, Map> ExpansionMaps = new();
         public readonly Dictionary<string, Map> BuildingMaps = new();
-        public readonly Dictionary<string, CustomizationDetails> CustomDefinitions=new();
+        public readonly Dictionary<string, GameLocation> SubLocations = new();
+        public readonly Dictionary<string, CustomizationDetails> CustomDefinitions = new();
         public readonly Dictionary<int, string> MapGrid = new();
+        public readonly Dictionary<string, string> TranslationDict = new();
+
+        public readonly int MaximumExpansions = 10;
         public override Type ServiceType => typeof(IModDataService);
     }
 }

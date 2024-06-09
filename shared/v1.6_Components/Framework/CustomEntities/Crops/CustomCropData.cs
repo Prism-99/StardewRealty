@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
+﻿using System.IO;
 using Newtonsoft.Json;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks;
-using SDV_Realty_Core.Framework.CustomEntities.Objects;
 using StardewValley.GameData.Crops;
 
 namespace SDV_Realty_Core.Framework.CustomEntities.Crops

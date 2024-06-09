@@ -1,6 +1,5 @@
 ﻿using SDV_Realty_Core.Framework.CustomEntities.BigCraftables;
 using System.Collections.Generic;
-using SDV_Realty_Core.Framework.CustomEntities.Buildings;
 using System.Linq;
 using StardewValley.TerrainFeatures;
 using Prism99_Core.Utilities;
@@ -17,22 +16,21 @@ using System.Data;
 using StardewValley.Extensions;
 using StardewValley.GameData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
-using StardewValley;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
-using SDV_Realty_Core.Framework.ServiceProviders;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+
 
 namespace SDV_Realty_Core.Framework.CustomEntities
 {
     internal class CustomProductionManager
     {
-        private static SDVLogger logger;
+        private static ILoggerService logger;
         private static string key_BuildingOutputCount = "sdr.BuildingOutput.Count";
         private static string key_BuildingOutputItem = "sdr.BuildingOutput.Item";
         private static string key_BuildingOutputQuantity = "sdr.BuildingOutput.Quantity";
         private static string key_BuildingOutputTime = "sdr.BuildingOutput.Time";
         private static string key_Crop = "sdr.Crop";
         private static ICustomEntitiesServices customEntitiesServices;
-        public void Initialize(SDVLogger ologger, GamePatches Patches,ICustomEntitiesServices entitiesServices)
+        public void Initialize(ILoggerService ologger, GamePatches Patches,ICustomEntitiesServices entitiesServices)
         {
             customEntitiesServices= entitiesServices;
             logger = ologger;
@@ -108,14 +106,14 @@ namespace SDV_Realty_Core.Framework.CustomEntities
                 if (machineData.AdditionalConsumedItems != null)
                 {
                     // check for AdditionalItems
-                    foreach (var fuel in machineData.AdditionalConsumedItems)
+                    foreach (MachineItemAdditionalConsumedItems fuel in machineData.AdditionalConsumedItems)
                     {
-                        var haveFuel = items.Where(p => (p?.QualifiedItemId ?? "") == fuel.ItemId && p.Stack >= fuel.RequiredCount).FirstOrDefault();
+                        Item haveFuel = items.Where(p => (p?.QualifiedItemId ?? "") == fuel.ItemId && p.Stack >= fuel.RequiredCount).FirstOrDefault();
                         if (haveFuel == null)
                             return false;
                     }
                 }
-                foreach (var rule in machineData.OutputRules)
+                foreach (MachineOutputRule rule in machineData.OutputRules)
                 {
                     if (rule.Triggers?.Count() > 0)
                     {
@@ -124,7 +122,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
                         //
                         if (selectedItem != null)
                         {
-                            var haveItem = rule.Triggers.Where(p => (p?.RequiredItemId ?? "") == selectedItem.QualifiedItemId && selectedItem.Stack >= p.RequiredCount).FirstOrDefault();
+                            MachineOutputTriggerRule haveItem = rule.Triggers.Where(p => (p?.RequiredItemId ?? "") == selectedItem.QualifiedItemId && selectedItem.Stack >= p.RequiredCount).FirstOrDefault();
                             if (haveItem == null)
                                 continue;
                             //
@@ -137,7 +135,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
                             }
                             return false;
                         }
-                        foreach (var trigger in rule.Triggers)
+                        foreach (MachineOutputTriggerRule trigger in rule.Triggers)
                         {
                             if (IsRuleMet(items, rule))
                             {
@@ -163,7 +161,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
         private static bool IsRuleMet(IInventory items, MachineOutputRule rule)
         {
             bool isValid = true;
-            foreach (var trigger in rule.Triggers)
+            foreach (MachineOutputTriggerRule trigger in rule.Triggers)
             {
                 if (!string.IsNullOrEmpty(trigger.Condition))
                 {
@@ -176,7 +174,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
                 }
                 if (!string.IsNullOrEmpty(trigger.RequiredItemId))
                 {
-                    var haveItem = items.Where(p => (p?.QualifiedItemId ?? "") == trigger.RequiredItemId && p.Stack >= trigger.RequiredCount).FirstOrDefault();
+                    Item haveItem = items.Where(p => (p?.QualifiedItemId ?? "") == trigger.RequiredItemId && p.Stack >= trigger.RequiredCount).FirstOrDefault();
                     if (haveItem == null)
                     {
                         isValid = false;
@@ -186,7 +184,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
                 else if (trigger.RequiredTags != null)
                 {
                     // check for tags
-                    var haveTag = items.Where(p => p.GetContextTags().Intersect(trigger.RequiredTags).Any() && p.Stack >= trigger.RequiredCount).FirstOrDefault();
+                    Item haveTag = items.Where(p => p.GetContextTags().Intersect(trigger.RequiredTags).Any() && p.Stack >= trigger.RequiredCount).FirstOrDefault();
                     if (haveTag == null)
                     {
                         isValid = false;
@@ -218,6 +216,9 @@ namespace SDV_Realty_Core.Framework.CustomEntities
         /// <returns>True if the machine was loaded</returns>
         private static bool AttemptLoading(IInventory inventory, Item inputItem, Farmer who, SDObject machine, bool probe, bool playSounds = true)
         {
+            if (!Game1.IsMasterGame)
+                return true;
+
             MachineData machinedata = machine.GetMachineData();
             //  check if machine is already in production
             if (machine.heldObject.Value != null)
@@ -241,7 +242,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
                 //  this will be used for flavoured items
                 //
                 Item primaryItem = null;
-                foreach (var item in triggerRule)
+                foreach (MachineOutputTriggerRule item in triggerRule)
                 {
                     if (!string.IsNullOrEmpty(item.RequiredItemId))
                     {
@@ -250,7 +251,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
                     }
                     else if (item.RequiredTags != null)
                     {
-                        var taggedItem = (SDObject.autoLoadFrom ?? who.Items).Where(p => p.GetContextTags().Intersect(item.RequiredTags).Any() && p.Stack >= item.RequiredCount).FirstOrDefault();
+                        Item taggedItem = (SDObject.autoLoadFrom ?? who.Items).Where(p => p.GetContextTags().Intersect(item.RequiredTags).Any() && p.Stack >= item.RequiredCount).FirstOrDefault();
                         if (taggedItem != null)
                         {
                             primaryItem ??= ItemRegistry.Create(taggedItem.ItemId, 1);
@@ -262,7 +263,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
                 MachineData machineData = machine.GetMachineData();
                 if (machineData.AdditionalConsumedItems != null)
                 {
-                    foreach (var fuel in machineData.AdditionalConsumedItems)
+                    foreach (MachineItemAdditionalConsumedItems fuel in machineData.AdditionalConsumedItems)
                     {
                         (SDObject.autoLoadFrom ?? who.Items).ReduceId(fuel.ItemId, fuel.RequiredCount);
                     }
@@ -289,7 +290,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
                 else
                 {
                     List<MachineItemOutput> potentailRules = new List<MachineItemOutput>();
-                    foreach (var outRule in outputRule.OutputItem)
+                    foreach (MachineItemOutput outRule in outputRule.OutputItem)
                     {
                         if (string.IsNullOrEmpty(outRule.Condition))
                         {
@@ -412,7 +413,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
         /// 
         public static bool AttemptAutoLoad(IInventory inventory, Farmer who, SDObject __instance, ref bool __result)
         {
-            if (!customEntitiesServices.customBigCraftableService.customBigCraftableManager.BigCraftables.ContainsKey(__instance.Name))
+            if (!Game1.IsMasterGame || !customEntitiesServices.customBigCraftableService.customBigCraftableManager.BigCraftables.ContainsKey(__instance.Name))
                 return true;
 
             SDObject.autoLoadFrom = inventory;
@@ -448,7 +449,8 @@ namespace SDV_Realty_Core.Framework.CustomEntities
             //
             //  check for custom machine
             //
-            if (!customEntitiesServices.customBigCraftableService.customBigCraftableManager.BigCraftables.ContainsKey(__instance.Name))
+
+            if (!Game1.IsMasterGame || !customEntitiesServices.customBigCraftableService.customBigCraftableManager.BigCraftables.ContainsKey(__instance.Name))
                 return true;
 
             if (AttemptLoading(who.Items, inputItem, who, __instance, probe, playSounds))
@@ -472,6 +474,9 @@ namespace SDV_Realty_Core.Framework.CustomEntities
         /// <param name="dayOfMonth">Current day of the month</param>
         public static void DayUpdate(GameLocation __instance, int dayOfMonth)
         {
+            if (!Game1.IsMasterGame)
+                return;
+
             if (customEntitiesServices.customBuildingService.customBuildingManager.CustomBuildings.TryGetValue(__instance.Name, out var building))
             {
                 if (building.ProductionModifiers != null)
@@ -639,6 +644,9 @@ namespace SDV_Realty_Core.Framework.CustomEntities
         /// <param name="timeElapsed"></param>
         public static void passTimeForObjects(GameLocation __instance, int timeElapsed)
         {
+            if (!Game1.IsMasterGame)
+                return;
+
             __instance.objects.Lock();
             var candadites = __instance.objects.Pairs.Where(p => p.Value.bigCraftable.Value && p.Value.heldObject.Value != null);
             foreach (KeyValuePair<Vector2, SDObject> pair in candadites)

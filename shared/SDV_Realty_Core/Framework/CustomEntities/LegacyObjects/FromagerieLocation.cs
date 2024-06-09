@@ -4,8 +4,7 @@ using System.Linq;
 using StardewValley.Objects;
 using StardewValley.Menus;
 using xTile.Dimensions;
-using SDV_Realty_Core.Framework.Utilities;
-using SDV_Realty_Core.Framework.Integrations;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 
 
 namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
@@ -22,24 +21,6 @@ namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
         public FromagerieLocation(string mapPath, string name) : base(mapPath, name)
         {
             InitVats();
-            //if (FEFramework.helper.ModRegistry.IsLoaded("Taiyo.StrangeMachinesJA"))
-            //{
-            //    FEFramework.logger.Log($"Adding Big cheeses", LogLevel.Debug);
-            //    //
-            //    //  adds large cheeses
-            //    //
- 
-            //    int id = Convert.ToInt32(JSONAssets.GetObjectId("Big Cheese"));
-            //    if (id > 0)
-            //    {
-            //        recipes["186"] =  Tuple.Create(id.ToString(), 0);
-            //    }
-            //    id = Convert.ToInt32(JSONAssets.GetObjectId("Big Goat Cheese"));
-            //    if (id > 0)
-            //    {
-            //        recipes["438"] =  Tuple.Create(id.ToString(), 0);
-            //    }
-            //}
         }
 
 
@@ -64,38 +45,21 @@ namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
         }
         public Dictionary<int, SDObject> GetBuildingProduction()
         {
-#if v16
             return new Dictionary<int, SDObject>
             {
                 {0,cheeseVatList[0].Running? new SDObject(Vector2.Zero, cheeseVatList[0].OutputOldId.ToString()){ Quality=(int)cheeseVatList[0].Quality,Stack=cheeseVatList[0].Quantity,MinutesUntilReady=cheeseVatList[0].MinutesRemaining }:null },
                 {1,cheeseVatList[1].Running? new SDObject(Vector2.Zero, cheeseVatList[1].OutputOldId.ToString()){Quality=(int)cheeseVatList[1].Quality,Stack=cheeseVatList[1].Quantity,MinutesUntilReady=cheeseVatList[1].MinutesRemaining  }:null },
                 {2,cheeseVatList[2].Running? new SDObject(Vector2.Zero, cheeseVatList[2].OutputOldId.ToString()){Quality=(int)cheeseVatList[2].Quality,Stack=cheeseVatList[2].Quantity ,MinutesUntilReady=cheeseVatList[2].MinutesRemaining }:null }
             };
-#else
-            return new Dictionary<int, SDObject>
-            {
-                {0,cheeseVatList[0].Running? new SDObject(Vector2.Zero, cheeseVatList[0].OutputOldId){ Quality=(int)cheeseVatList[0].Quality,Stack=cheeseVatList[0].Quantity,MinutesUntilReady=cheeseVatList[0].MinutesRemaining }:null },
-                {1,cheeseVatList[1].Running? new SDObject(Vector2.Zero, cheeseVatList[1].OutputOldId){Quality=(int)cheeseVatList[1].Quality,Stack=cheeseVatList[1].Quantity,MinutesUntilReady=cheeseVatList[1].MinutesRemaining  }:null },
-                {2,cheeseVatList[2].Running? new SDObject(Vector2.Zero, cheeseVatList[2].OutputOldId){Quality=(int)cheeseVatList[2].Quality,Stack=cheeseVatList[2].Quantity ,MinutesUntilReady=cheeseVatList[2].MinutesRemaining }:null }
-            };
-#endif
         }
         public CheeseVat[] cheeseVatList = new CheeseVat[] { new CheeseVat(), new CheeseVat(), new CheeseVat() };
 
         private void AddVat(Vector2 pos)
         {
-#if v16
-                           //objects.Add(new Vector2(-100, -100), new Chest(true, 130));
-                                          objects.Add(pos, new Chest(true,pos));
-#else
-            //objects.Add(new Vector2(-100, -100), new Chest(true, 130));
-            objects.Add(pos, new Chest(true, 130));
-#endif
-
+            objects.Add(pos, new Chest(true, pos));
         }
         private void InitVats()
         {
-            //FEFramework.logger.Log($"Initializing Vats", LogLevel.Debug);
             if (!objects.ContainsKey(new Vector2(-100, -100)))
                 AddVat(new Vector2(-100, -100));
             if (!objects.ContainsKey(new Vector2(-200, -100)))
@@ -113,9 +77,9 @@ namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
         public override void updateWarps()
         {
             base.updateWarps();
-            if (modData.ContainsKey(FEModDataKeys.FELocationName))
+            if (modData.ContainsKey(IModDataKeysService.FELocationName))
             {
-                //FEFramework.FixWarps(this, modData[FEModDataKeys.FELocationName]);
+                //FEFramework.FixWarps(this, modData[IModDataKeysService.FELocationName]);
             }
         }
         public override void updateEvenIfFarmerIsntHere(GameTime time, bool ignoreWasUpdatedFlush = false)
@@ -164,11 +128,7 @@ namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
                     //
                     foreach (string key in recipes.Keys)
                     {
-#if v16
                         List<Item> input = chest.Items.Where(p => p != null && p.ParentSheetIndex.ToString() == key && p.Stack >= 50).ToList();
-#else
-                        List<Item> input = chest.items.Where(p => p != null && p.ParentSheetIndex.ToString() == key && p.Stack >= 50).ToList();
-#endif
                         Item inputItem = null; ;
                         int quality = 0;
                         bool hasInput = false;
@@ -176,7 +136,7 @@ namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
                         for (quality = 0; quality < 5; quality++)
                         {
                             if (quality == 3) continue;
-                            List<Item> qualifiedInput = input.Where(p => p is SDObject && ((SDObject)p).quality == quality && p.Stack >= 50).ToList();
+                            List<Item> qualifiedInput = input.Where(p => p is SDObject && ((SDObject)p).Quality == quality && p.Stack >= 50).ToList();
                             if (qualifiedInput.Any())
                             {
                                 hasInput = true;
@@ -184,7 +144,6 @@ namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
                                 break;
                             }
                         }
-
 
                         if (hasInput)
                         {
@@ -197,23 +156,12 @@ namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
                             cheeseVatList[machineId].Quality = recipes[key].Item2;
                             if (inputItem.Stack == 50)
                             {
-#if v16
                                 chest.Items.Remove(inputItem);
-#else
-                                chest.items.Remove(inputItem);
-#endif
                             }
                             else
                             {
                                 inputItem.Stack = inputItem.Stack - 50;
                             }
-
-                            //FEFramework.logger.Log($"[{callSource}][{timeOfDay}] Chest-{machineId} started. Input: {cheeseVatList[0].InputId}", StardewModdingAPI.LogLevel.Debug);
-
-                            //if (Game1.player.currentLocation != null && Game1.player.currentLocation.NameOrUniqueName == NameOrUniqueName)
-                            //{
-                            //    SetMachineState(machineId, true);
-                            //}
                             break;
                         }
                     }
@@ -231,41 +179,9 @@ namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
             //
             if (!ChestVerified)
             {
-                //FEFramework.logger.Log($"Verifying chest content", LogLevel.Debug);
-
                 for (int i = 0; i < 3; i++)
                 {
                     Chest tChest = GetChest(i);
-                    //JSONAssets.ShuffleMe(ref tChest, JSONAssets.LocationType.Fromagerie);
-                    //foreach (Item cItem in tChest.items.ToList())
-                    //{
-                    //    if (!JSONAssets.IsObjectValid(cItem.Name, cItem.ParentSheetIndex))
-                    //    {
-                    //        int newId = Convert.ToInt32(JSONAssets.GetObjectId(cItem.Name));
-                    //        if (newId == -1)
-                    //        {
-                    //            //
-                    //            //  item did not get re-mapped, change it to cheese
-                    //            //
-                    //            FEFramework.logger.Log($"  re-mapping item: {cItem.Name}", LogLevel.Debug);
-                    //            tChest.items.Remove(cItem);
-                    //            cItem.ParentSheetIndex = 424;
-                    //            //cItem..Value = 2;
-                    //            tChest.items.Add(cItem);
-                    //        }
-                    //        else
-                    //        {
-                    //            //
-                    //            //  replace item with new id
-                    //            //
-                    //            FEFramework.logger.Log($"  replacing item: {cItem.Name}", LogLevel.Debug);
-                    //            tChest.items.Remove(cItem);
-                    //            cItem.ParentSheetIndex = newId;
-                    //            tChest.items.Add(cItem);
-
-                    //        }
-                    //    }
-                    //}
                 }
                 ChestVerified = true;
             }
@@ -324,22 +240,11 @@ namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
                         //
                         //  get output at end of process, in case mods change
                         //
-
-                        //FEFramework.logger.Log($"[{timeOfDay}] Chest-{machineId} finished. Output: {recipes[cheeseVatList[machineId].InputId].Item1}, Quality:  {recipes[cheeseVatList[machineId].InputId].Item2}", LogLevel.Debug);
-
-#if v16
                         SDObject outputItem = new SDObject(recipes[cheeseVatList[machineId].InputId].Item1, cheeseVatList[machineId].Quantity);
-#else
-                        SDObject outputItem = new SDObject(Convert.ToInt32(recipes[cheeseVatList[machineId].InputId].Item1), cheeseVatList[machineId].Quantity);
-#endif
                         outputItem.Quality = recipes[cheeseVatList[machineId].InputId].Item2;
 
                         chest.addItem(outputItem);
                         cheeseVatList[machineId].InputId = null;
-                        //if (Game1.player.currentLocation != null && Game1.player.currentLocation.NameOrUniqueName == NameOrUniqueName)
-                        //{
-                        //    SetMachineState(machineId, false);
-                        //}
                         if (outputItem.ParentSheetIndex == 426)
                         {
                             Game1.stats.GoatCheeseMade += (uint)outputItem.Stack;
@@ -360,11 +265,7 @@ namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
         {
             if (cheeseVatList[vatIndex].Running)
             {
-#if v16
                 string prodName = Game1.objectData[cheeseVatList[vatIndex].OutputId].Name;
-#else
-                string prodName = Game1.objectInformation[Convert.ToInt32(cheeseVatList[vatIndex].OutputId)].Split('/')[0];
-#endif
                 Game1.activeClickableMenu = new DialogueBox($"Producing {cheeseVatList[vatIndex].Quantity}x{prodName} in {cheeseVatList[vatIndex].MinutesRemaining} minutes");
             }
             else
@@ -453,7 +354,7 @@ namespace SDV_Realty_Core.Framework.Buildings.CheeseFactory
                 }
                 else
                 {
-                    int tileIndex = 12;
+                    //int tileIndex = 12;
                     //FEFramework.setMapTileIndex(map, iStart, 5, tileIndex, "Buildings", 5);
                     //FEFramework.setMapTileIndex(map, iStart + 1, 5, tileIndex + 1, "Buildings", 5);
                     //FEFramework.setMapTileIndex(map, iStart + 2, 5, tileIndex + 2, "Buildings", 5);

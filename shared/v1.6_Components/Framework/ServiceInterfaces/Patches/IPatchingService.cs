@@ -11,5 +11,7 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.Patches
     {
         public GamePatches patches;
         public override Type ServiceType => typeof(IPatchingService);
+        internal abstract void ApplyPatches();
+        internal abstract void ApplyPatches(string patchGroup);
     }
 }

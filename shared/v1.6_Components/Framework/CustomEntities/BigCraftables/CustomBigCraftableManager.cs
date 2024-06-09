@@ -13,11 +13,11 @@ namespace SDV_Realty_Core.Framework.CustomEntities.BigCraftables
     /// <summary>
     /// Manages details of CustomBigCraftables
     /// </summary>
-    internal  class CustomBigCraftableManager
+    internal class CustomBigCraftableManager
     {
-        private  ILoggerService logger;
+        private ILoggerService logger;
         private IModHelperService modHelperService;
-        public  Dictionary<string, CustomBigCraftableData> BigCraftables = new Dictionary<string, CustomBigCraftableData>();
+        public Dictionary<string, CustomBigCraftableData> BigCraftables = new Dictionary<string, CustomBigCraftableData>();
         //private  SDRContentManager conMan;
         public Dictionary<string, object> ExternalReferences = new Dictionary<string, object> { };
 
@@ -37,7 +37,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.BigCraftables
         /// Loads any CustomBigCraftable definition files bundled with the game
         /// </summary>
         /// <param name="modBaseDirectory">Top directory of the SDR mod</param>
-        public void LoadDefinitions( )
+        public void LoadDefinitions()
         {
             try
             {
@@ -77,14 +77,17 @@ namespace SDV_Realty_Core.Framework.CustomEntities.BigCraftables
                     logger.Log($"Missing custom BigCraftable directory {bigCraftableRootPath}", LogLevel.Warn);
                 }
             }
-            catch(Exception ex) { }
+            catch (Exception ex)
+            {
+                logger.LogError( ex);
+            }
         }
         /// <summary>
         /// Load an external CustomBigCraftable content back
         /// </summary>
         /// <param name="contentPack">Content pack to be added</param>
         /// <returns></returns>
-        public  CustomBigCraftableData ReadContentPack(IContentPack contentPack)
+        public CustomBigCraftableData ReadContentPack(IContentPack contentPack)
         {
             CustomBigCraftableData content = contentPack.ReadJsonFile<CustomBigCraftableData>("bigcraftable.json");
 
@@ -97,7 +100,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.BigCraftables
         /// Add a CustomBigCraftable to the manager
         /// </summary>
         /// <param name="customBigCraftableData">CustomBigCraftable object to be added.</param>
-        public  void AddBigCraftable(CustomBigCraftableData customBigCraftableData)
+        public void AddBigCraftable(CustomBigCraftableData customBigCraftableData)
         {
             try
             {
@@ -110,7 +113,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.BigCraftables
             catch (Exception ex)
             {
                 logger.Log($"Error loading {customBigCraftableData.Id}", LogLevel.Error);
-                logger.Log($"Error: {ex}", LogLevel.Error);
+                logger.LogError(ex);
             }
         }
 

@@ -53,9 +53,10 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 
         public void SaveLoaded(EventArgs e)
         {
-            JunimoHarvester.LoadSeeds(JunimoSeedDiscount);
-
+            if (Game1.IsMasterGame)
+            {
+                JunimoHarvester.LoadSeeds(JunimoSeedDiscount);
+            }
         }
-
     }
 }

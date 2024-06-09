@@ -7,6 +7,7 @@ using Prism99_Core.Utilities;
 using SDV_Realty_Core.ContentPackFramework.Helpers;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using SDV_Realty_Core.ContentPackFramework.Utilities;
 
 namespace SDV_xTile
 {
@@ -39,8 +40,8 @@ namespace SDV_xTile
             // Monitor.Log($"Map path: {sMapPath}", LogLevel.Info);
             string assetName = Path.GetFileName(sMapRelativePath);
             sMapRelativePath = sMapRelativePath.TrimStart('/').TrimStart('\\');
-            logger.Log($"LoadMap sMapRelativePath: {sMapRelativePath}", LogLevel.Debug);
-            logger.Log($"LoadMap sGameRootPath: {sGameRootPath}", LogLevel.Debug);
+            logger.Log($"sMapRelativePath: {sMapRelativePath}", LogLevel.Debug);
+            logger.Log($"sGameRootPath: {sGameRootPath}", LogLevel.Debug);
             logger.Log($"Load map path: {Path.Combine(sGameRootPath, sMapRelativePath)}", LogLevel.Debug);
             Map mNewMap = formatManager.LoadMap(Path.Combine(sGameRootPath, sMapRelativePath));
             mNewMap.Id = sLocationName;
@@ -118,9 +119,9 @@ namespace SDV_xTile
                         if (assetName.EndsWith(".png") && removeExt) assetName = assetName.Substring(0, assetName.Length - 4);
                     }
                     if (assetName.StartsWith("Maps\\femaps"))
-                        assetName = assetName.Replace("Maps\\femaps", "SDR/assets");
+                        assetName = assetName.Replace("Maps\\femaps", $"SDR{FEConstants.AssetDelimiter}assets");
 
-                    tilesheet.ImageSource = assetName.Replace("\\", "/");
+                    tilesheet.ImageSource = assetName.Replace("\\", FEConstants.AssetDelimiter);
 
                     //if (assetName != tilesheet.ImageSource)
                     //    monitor.Log($"   Mapped tilesheet '{tilesheet.ImageSource}' to '{assetName}'.  Remove ext {removeExt}");

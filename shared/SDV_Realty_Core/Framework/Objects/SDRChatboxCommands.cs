@@ -14,25 +14,25 @@ namespace SDV_Realty_Core.Framework.Objects
 {
     internal class SDRChatboxCommands
     {
-        private  IModHelperService helper;
-        private  ILoggerService logger;
+        private IModHelperService helper;
+        private ILoggerService logger;
         private IGridManager _gridManager;
         private IContentManagerService _contentManagerService;
-        public SDRChatboxCommands(ILoggerService olog, IModHelperService ohelper,  IGridManager  gridManager, IContentManagerService contentManagerService)
+        public SDRChatboxCommands(ILoggerService olog, IModHelperService ohelper, IGridManager gridManager, IContentManagerService contentManagerService)
         {
             helper = ohelper;
             logger = olog;
             _gridManager = gridManager;
             _contentManagerService = contentManagerService;
-            ChatBoxCommands.Initialize(helper.modHelper,(SDVLogger) logger.CustomLogger);
+            ChatBoxCommands.Initialize(helper.modHelper, (SDVLogger)logger.CustomLogger);
             ChatBoxCommands.AddCommand("sdr", sdr);
 
         }
-        private  void PopHUDMessage(string message)
+        private void PopHUDMessage(string message,int duration=6000)
         {
-            Game1.addHUDMessage(new HUDMessage(message) { noIcon = true, timeLeft = 6000 });
+            Game1.addHUDMessage(new HUDMessage(message) { noIcon = true, timeLeft = duration });
         }
-        internal  void sdr(string commandLine)
+        internal void sdr(string commandLine)
         {
             //
             //  /sdr command
@@ -56,16 +56,14 @@ namespace SDV_Realty_Core.Framework.Objects
 
             }
         }
-        public  void assets(string[] arWords)
+        public void assets(string[] arWords)
         {
             logger.Log($"SDR Assets Served:", LogLevel.Info);
 
-            //foreach (string key in FEFramework.ContentHandler.ExternalReferences.Keys.OrderBy(p => p))
-                foreach (string key in _contentManagerService.ExternalReferences.Keys.OrderBy(p=>p))
+            foreach (string key in _contentManagerService.ExternalReferences.Keys.OrderBy(p => p))
             {
-                if (arWords.Length == 1 || key.Contains(arWords[1],StringComparison.OrdinalIgnoreCase))
+                if (arWords.Length == 1 || key.Contains(arWords[1], StringComparison.OrdinalIgnoreCase))
                 {
-                    //switch (FEFramework.ContentHandler.ExternalReferences[key])
                     switch (_contentManagerService.ExternalReferences[key])
                     {
                         case Texture2D txt:
@@ -76,24 +74,19 @@ namespace SDV_Realty_Core.Framework.Objects
                             break;
                         default:
                             logger.Log($"{key}: {_contentManagerService.ExternalReferences[key]}", LogLevel.Info);
-                            //logger.Log($"{key}: {FEFramework.ContentHandler.ExternalReferences[key]}", LogLevel.Info);
                             break;
                     }
                 }
             }
         }
-        private  void mapstrings(string[] arWords)
+        private void mapstrings(string[] arWords)
         {
-            //foreach (string key in FEFramework.ContentHandler.StringFromMaps.Keys.OrderBy(p => p))
-            //{
-            //    logger.Log($"{key}: {FEFramework.ContentHandler.StringFromMaps[key]}", LogLevel.Info);
-            //}
             foreach (string key in _contentManagerService.stringFromMaps.Keys.OrderBy(p => p))
             {
                 logger.Log($"{key}: {_contentManagerService.stringFromMaps[key]}", LogLevel.Info);
             }
         }
-        private  void swap(string[] arWords)
+        private void swap(string[] arWords)
         {
             if (int.TryParse(arWords[1], out int gridA))
             {

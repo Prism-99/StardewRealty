@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections.Generic;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
 
 namespace SDV_Realty_Core.Framework.DataProviders
 {
@@ -29,24 +30,28 @@ namespace SDV_Realty_Core.Framework.DataProviders
 
         public override void HandleEdit(AssetRequestedEventArgs e)
         {
-            var mineCartLocs = modDataService.validContents.Where(p => p.Value.MineCartEnabled).ToList();
+            List<KeyValuePair<string, ExpansionPack>> mineCartLocs = modDataService.validContents.Where(p => p.Value.MineCarts.Any()).ToList();
 
             e.Edit(asset =>
             {
-                var carts = (Dictionary<string, MinecartNetworkData>)asset.Data;
+                Dictionary<string, MinecartNetworkData> carts = (Dictionary<string, MinecartNetworkData>)asset.Data;
 
-                foreach (var contentPack in mineCartLocs)
+                foreach (KeyValuePair<string, ExpansionPack> contentPack in mineCartLocs)
                 {
                     if (modDataService.farmExpansions[contentPack.Key].Active)
                     {
-                        carts["Default"].Destinations.Add( new MinecartDestinationData
+                        foreach (ExpansionPack.MineCartSpot mineCartDesitination in contentPack.Value.MineCarts)
                         {
-                            Id= contentPack.Key,
-                            TargetLocation=contentPack.Key,
-                            TargetDirection = contentPack.Value.MineCartDirection,
-                            DisplayName = contentPack.Value.MineCartDisplayName ?? contentPack.Key,
-                            TargetTile = new Point(contentPack.Value.MineCart.X, contentPack.Value.MineCart.Y)
-                        });
+                            carts["Default"].Destinations.Add(new MinecartDestinationData
+                            {
+                                Id = contentPack.Key + "." + mineCartDesitination.MineCartDisplayName,
+                                TargetLocation = contentPack.Key,
+                                Condition=mineCartDesitination.Condition,
+                                TargetDirection = mineCartDesitination.MineCartDirection,
+                                DisplayName = mineCartDesitination.MineCartDisplayName ?? contentPack.Key,
+                                TargetTile = new Point(mineCartDesitination.Exit.X, mineCartDesitination.Exit.Y)
+                            });
+                        }
                     }
                 }
             });

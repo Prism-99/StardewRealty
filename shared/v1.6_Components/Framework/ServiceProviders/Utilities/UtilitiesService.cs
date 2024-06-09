@@ -6,6 +6,7 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceProviders.Game;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using System;
+using System.Diagnostics;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
 {
@@ -57,15 +58,16 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
         {
             this.logger = logger;
             _modHelperService = (IModHelperService)args[0];
-            _manifestService= (ManifestService)args[1];
+            _manifestService = (ManifestService)args[1];
             _monitorService = (IMonitorService)args[2];
             _configService = (IConfigService)args[3];
             _patchingService = (IPatchingService)args[4];
             _eventsService = (IGameEventsService)args[5];
             _mapLoaderService = (IMapLoaderService)args[6];
-            _mapUtilities= (IMapUtilities)args[7];
-            _gameEnvironmentService= (IGameEnvironmentService)args[8];
+            _mapUtilities = (IMapUtilities)args[7];
+            _gameEnvironmentService = (IGameEnvironmentService)args[8];
             _customEventsService = (ICustomEventsService)args[9];
         }
+
     }
 }

@@ -60,8 +60,8 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
             Color? gemColor = getGemColor(ref isPrismatic, __instance);
             JunimoHarvester junimoHarvester = new JunimoHarvester(glFarm, new Vector2((int)__instance.tileX.Value + 1, (int)__instance.tileY.Value + 1) * 64f + new Vector2(0f, 32f), __instance, unusedJunimoNumber, gemColor);
             //CustomJunimoHarvester junimoHarvester = new CustomJunimoHarvester(logger, new Vector2(__instance.tileX.Value + 1, __instance.tileY.Value + 1) * 64f + new Vector2(0f, 32f), __instance, glFarm, unusedJunimoNumber, gemColor);
-            //junimoHarvester.modData.Add(FEModDataKeys.FELocationName, glFarm.Name);
-            //junimoHarvester.modData.Add(FEModDataKeys.FEExpansionType, "FarmExpansion");
+            //junimoHarvester.modData.Add(IModDataKeysService.FELocationName, glFarm.Name);
+            //junimoHarvester.modData.Add(IModDataKeysService.FEExpansionType, "FarmExpansion");
 
             junimoHarvester.isPrismatic.Value = isPrismatic;
             glFarm.characters.Add(junimoHarvester);
@@ -88,8 +88,8 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
             Color? gemColor = getGemColor(ref isPrismatic, __instance);
             LumberJackWorker lumberJack = new LumberJackWorker(glFarm, new Vector2((int)__instance.tileX.Value + 1, (int)__instance.tileY.Value + 1) * 64f + new Vector2(0f, 32f), __instance, unusedJunimoNumber, gemColor);
             //CustomJunimoHarvester junimoHarvester = new CustomJunimoHarvester(logger, new Vector2(__instance.tileX.Value + 1, __instance.tileY.Value + 1) * 64f + new Vector2(0f, 32f), __instance, glFarm, unusedJunimoNumber, gemColor);
-            //junimoHarvester.modData.Add(FEModDataKeys.FELocationName, glFarm.Name);
-            //junimoHarvester.modData.Add(FEModDataKeys.FEExpansionType, "FarmExpansion");
+            //junimoHarvester.modData.Add(IModDataKeysService.FELocationName, glFarm.Name);
+            //junimoHarvester.modData.Add(IModDataKeysService.FEExpansionType, "FarmExpansion");
 
             //lumberJack.isPrismatic.Value = isPrismatic;
             glFarm.characters.Add(lumberJack);
@@ -109,19 +109,21 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
         }
         public static bool updateWhenFarmNotCurrentLocation(GameTime time, JunimoHut __instance)
         {
+            if (!Game1.IsMasterGame)
+                return true;
 
             GameLocation glFarm = __instance.GetParentLocation();
-
-            //logger.Log($"    checking Junimos called for {glFarm.NameOrUniqueName}",LogLevel.Debug);
-
-             __instance.GetOutputChest().mutex.Update(glFarm);
+#if DEBUG_LOG
+            //logger.Log($"Checking Junimos for {glFarm.NameOrUniqueName}",LogLevel.Debug);
+#endif
+            __instance.GetOutputChest().mutex.Update(glFarm);
             if (__instance.GetOutputChest().mutex.IsLockHeld() && Game1.activeClickableMenu == null)
             {
                 __instance.GetOutputChest().mutex.ReleaseLock();
             }
 
             int junimoSendOutTimer = (int)Traverse.Create(__instance).Field("junimoSendOutTimer").GetValue();
-            if (!Game1.IsMasterGame || junimoSendOutTimer <= 0 || !__instance.shouldSendOutJunimos.Value)
+            if ( junimoSendOutTimer <= 0 || !__instance.shouldSendOutJunimos.Value)
             {
                 return false;
             }
@@ -132,7 +134,9 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
             {
                 return false;
             }
-            //logger.Log($"     sending out Junimos", StardewModdingAPI.LogLevel.Debug);
+#if DEBUG_LOG
+            //logger.Log($"     sending out Junimos", LogLevel.Debug);
+#endif
             if (__instance.myJunimos.Count < config.MaxNumberJunimos && (!_seasonUtils.isWinter(__instance.modData) || config.JunimosWorkInWinter) && (!Game1.isRaining || config.JunimosWorkInRain) && areThereMatureCropsWithinRadius_int(glFarm, __instance))
             {
                 SendOutJunimo(__instance);
@@ -156,9 +160,9 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
         //{
         //    GameLocation currentFarm = null;
 
-        //    //if (__instance.modData.ContainsKey(FEModDataKeys.FELocationName))
+        //    //if (__instance.modData.ContainsKey(IModDataKeysService.FELocationName))
         //    //{
-        //    //currentFarm = Game1.getLocationFromName(__instance.modData[FEModDataKeys.FELocationName]);
+        //    //currentFarm = Game1.getLocationFromName(__instance.modData[IModDataKeysService.FELocationName]);
         //    currentFarm = __instance.GetParentLocation();
         //    //}
         //    //else
@@ -216,7 +220,7 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
 
             GameLocation currentFarm = null;
 
-            currentFarm = __instance.GetParentLocation();// Game1.getLocationFromName(__instance.modData[FEModDataKeys.FELocationName]);
+            currentFarm = __instance.GetParentLocation();// Game1.getLocationFromName(__instance.modData[IModDataKeysService.FELocationName]);
             __result = areThereMatureCropsWithinRadius_int(currentFarm, __instance);
 
             return false;
@@ -269,9 +273,9 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
         }
         //public static bool getSourceRectForMenu(JunimoHut __instance, ref Rectangle __result)
         //{
-        //    if (__instance.modData.ContainsKey(FEModDataKeys.FELocationName) && __instance.modData[FEModDataKeys.FELocationName] != "Farm")
+        //    if (__instance.modData.ContainsKey(IModDataKeysService.FELocationName) && __instance.modData[IModDataKeysService.FELocationName] != "Farm")
         //    {
-        //        string sOverride = FEFramework.farmExpansions[__instance.modData[FEModDataKeys.FELocationName]].seasonOverride;
+        //        string sOverride = FEFramework.farmExpansions[__instance.modData[IModDataKeysService.FELocationName]].seasonOverride;
         //        if (!string.IsNullOrEmpty(sOverride))
         //        {
         //            __result = new Rectangle(Utility.getSeasonNumber(sOverride) * 48, 0, 48, 64);
@@ -313,9 +317,9 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
         public static bool performTenMinuteAction(int timeElapsed, JunimoHut __instance)
         {
             Farm currentFarm;
-            if (__instance.modData.ContainsKey(FEModDataKeys.FELocationName))
+            if (__instance.modData.ContainsKey(IModDataKeysService.FELocationName))
             {
-                currentFarm = Game1.getLocationFromName(__instance.modData[FEModDataKeys.FELocationName]) as Farm;
+                currentFarm = Game1.getLocationFromName(__instance.modData[IModDataKeysService.FELocationName]) as Farm;
             }
             else
             {

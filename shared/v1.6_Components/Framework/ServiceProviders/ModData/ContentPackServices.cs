@@ -1,6 +1,4 @@
-﻿using Prism99_Core.Utilities;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks;
@@ -9,12 +7,20 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using System.Linq;
 using StardewModdingAPI.Events;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using xTile;
+using xTile.Layers;
+using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
+using System.IO;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.ModData
 {
 
     internal class ContentPackServices : IContentPackService
     {
+        private IUtilitiesService utilitiesService;
+        private IModDataService modDataService;
+        private IGameEnvironmentService gameEnvironmentService;
         public override Type ServiceType => typeof(IContentPackService);
 
         public override Type[] InitArgs => new Type[]
@@ -25,7 +31,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModData
         };
         public override Type[] Dependants => new Type[]
         {
-            
+
         };
 
         public List<IContentPack> contentPacks;
@@ -40,21 +46,22 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModData
         internal override void Initialize(ILoggerService logger, object[] args)
         {
             this.logger = logger;
-            IUtilitiesService utilities = ((IUtilitiesService)args[0]);
+            utilitiesService = ((IUtilitiesService)args[0]);
             ICustomEntitiesServices customEntitiesServices = (ICustomEntitiesServices)args[1];
-            IModDataService modDataService = (IModDataService)args[2];
+            modDataService = (IModDataService)args[2];
             IGameEventsService eventsService = (IGameEventsService)args[3];
             IAutoMapperService autoMapperService = (IAutoMapperService)args[4];
-            IGameEnvironmentService gameEnvironmentService= (IGameEnvironmentService)args[5];
+            gameEnvironmentService = (IGameEnvironmentService)args[5];
 
-            contentPackLoader = new ContentPackLoader(logger, utilities, customEntitiesServices, modDataService, autoMapperService, gameEnvironmentService);
-            contentPacks = utilities.ModHelperService.modHelper.ContentPacks.GetOwned().ToList();
-            eventsService.AddSubscription(new GameLaunchedEventArgs(), LoadContent,500);
+            contentPackLoader = new ContentPackLoader(logger, utilitiesService, customEntitiesServices, modDataService, autoMapperService, gameEnvironmentService);
+            contentPacks = utilitiesService.ModHelperService.modHelper.ContentPacks.GetOwned().ToList();
+            eventsService.AddSubscription(new GameLaunchedEventArgs(), LoadContent, 500);
         }
         private void LoadContent(EventArgs e)
         {
             LoadPacks();
             LoadMaps();
+            utilitiesService.HaveExpansions = contentPackLoader.ValidContents.Any();
         }
         internal override void LoadPacks()
         {

@@ -3,18 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using StardewValley.Buildings;
 using StardewValley.Menus;
-using SDV_Realty_Core.Framework.Utilities;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using StardewValley.TerrainFeatures;
 
 namespace Framework.StardewObjects
 {
-    class CustomJunimoHut:JunimoHut
+    class CustomJunimoHut : JunimoHut
     {
         public override void updateWhenFarmNotCurrentLocation(GameTime time)
         {
             //framework.monitor.Log("Running FEJunimoHut update", StardewModdingAPI.LogLevel.Info);
 
-            Farm currentFarm = Game1.getLocationFromName(modData[FEModDataKeys.FELocationName]) as Farm;
+            Farm currentFarm = Game1.getLocationFromName(modData[IModDataKeysService.FELocationName]) as Farm;
 
 
             GetOutputChest().mutex.Update(currentFarm);
@@ -33,7 +33,7 @@ namespace Framework.StardewObjects
                     int junimoNumber = getUnusedJunimoNumber();
                     bool isPrismatic = false;
                     Color? gemColor = getGemColor(ref isPrismatic);
-                     junimoSendOutTimer = 1000;
+                    junimoSendOutTimer = 1000;
                     if (Utility.isOnScreen(Utility.Vector2ToPoint(new Vector2((float)(tileX.Value + 1), (float)(tileY.Value + 1))), 64, currentFarm))
                     {
                         try
@@ -47,9 +47,9 @@ namespace Framework.StardewObjects
                 }
             }
 
-           
+
         }
-        private  bool areThereMatureCropsWithinRadius(Farm farm)
+        private bool areThereMatureCropsWithinRadius(Farm farm)
         {
             for (int i = tileX.Value + 1 - 8; i < tileX.Value + 2 + 8; i++)
             {

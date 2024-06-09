@@ -57,7 +57,7 @@ namespace SDV_Realty_Core.Framework.Menus
         }
         public void EnableItem(string itemKey)
         {
-            var olist=displayItems.Where(p=>p.name == itemKey).ToList();
+            List<FEListButton> olist =displayItems.Where(p=>p.name == itemKey).ToList();
             if(olist.Count() > 0)
             {
                 olist[0].Disabled = false;
@@ -65,7 +65,7 @@ namespace SDV_Realty_Core.Framework.Menus
         }
         public void DisableItem(string itemKey)
         {
-            var olist = displayItems.Where(p => p.name == itemKey).ToList();
+            List<FEListButton> olist = displayItems.Where(p => p.name == itemKey).ToList();
             if (olist.Count() > 0)
             {
                 olist[0].Disabled = true;
@@ -126,7 +126,7 @@ namespace SDV_Realty_Core.Framework.Menus
             }
             else
             {
-                var oList = displayItems.Where(p => p.containsPoint(x, y)).ToList();
+                List<FEListButton> oList = displayItems.Where(p => p.containsPoint(x, y)).ToList();
                 if (oList.Count == 1 && !oList.First().Disabled)
                 {
                     ItemSelected = true;
@@ -174,7 +174,7 @@ namespace SDV_Realty_Core.Framework.Menus
         }
         public void HoverIn(Point p, Point o)
         {
-            var oList = displayItems.Where(r => !r.containsPoint(p.X, p.Y) && r.Hovered).ToList();
+            List<FEListButton> oList = displayItems.Where(r => !r.containsPoint(p.X, p.Y) && r.Hovered).ToList();
             if (oList.Count == 1)
             {
                 oList.First().HoverOut(p, o);

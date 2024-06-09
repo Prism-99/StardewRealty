@@ -25,19 +25,16 @@ namespace SDV_Realty_Core.Framework.Weather
         {
 
         }
-
+        public void UpdateTicked(ref WeatherManager.CurrentWeather cw)
+        {
+        }
         public void TenMinuteUpdateTicked(ref WeatherManager.CurrentWeather cw)
         {
 
         }
-        public string Name()
-        {
-            return "prism99.advize.stardewrealty.drizzle";
-        }
-        public string DisplayName()
-        {
-            return "Drizzle";
-        }
+        public string Name()=> "prism99.advize.stardewrealty.drizzle";        
+        public string DisplayName() => "Drizzle";
+        public bool IsRaining() => true;
 
         public void Update(GameTime time, ref WeatherManager.CurrentWeather cw)
         {

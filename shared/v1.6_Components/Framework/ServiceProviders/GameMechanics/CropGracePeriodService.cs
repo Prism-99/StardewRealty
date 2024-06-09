@@ -11,7 +11,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
     {
         public override Type[] InitArgs => new Type[]
         {
-            typeof(IPatchingService),typeof(IConfigService)
+            typeof(IPatchingService),typeof(IUtilitiesService)
         };
 
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -27,9 +27,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
             this.logger = logger;
 
             IPatchingService patchingService = (IPatchingService)args[0];
-            IConfigService configService = (IConfigService)args[1];
+            IUtilitiesService utilitiesService = (IUtilitiesService)args[1];
 
-            CropGracePeriod cropGracePeriod = new CropGracePeriod(logger,patchingService, configService);
+            CropGracePeriod cropGracePeriod = new CropGracePeriod(logger,patchingService, utilitiesService);
         }
     }
 }

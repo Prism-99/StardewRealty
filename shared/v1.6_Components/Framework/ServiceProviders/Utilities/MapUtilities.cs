@@ -7,29 +7,34 @@ using xTile.Tiles;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using System.Linq;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
+using System.Xml;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
 {
-    internal class MapUtilities:IMapUtilities
+    internal class MapUtilities : IMapUtilities
     {
         //private SDRContentManager contentManager;
 
-        public override List<string> CustomServiceEventTriggers 
-        { get => new List<string> { "RemoveStringFromMap" }; }
+        private ICustomEventsService customEventsService;
+        public override List<string> CustomServiceEventTriggers
+        { get => new List<string> {  }; }
         public override Type ServiceType => typeof(IMapUtilities);
 
         public override Type[] InitArgs => new Type[]
         {
-            
+            typeof(ICustomEventsService)
         };
 
         internal override void Initialize(ILoggerService logger, object[] args)
         {
-            this.logger=logger;
+            this.logger = logger;
+
+            customEventsService = (ICustomEventsService)args[0];
 
             //contentManager = ((IContentManagerService)args[0]).contentManager;
         }
-        internal override  string GetSignPostMessagePrefix(EntranceDirection side)
+        internal override string GetSignPostMessagePrefix(EntranceDirection side)
         {
             return side switch
             {
@@ -40,7 +45,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 _ => ""
             };
         }
-        internal override  void RemovePatchWarps(EntrancePatch oPatch, GameLocation glExp)
+        internal override void RemovePatchWarps(EntrancePatch oPatch, GameLocation glExp)
         {
             //
             //  remove all of the exits warps for a given side
@@ -75,7 +80,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
         /// <param name="oExp"></param>
         /// <param name="oExpPatch"></param>
         /// <param name="messageKeySuffix"></param>
-        internal override  void RemoveSignPost(GameLocation oExp, EntrancePatch oExpPatch, string messageKeySuffix)
+        internal override void RemoveSignPost(GameLocation oExp, EntrancePatch oExpPatch, string messageKeySuffix)
         {
             if (oExpPatch.Sign != null)
             {
@@ -83,9 +88,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 RemoveTile(oExp, oExpPatch.Sign.Position.X, oExpPatch.Sign.Position.Y, layerName);
                 string messageKey = oExp.Name + "." + messageKeySuffix;
 
-                TriggerEvent("RemoveStringFromMap", new object[] { messageKey });
-                //contentManager.RemoveStringFromMap(messageKey);
-                //ContentHandler.RemoveStringFromMap(messageKey);
+                customEventsService.TriggerCustomEvent("RemoveStringFromMap", new object[] { messageKey });
                 RemoveTileProperty(oExp, oExpPatch.Sign.Position.X, oExpPatch.Sign.Position.Y, "Buildings", "Action");
                 RemoveTile(oExp, oExpPatch.Sign.Position.X, oExpPatch.Sign.Position.Y - 1, "Front");
             }
@@ -95,14 +98,14 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
         {
             return side switch
             {
-                IMapUtilities.westSidePatch => "WestMessage",
-                IMapUtilities.eastSidePatch => "EastMessage",
-                IMapUtilities.northSidePatch => "NorthMessage",
-                IMapUtilities.southSidePatch => "SouthMessage",
+                westSidePatch => "WestMessage",
+                eastSidePatch => "EastMessage",
+                northSidePatch => "NorthMessage",
+                southSidePatch => "SouthMessage",
                 _ => ""
             };
         }
-        internal override  void RemovePathBlock(Vector2 oBlockPos, GameLocation gl, WarpOrientations eBlockOrientation, int iBlockWidth)
+        internal override void RemovePathBlock(Vector2 oBlockPos, GameLocation gl, WarpOrientations eBlockOrientation, int iBlockWidth)
         {
             logger.Log($"   Removing path block {gl.Name} {oBlockPos}, {eBlockOrientation} for {iBlockWidth}", LogLevel.Debug);
 
@@ -154,7 +157,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             }
             catch (Exception ex)
             {
-                logger?.LogError($"FEFramework.RemovePathBlock", ex); ;
+                logger.LogError($"FEFramework.RemovePathBlock", ex); ;
             }
         }
         internal override void RemoveTile(GameLocation gl, int x, int y, string sLayer, int tileIndex)
@@ -197,7 +200,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             PatchInMap(gl.Map, oMap, vOffset);
         }
 
-        internal override void  AddPathBlock(Vector2 oBlockPos, Map map, WarpOrientations eBlockOrientation, int iBlockWidth)
+        internal override void AddPathBlock(Vector2 oBlockPos, Map map, WarpOrientations eBlockOrientation, int iBlockWidth)
         {
             //
             //  add building layer tiles to block the exit path
@@ -329,33 +332,39 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 _ => ""
             };
         }
-        internal override void PatchInMap(Map gl, Map oMap, Vector2 vOffset)
+        internal override void PatchInMap(Map targetMap, Map sourceMap, Vector2 vOffset)
         {
-            logger.Log($"PatchInMap Dest map: {gl.Description}, Src map: {oMap.Description}", LogLevel.Debug);
-            foreach (Layer olayer in oMap.Layers)
+            logger.Log($"PatchInMap Dest map: {targetMap.Description}, Src map: {sourceMap.Description}", LogLevel.Debug);
+            foreach (Layer sourceLayer in sourceMap.Layers)
             {
-                Layer layer = gl.GetLayer(olayer.Id);
-                if (olayer != null)
+                Layer targetLayer = targetMap.GetLayer(sourceLayer.Id);
+                if (sourceLayer != null)
                 {
-                    for (int iCol = 0; iCol < olayer.LayerHeight; iCol++)
+                    for (int iCol = 0; iCol < sourceLayer.LayerHeight; iCol++)
                     {
-                        for (int iRow = 0; iRow < olayer.LayerWidth; iRow++)
+                        for (int iRow = 0; iRow < sourceLayer.LayerWidth; iRow++)
                         {
-                            int iIndex = (olayer.Tiles[iRow, iCol] == null ? -1 : olayer.Tiles[iRow, iCol].TileIndex);
-                            if (olayer.Tiles[iRow, iCol] != null && olayer.Tiles[iRow, iCol].TileIndex > 0)
+                            int iIndex = (sourceLayer.Tiles[iRow, iCol] == null ? -1 : sourceLayer.Tiles[iRow, iCol].TileIndex);
+                            if (sourceLayer.Tiles[iRow, iCol] != null && sourceLayer.Tiles[iRow, iCol].TileIndex > 0)
                             {
-                                if (layer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] == null || layer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y].TileSheet.ImageSource != olayer.Tiles[iRow, iCol].TileSheet.ImageSource)
+                                if (targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] == null || targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y].TileSheet.ImageSource != sourceLayer.Tiles[iRow, iCol].TileSheet.ImageSource)
                                 {
-                                    layer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] = new StaticTile(layer, gl.TileSheets[GetTileSheetId(gl, olayer.Tiles[iRow, iCol].TileSheet.ImageSource)], BlendMode.Alpha, olayer.Tiles[iRow, iCol].TileIndex);
+                                    targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] = new StaticTile(targetLayer, targetMap.TileSheets[GetTileSheetId(targetMap, sourceLayer.Tiles[iRow, iCol].TileSheet.ImageSource)], BlendMode.Alpha, sourceLayer.Tiles[iRow, iCol].TileIndex);
                                 }
                                 else
-                                    setMapTileIndex(gl, iRow + (int)vOffset.X, iCol + (int)vOffset.Y, olayer.Tiles[iRow, iCol].TileIndex, olayer.Id, GetTileSheetId(gl, olayer.Tiles[iRow, iCol].TileSheet.ImageSource));
+                                    setMapTileIndex(targetMap, iRow + (int)vOffset.X, iCol + (int)vOffset.Y, sourceLayer.Tiles[iRow, iCol].TileIndex, sourceLayer.Id, GetTileSheetId(targetMap, sourceLayer.Tiles[iRow, iCol].TileSheet.ImageSource));
+
+                                //  add tile properties
+                                targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y].Properties.Clear();
+                                foreach (var prop in sourceLayer.Tiles[iRow, iCol].Properties) {
+                                    targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y].Properties.Add(prop.Key,prop.Value);
+                                }
                             }
                             else
                             {
-                                if (layer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] != null)
+                                if (targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] != null)
                                 {
-                                    gl.GetLayer(olayer.Id).Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] = null;
+                                    targetMap.GetLayer(sourceLayer.Id).Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] = null;
                                 }
                             }
                         }
@@ -364,12 +373,12 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 }
                 else
                 {
-                    logger.Log($"Layer is null. Id= {olayer?.Id ?? "-1"}", LogLevel.Error);
+                    logger.Log($"Layer is null. Id= {sourceLayer?.Id ?? "-1"}", LogLevel.Error);
                 }
             }
         }
 
-        internal override  int GetTileSheetId(Map map, string tileSheetSourceName)
+        internal override int GetTileSheetId(Map map, string tileSheetSourceName)
         {
             tileSheetSourceName = SDVPathUtilities.NormalizePath(tileSheetSourceName);
 
@@ -379,16 +388,25 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             {
                 if (tileSheetSourceName.Contains("*"))
                 {
-                    bool allParts = true;
-                    foreach (string part in arParts)
+                    if (arParts.Length == 2)
                     {
-                        if (!SDVPathUtilities.NormalizePath(map.TileSheets[iTileSheet].ImageSource).ToLower().Contains(part.ToLower()))
-                        {
-                            allParts = false;
-                            break;
-                        }
+                        string normalized = SDVPathUtilities.NormalizePath(map.TileSheets[iTileSheet].ImageSource).ToLower();
+                        if (normalized.StartsWith(arParts[0].ToLower()) && normalized.EndsWith(arParts[1].ToLower()))
+                            return iTileSheet;
                     }
-                    if (allParts) return iTileSheet;
+                    else
+                    {
+                        bool allParts = true;
+                        foreach (string part in arParts)
+                        {
+                            if (!SDVPathUtilities.NormalizePath(map.TileSheets[iTileSheet].ImageSource).ToLower().Contains(part.ToLower()))
+                            {
+                                allParts = false;
+                                break;
+                            }
+                        }
+                        if (allParts) return iTileSheet;
+                    }
                 }
                 else
                 {
@@ -404,7 +422,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 return GetTileSheetId(map, WildCardSeason(tileSheetSourceName));
             }
 
-            logger?.Log($"GetTileSheetId. Could not find tilesheet: {map.Id} '{tileSheetSourceName}'", LogLevel.Error);
+            logger.Log($"GetTileSheetId. Could not find tilesheet: {map.Id} '{tileSheetSourceName}'", LogLevel.Error);
 
             return -1;
         }
@@ -423,7 +441,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
 
             return "*" + tileSheetSourceName.Substring(iDelim);
         }
-        internal override  void SetTile(Map map, int x, int y, int iTileSheetId, int iTileId, string sLayerId, bool overwriteTile)
+        internal override void SetTile(Map map, int x, int y, int iTileSheetId, int iTileId, string sLayerId, bool overwriteTile)
         {
             //
             //  sets a tile to a new tileid, if the tile does not exist

@@ -12,12 +12,13 @@ namespace SDV_Realty_Core.Framework.Objects
         /// <summary>Determines whether to patch an alternate entrance to the expansion in the backwoods.</summary>
         public bool useBackwoodsEntrance { get; set; } = true;
         public bool AlwaysShowMagicMenu { get; set; } = true;
+        public bool AddMushroomBoxRecipe { get; set; } = true;
         public bool SkipRequirements { get; set; } = false;
         public bool AddBridgeSeat { get; set; } = true;
         public bool UseLore { get; set; } = true;
         public bool SkipBuildingConditions { get; set; } = false;
         public bool UseCustomWeather { get; set; } = false;
-        public float LightLevel { get; set; } = 1f;
+        public bool ApplyWeatherFixes { get; set; } = true;
         public bool BuildCustomOnHomeFarm { get; set; } = true;      
         public KeybindList WarpRoomKey { get; set; } = new KeybindList(new Keybind(SButton.Z, SButton.LeftControl), new Keybind(SButton.Z, SButton.RightControl));
         public bool UseParallel = false;
@@ -27,6 +28,8 @@ namespace SDV_Realty_Core.Framework.Objects
         //  lighting parameters
         //
         public bool AddFishPondLight { get; set; } = true;
+        public float LightLevel { get; set; } = 1f;
+        public bool EnableBuildingLights { get; set; } = true;
         //
         //  grace period
         //

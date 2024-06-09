@@ -6,7 +6,7 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using System;
 
-namespace SDV_Realty_Core.Framework.ServiceProviders
+namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
 {
     internal class StaticClassService : IStaticClassService
     {

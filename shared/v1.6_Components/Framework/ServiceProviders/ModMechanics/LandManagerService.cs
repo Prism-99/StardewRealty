@@ -210,8 +210,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                     EntrancePatch oExpPatch;
                     int iGridRow;
                     int iGridCol;
-                    ExpansionPack oRightPack;
-                    EntrancePatch oRightExpPatch;
+                    //ExpansionPack oRightPack;
+                    //EntrancePatch oRightExpPatch;
                     int iPatchIndex;
 
                     switch (iGridId)
@@ -479,7 +479,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             }
             catch (Exception ex)
             {
-                logger?.Log($"Error AddingSignPost. {ex}", LogLevel.Error);
+                logger.Log($"Error AddingSignPost. {ex}", LogLevel.Error);
             }
         }
 
@@ -490,11 +490,11 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         /// <param name="sCaller"></param>
         internal void CheckForExpansionActivation(string sCaller)
         {
-            logger?.Log($"     LandManager CheckForExpansionActivation for {sCaller}", LogLevel.Debug);
 #if DEBUG_LOG
-            monitor.Log("Check for expansion activation: " + sCaller, LogLevel.Trace);
-            monitor.Log($"Player has {Game1.player.mailReceived.Count} messages", LogLevel.Info);
-            monitor.Log("Messages: " + string.Join(", ", Game1.player.mailReceived), LogLevel.Info);
+            logger.Log($"     LandManager CheckForExpansionActivation for {sCaller}", LogLevel.Debug);
+            logger.Log("Check for expansion activation: " + sCaller, LogLevel.Trace);
+            logger.Log($"Player has {Game1.player.mailReceived.Count} messages", LogLevel.Info);
+            logger.Log("Messages: " + string.Join(", ", Game1.player.mailReceived), LogLevel.Info);
 #endif
             foreach (string sKey in modDataService.farmExpansions.Keys)
             {
@@ -511,13 +511,13 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                         //  check if player received mail
                         //
 
-                        logger?.Log("      Checking for mailId: " + contentPackLoader.ValidContents[sKey].MailId, LogLevel.Debug);
+                        logger.Log("      Checking for mailId: " + contentPackLoader.ValidContents[sKey].MailId, LogLevel.Debug);
 
                         if (Game1.IsMultiplayer)
                         {
                             if (Game1.MasterPlayer.mailReceived.Contains(contentPackLoader.ValidContents[sKey].MailId) || Game1.MasterPlayer.mailbox.Contains(contentPackLoader.ValidContents[sKey].MailId))
                             {
-                                TriggerEvent("ActivateExpansion", new object[] { sKey });
+                                utilitiesService.CustomEventsService.TriggerCustomEvent("ActivateExpansion", new object[] { sKey });
                                 active = true;
                             }
                         }
@@ -528,7 +528,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                                 //
                                 //  mail received, activate expansion
                                 //
-                                TriggerEvent("ActivateExpansion", new object[] { sKey });
+                                utilitiesService.CustomEventsService.TriggerCustomEvent("ActivateExpansion", new object[] { sKey });
                                 active = true;
                             }
                         }
@@ -576,43 +576,53 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         }
         private void DayStarted(EventArgs e)
         {
-            NewLandMessageSentToday = false;
-            CheckMail();
-            CheckForExpansionActivation("DayStarted");
-        }
-        internal override void PurchaseLand(string expansionName, bool withPopup, long purchasedBy)
-        {
-            ExpansionPack oContent = contentPackLoader.ValidContents[expansionName];
-            try
+            if (utilitiesService.IsMasterGame())
             {
-                if (withPopup && Game1.IsMultiplayer)
-                {
-                    ChatSnippet oSnip = new ChatSnippet("Land bought", LocalizedContentManager.LanguageCode.en);
-                    utilitiesService.ModHelperService.modHelper.Multiplayer.SendMessage(new ChatMessage() { message = new List<ChatSnippet> { { oSnip } }, language = LocalizedContentManager.LanguageCode.en }, "Info");
-                }
-                if (Game1.IsMasterGame)
-                {
-                    if (!string.IsNullOrEmpty(oContent?.MailId))
-                    {
-                        logger?.Log("Sent purchase letter: " + oContent.MailId, LogLevel.Debug);
-                        Game1.MasterPlayer.mailForTomorrow.Add(oContent.MailId);
-                    }
-                    Game1.player.Money -= oContent?.Cost ?? 0;
-                    LandBought(oContent.LocationName ?? "", withPopup, purchasedBy);
-                }
-                else
-                {
-                    TriggerEvent("SendFarmHandPurchase", new object[] { expansionName });
-                    //multiplayerService.Multiplayer.SendFarmHandPurchase(expansionName);
-                }
+                NewLandMessageSentToday = false;
+                CheckMail();
+                CheckForExpansionActivation("DayStarted");
             }
-            catch (Exception ex)
+        }
+        internal override bool PurchaseLand(string expansionName, bool withPopup, long purchasedBy)
+        {
+            if (contentPackLoader.ValidContents.TryGetValue(expansionName, out ExpansionPack oContent))
             {
-                logger?.Log("Pick error: " + ex.ToString(), LogLevel.Error);
+                try
+                {
+                    if (withPopup && Game1.IsMultiplayer)
+                    {
+                        ChatSnippet oSnip = new ChatSnippet("Land bought", LocalizedContentManager.LanguageCode.en);
+                        utilitiesService.ModHelperService.modHelper.Multiplayer.SendMessage(new ChatMessage() { message = new List<ChatSnippet> { { oSnip } }, language = LocalizedContentManager.LanguageCode.en }, "Info");
+                    }
+                    if (Game1.IsMasterGame)
+                    {
+                        if (!string.IsNullOrEmpty(oContent?.MailId))
+                        {
+                            logger.Log("Sent purchase letter: " + oContent.MailId, LogLevel.Debug);
+                            Game1.MasterPlayer.mailForTomorrow.Add(oContent.MailId);
+                        }
+                        Game1.player.Money -= oContent?.Cost ?? 0;
+                        LandBought(oContent.LocationName ?? "", withPopup, purchasedBy);
+                    }
+                    else
+                    {
+                        TriggerEvent("SendFarmHandPurchase", new object[] { expansionName });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Log("Pick error: " + ex.ToString(), LogLevel.Error);
+                    return false;
+                }
+
+                if (withPopup)
+                    Game1.drawObjectDialogue(I18n.DeedTomorrow());
+
+                return true;
             }
 
-            if (withPopup)
-                Game1.drawObjectDialogue(I18n.DeedTomorrow());
+            logger.Log($"Attempt to purchase unknown expansion '{expansionName}'", LogLevel.Error);
+            return false;
         }
         internal override void LandBought(string sExpansionName, bool withPopup, long purchasedBy)
         {
@@ -625,7 +635,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             if (purchasedBy != 0)
                 modDataService.expDetails[sExpansionName].PurchasedBy = purchasedBy;
 
-            TriggerEvent("ActivateExpansion", new object[] { sExpansionName });
+            utilitiesService.CustomEventsService.TriggerCustomEvent("ActivateExpansion", new object[] { sExpansionName, modDataService.farmExpansions[sExpansionName].GridId });
         }
         internal void AddLandForSale(string expansionName)
         {
@@ -701,7 +711,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                         //
                         //  no offer mail, add for sale directly
                         //
-                        logger?.Log($"   {(string.IsNullOrEmpty(oPack.VendorMailId) ? "    No email requirements, putting for sale." : "    Received email, putting for sale.")}: {sExpansionName}", LogLevel.Debug);
+                        logger.Log($"   {(string.IsNullOrEmpty(oPack.VendorMailId) ? "    No email requirements, putting for sale." : "    Received email, putting for sale.")}: {sExpansionName}", LogLevel.Debug);
                         AddLandForSale(sExpansionName);
                     }
                     else if (oPack.Cost > 0 && !string.IsNullOrEmpty(oPack.VendorMailId))
@@ -712,7 +722,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                         //  the land will be put for sale after
                         //  the letter has been read
                         //
-                        logger?.Log($"  Requirements met, sending letter for {sExpansionName}", LogLevel.Debug);
+                        logger.Log($"  Requirements met, sending letter for {sExpansionName}", LogLevel.Debug);
                         SendPlayerMail(oPack.VendorMailId, sExpansionName, false, true);
                     }
                     else
@@ -720,7 +730,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                         //
                         //  no cost, just activate
                         //
-                        logger?.Log($"   No requirements, no cost ({oPack.Cost}), activating {sExpansionName}", LogLevel.Debug);
+                        logger.Log($"   No requirements, no cost ({oPack.Cost}), activating {sExpansionName}", LogLevel.Debug);
                         PurchaseLand(sExpansionName, false, -1);
                     }
                 }
@@ -742,11 +752,11 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                         if (!string.IsNullOrEmpty(oPack.MailId) && !modDataService.farmExpansions[sExpansionName].OfferLetterRead)
                         {
 
-                            logger?.Log("Sent free land letter: " + oPack.MailId, LogLevel.Debug);
+                            logger.Log("Sent free land letter: " + oPack.MailId, LogLevel.Debug);
 
                             SendPlayerMail(oPack.MailId, sExpansionName, false, true);
                         }
-                        TriggerEvent("ActivateExpansion", new object[] { oPack.LocationName });
+                        utilitiesService.CustomEventsService.TriggerCustomEvent("ActivateExpansion", new object[] { oPack.LocationName });
                     }
                     else if (bPassedRequirements)
                     {

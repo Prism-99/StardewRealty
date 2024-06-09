@@ -3,6 +3,8 @@ using StardewModdingAPI.Events;
 using StardewValley.GameData.Buildings;
 using System.Collections.Generic;
 using System;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Configuration;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 
 
 namespace SDV_Realty_Core.Framework.DataProviders
@@ -13,12 +15,12 @@ namespace SDV_Realty_Core.Framework.DataProviders
     /// 
     internal class BuildingsDataProvider : IGameDataProvider
     {
-        private bool skipConditions = false;
         private Dictionary<string, ICustomBuilding> CustomBuildings;
-        public BuildingsDataProvider(Dictionary<string, ICustomBuilding> customBuildings, bool skipBuildConditions)
+        private IUtilitiesService utilitiesService;
+        public BuildingsDataProvider(Dictionary<string, ICustomBuilding> customBuildings, IUtilitiesService utilitiesService)
         {
             CustomBuildings = customBuildings;
-            skipConditions = skipBuildConditions;
+            this.utilitiesService = utilitiesService;
         }
 
         public override string Name => "Data/Buildings";
@@ -40,7 +42,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                     try
                     {
                         BuildingData buildingData = CustomBuildings[buildingKey].BuildingDefinition();
-                        if (skipConditions)
+                        if (utilitiesService.ConfigService.config.SkipBuildingConditions)
                         {
                             //
                             //  remove any build conditions
@@ -60,7 +62,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
 
         public override void OnGameLaunched()
         {
-
+            utilitiesService.InvalidateCache(Name);
         }
     }
 }

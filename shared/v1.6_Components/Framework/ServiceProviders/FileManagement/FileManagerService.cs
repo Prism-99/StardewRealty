@@ -2,7 +2,6 @@
 using SDV_Realty_Core.ContentPackFramework.FileManagement;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.FileManagement;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
 using System;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.FileManagement
@@ -28,7 +27,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.FileManagement
             ISaveManagerService saveManagerService = (ISaveManagerService)args[0];
             IUtilitiesService utilitiesService = (IUtilitiesService)args[1];
 
-            LoadGameMenu = new FileManager((SDVLogger)logger.CustomLogger, utilitiesService.PatchingService.patches, saveManagerService);
+            LoadGameMenu = new FileManager(logger, utilitiesService.PatchingService, saveManagerService);
         }
     }
 }

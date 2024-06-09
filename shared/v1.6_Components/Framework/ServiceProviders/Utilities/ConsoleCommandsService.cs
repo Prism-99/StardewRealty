@@ -7,18 +7,20 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using System;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using SDV_Realty_Core.Framework.ServiceInterfaces.GUI;
 
-namespace SDV_Realty_Core.Framework.ServiceProviders
+namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
 {
     internal class ConsoleCommandsService : IConsoleCommandsService
     {
 
         public override Type[] InitArgs => new Type[] 
-        {typeof(IModHelperService),typeof(IGameEventsService),
-        typeof(IUtilitiesService),typeof(IFishStockService),
-        typeof(ILandManager),typeof(IModDataService),
-        typeof(IJunimoHarvesterService),typeof(IContentManagerService),
-        typeof(IValleyStatsService)
+        {
+            typeof(IModHelperService),typeof(IGameEventsService),
+            typeof(IUtilitiesService),typeof(IFishStockService),
+            typeof(ILandManager),typeof(IModDataService),
+            typeof(IJunimoHarvesterService),typeof(IContentManagerService),
+            typeof(IValleyStatsService),typeof(IMapRendererService)
         };
         private IModHelper helper;
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -41,13 +43,14 @@ namespace SDV_Realty_Core.Framework.ServiceProviders
             IJunimoHarvesterService junimoHarvesterService = (IJunimoHarvesterService)args[6];
             IContentManagerService contentManager = (IContentManagerService)args[7];
             IValleyStatsService valleyStatsService = (IValleyStatsService)args[8];
+            IMapRendererService  mapRendererService = (IMapRendererService)args[9];
 
-            eventsService.AddSubscription(IGameEventsService.EventTypes.ContentLoaded, AddCommands);
+            eventsService.AddSubscription(IGameEventsService.EventTypes.ContentLoaded, HandleContentLoaded);
 
-            consoleCommands=new ConsoleCommands(logger, utilities, fishStockService, landManager, junimoHarvesterService, modDataService, contentManager, valleyStatsService);
+            consoleCommands=new ConsoleCommands(logger, utilities, fishStockService, landManager, junimoHarvesterService, modDataService, contentManager, valleyStatsService, mapRendererService);
         }
 
-        private void AddCommands()
+        private void HandleContentLoaded()
         {
             consoleCommands.AddCommands(helper);
         }

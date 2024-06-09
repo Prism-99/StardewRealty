@@ -21,10 +21,11 @@ namespace SDV_Realty_Core.Framework.AssetUtils
             //
             //  add version data handlers
             //
-            ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}Images{FEConstants.AssetDelimiter}WorldMap.png", Path.Combine(helper.DirectoryPath,"data","assets","worldmap.png"));
-            ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}Images{FEConstants.AssetDelimiter}WorldMap_ForSale.png", Path.Combine(helper.DirectoryPath, "data", "assets", "WorldMap_ForSale.png"));
-            ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}Images{FEConstants.AssetDelimiter}WorldMap_ForFuture.png", Path.Combine(helper.DirectoryPath, "data", "assets", "WorldMap_ForFuture.png"));
-            ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}Images{FEConstants.AssetDelimiter}WorldMap_ComingSoon.png", Path.Combine(helper.DirectoryPath, "data", "assets", "WorldMap_ComingSoon.png"));
+            //  graphics moved to WorldMapDataProviders
+            //ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap.png", Path.Combine(helper.DirectoryPath,"data","assets","worldmap.png"));
+            //ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap_ForSale.png", Path.Combine(helper.DirectoryPath, "data", "assets", "WorldMap_ForSale.png"));
+            //ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap_ForFuture.png", Path.Combine(helper.DirectoryPath, "data", "assets", "WorldMap_ForFuture.png"));
+            //ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}WorldMap_ComingSoon.png", Path.Combine(helper.DirectoryPath, "data", "assets", "WorldMap_ComingSoon.png"));
             ////
             ////  add expansions
             ////
@@ -162,8 +163,8 @@ namespace SDV_Realty_Core.Framework.AssetUtils
         //                            e.LoadFrom(() => { return ContentPacks.ExpansionMaps[mapName]; }, AssetLoadPriority.Medium);
         //                        }
         //                        break;
-        //                    case "Images":
-        //                        string imagePath = Path.Combine(helper.DirectoryPath, "data", "assets", "Images", urlParts[2]);
+        //                    case "images":
+        //                        string imagePath = Path.Combine(helper.DirectoryPath, "data", "assets", "images", urlParts[2]);
         //                        if (File.Exists(imagePath))
         //                        {
         //                            e.LoadFrom(() => { return new StardewBitmap(imagePath).Texture(); }, AssetLoadPriority.Medium);

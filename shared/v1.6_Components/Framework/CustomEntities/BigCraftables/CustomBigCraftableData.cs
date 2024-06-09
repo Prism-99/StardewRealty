@@ -4,7 +4,6 @@ using System.Linq;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks;
 using Newtonsoft.Json;
 using System.IO;
-using SDV_Realty_Core.Framework.CustomEntities.Objects;
 using SDV_Realty_Core.Framework.CustomEntities.Machines;
 
 namespace SDV_Realty_Core.Framework.CustomEntities.BigCraftables

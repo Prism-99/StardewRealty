@@ -2,7 +2,7 @@
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
 using StardewModdingAPI.Events;
 using StardewValley.GameData.Machines;
-
+using SDV_Realty_Core.Framework.CustomEntities.Machines;
 
 namespace SDV_Realty_Core.Framework.DataProviders
 {
@@ -33,7 +33,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
         {
             e.Edit(asset =>
             {
-                foreach (var machine in _machineDataService.Machines.Values)
+                foreach (CustomMachineData machine in _machineDataService.Machines.Values)
                 {
                     //if (!FEFramework.IsAutomateInstalled())
                     //{

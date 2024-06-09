@@ -1,11 +1,10 @@
 ﻿using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
 using StardewModdingAPI.Events;
 using System;
-
+using System.Collections.Generic;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
 {
@@ -43,11 +42,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
             customMachineDataService = (ICustomMachineDataService)args[7];
             customLocationContextService = (ICustomLocationContextService)args[8];
             customMovieService = (ICustomMovieService)args[9];
-            //IMonitorService monitorService = (IMonitorService)args[1];
-            //IPatchingService patchingService = (IPatchingService)args[2];
-
-
-
+  
             IModHelper helper = utilitiesService.ModHelperService.modHelper;
             contentManager = contentManagerService.contentManager;
             IMonitor monitor = utilitiesService.MonitorService.monitor;
@@ -94,35 +89,35 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
             //
             //  BigCraftables
             //            
-            foreach (var extRef in customBigCraftableService.ExternalReferences)
+            foreach (KeyValuePair<string, object> extRef in customBigCraftableService.ExternalReferences)
             {
                 contentManager.ExternalReferences.Add(extRef.Key, extRef.Value);
             }
             //
             //  buildings
             //
-            foreach(var buildingRef in customBuildingService.ExternalReferences)
+            foreach (KeyValuePair<string, object> buildingRef in customBuildingService.ExternalReferences)
             {
                 contentManager.ExternalReferences.Add(buildingRef.Key, buildingRef.Value);
             }
             //
             //  crops
             //
-            foreach(var cropRef in customCropService.ExternalReferences)
+            foreach (KeyValuePair<string, object> cropRef in customCropService.ExternalReferences)
             {
                 contentManager.ExternalReferences.Add(cropRef.Key, cropRef.Value);
             }
             //
             //  movies
             //
-            foreach(var movieRef in customMovieService.ExternalReferences)
+            foreach(KeyValuePair<string, object> movieRef in customMovieService.ExternalReferences)
             {
                 contentManager.ExternalReferences.Add(movieRef.Key, movieRef.Value);
             }
             //
             //  objects
             //
-            foreach(var objExtRef in customObjectService.ExternalReferences)
+            foreach(KeyValuePair<string, object> objExtRef in customObjectService.ExternalReferences)
             {
                 contentManager.ExternalReferences.Add(objExtRef.Key, objExtRef.Value);
             }

@@ -3,7 +3,6 @@ using SDV_Realty_Core.Framework.Utilities;
 using System;
 using System.Collections.Generic;
 using SDV_Realty_Core.Framework.Expansions;
-using Prism99_Core.Utilities;
 using SDict = Prism99_Core.Objects.SerializableDictionary<string, SDV_Realty_Core.Framework.Expansions.FarmExpansionLocation>;
 using StardewModdingAPI.Events;
 using System.IO;
@@ -15,24 +14,23 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using System.Xml.Serialization;
 using StardewModdingAPI.Enums;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
-
+using System.Security.Cryptography.X509Certificates;
 
 
 namespace SDV_Realty_Core.Framework.Saves
 {
-    internal  class SaveManagerV2
+    internal class SaveManagerV2
     {
         //
         //  verions 1.6
         //
-        private  SDVLogger logger;
-        private  bool ExpansionLoaded = false;
+        private ILoggerService logger;
+        private bool ExpansionLoaded = false;
         //
         //  
         //
-        private  IModHelper helper;
-        public  XmlSerializer locationSerializer = new XmlSerializer(typeof(SDict));
+        private IModHelper helper;
+        public XmlSerializer locationSerializer = new XmlSerializer(typeof(SDict));
         //public  XmlSerializer OldlocationSerializer = new XmlSerializer(typeof(SDictOld));
         private IUtilitiesService utilitiesService;
         private IWarproomService warproomService;
@@ -41,12 +39,12 @@ namespace SDV_Realty_Core.Framework.Saves
         private IContentPackService contentPackService;
         private IExitsService exitsService;
         private IModDataService modDataService;
-        private  List<GameLocation> savedCustomBuildingsInteriors = new List<GameLocation> { };
-        public  void Initialize(SDVLogger errorLogger, IUtilitiesService  utilitiesService, IWarproomService warproomService, IGridManager gridManager, IExpansionManager expansionManager, IContentPackService contentPackService,IExitsService exitsService, IModDataService modDataService)
+        private List<GameLocation> savedCustomBuildingsInteriors = new List<GameLocation> { };
+        public void Initialize(ILoggerService errorLogger, IUtilitiesService utilitiesService, IWarproomService warproomService, IGridManager gridManager, IExpansionManager expansionManager, IContentPackService contentPackService, IExitsService exitsService, IModDataService modDataService)
         {
             this.utilitiesService = utilitiesService;
             this.warproomService = warproomService;
-            this.gridManager= gridManager;
+            this.gridManager = gridManager;
             this.expansionManager = expansionManager;
             this.contentPackService = contentPackService;
             this.exitsService = exitsService;
@@ -62,7 +60,7 @@ namespace SDV_Realty_Core.Framework.Saves
         /// <summary>Raised before the game begins writes data to the save file (except the initial save creation).</summary>
         /// <param name="sender">The event sender.</param>
         /// <param name="e">The event data.</param>
-        public  void GameLoop_SaveCreating( EventArgs e)
+        public void GameLoop_SaveCreating(EventArgs e)
         {
             logger.Log("GameLoop_SaveCreating", LogLevel.Debug);
             //
@@ -80,13 +78,16 @@ namespace SDV_Realty_Core.Framework.Saves
             LoadStageChangedEventArgs evArgs = (LoadStageChangedEventArgs)e;
             if (evArgs.NewStage == LoadStage.SaveAddedLocations)
             {
-
+                //
+                //  expansions have been loaded and added to the map
+                //  need to patch map exits
+                //
                 LoadActiveExpansions();
             }
         }
-        internal  void Specialized_LoadStageChanged(EventArgs e)
+        internal void Specialized_LoadStageChanged(EventArgs e)
         {
-            LoadStageChangedEventArgs evArgs=(LoadStageChangedEventArgs)e;
+            LoadStageChangedEventArgs evArgs = (LoadStageChangedEventArgs)e;
             logger.Log($"SaveManager.Specialized_LoadStageChange - {evArgs.NewStage}", LogLevel.Debug);
             //
             //  called by master and split-screen players
@@ -96,7 +97,7 @@ namespace SDV_Realty_Core.Framework.Saves
                 //
                 //  called by existing save load
                 //
-                LoadLocations(evArgs.NewStage.ToString());
+                LoadSaveFile(evArgs.NewStage.ToString());
                 // moved to ILandManagerService
                 //FEFramework.CheckForExpansionActivation("SaveManager.LoadStageChanged");
             }
@@ -105,15 +106,49 @@ namespace SDV_Realty_Core.Framework.Saves
                 //
                 //  called by new game load
                 //
-                LoadLocations(evArgs.NewStage.ToString());
+                LoadSaveFile(evArgs.NewStage.ToString());
                 // added trigger in ExpansionManager
                 //expansionManager.expansionManager.ReAddActiveExpansions();
             }
         }
 
         #endregion
+        internal string GetDataDirectoryLocation()
+        {
+            string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string dataDirectory= Path.Combine(appDataPath, "StardewValley", "StardewRealty");
 
-        internal  void DeleteSave(string saveName)
+            if(!Directory.Exists(dataDirectory))
+            {
+                Directory.CreateDirectory(dataDirectory);
+                MigrateSaveFiles(dataDirectory);
+            }
+            return dataDirectory;
+        }
+        private void MigrateSaveFiles(string destinationDirectoy)
+        {
+            //
+            //  migrate save data from old save directory (ModDir\pslocationdata)
+            //  to new directory (User\AppData\Roaming\StardewValley\destinationDirectory)
+            //
+            logger.Log($"Migrating Stardew Realty data directory",LogLevel.Info);
+            string oldDirectoy = Path.Combine(utilitiesService.ModHelperService.DirectoryPath, "pslocationdata");
+            if(Directory.Exists(oldDirectoy))
+            {
+                //
+                //  move save data to new location
+                //
+                var dir = new DirectoryInfo(oldDirectoy);
+  
+                // Get the files in the source directory and copy to the destination directory
+                foreach (FileInfo file in dir.GetFiles())
+                {
+                    string targetFilePath = Path.Combine(destinationDirectoy, file.Name);
+                    file.CopyTo(targetFilePath);
+                }
+            }
+        }
+        internal void DeleteSave(string saveName)
         {
             //
             //  called when game slot is being deleted
@@ -122,7 +157,8 @@ namespace SDV_Realty_Core.Framework.Saves
             //
             if (!string.IsNullOrEmpty(saveName) && saveName != "*" && saveName != "*.*")
             {
-                List<string> saveNames = Directory.GetFiles(Path.Combine(helper.DirectoryPath, "pslocationdata"), $"*{saveName}.*").ToList();
+                string saveDir=GetDataDirectoryLocation();
+                List<string> saveNames = Directory.GetFiles(saveDir, $"*{saveName}.*").ToList();
 
                 if (saveNames.Count < 5)
                 {
@@ -140,7 +176,7 @@ namespace SDV_Realty_Core.Framework.Saves
                 }
             }
         }
-        private  void Load()
+        private void Load(string filename = null, bool loadOnly = false)
         {
             //
             //  on save loaded, load details of saved expansions
@@ -155,9 +191,15 @@ namespace SDV_Realty_Core.Framework.Saves
             //
             logger?.Log("SaveManager.Load called", LogLevel.Debug);
 
-            Save_V1_6 save_V1_6 = new Save_V1_6(logger, helper,expansionManager,gridManager);
+            Save_V1_6 save_V1_6 = new Save_V1_6(logger, helper, expansionManager, gridManager);
 
-            if (save_V1_6.LoadSaveFile(save_V1_6.GetSaveFilename()))
+            string saveFilename = filename;
+            if (string.IsNullOrEmpty(saveFilename))
+            {
+                saveFilename = save_V1_6.GetSaveFilename(GetDataDirectoryLocation());
+            }
+
+            if (save_V1_6.LoadSaveFile(saveFilename, loadOnly))
             {
                 //
                 //  update world map
@@ -172,9 +214,9 @@ namespace SDV_Realty_Core.Framework.Saves
 
                 return;
             }
-            else if (save_V1_6.BackupExists(out string backupPath))
+            else if (save_V1_6.BackupExists(GetDataDirectoryLocation(), out string backupPath))
             {
-                if (save_V1_6.LoadSaveFile(backupPath))
+                if (save_V1_6.LoadSaveFile(backupPath, loadOnly))
                 {
                     logger.Log("Backup file used.", LogLevel.Info);
                     //
@@ -190,7 +232,7 @@ namespace SDV_Realty_Core.Framework.Saves
                 }
             }
         }
-        internal  void PreSaveProcessing(EventArgs e)
+        internal void PreSaveProcessing(EventArgs e)
         {
             //
             //  remove expansions from Game1.locations
@@ -198,13 +240,13 @@ namespace SDV_Realty_Core.Framework.Saves
             try
             {
                 logger.Log("SaveManager.PreSaveProcessing", LogLevel.Debug);
-                Save();
+                SaveFile();
             }
             catch
             { }
 
 
-            logger.Log($"SM.PreSaveProcessing. {modDataService.farmExpansions.Count} farmExpansions records.", LogLevel.Debug);
+            logger.Log($"SaveManager.PreSaveProcessing. {modDataService.farmExpansions.Count} Expansion records.", LogLevel.Debug);
 
             savedCustomBuildingsInteriors = new List<GameLocation> { };
             //
@@ -269,7 +311,7 @@ namespace SDV_Realty_Core.Framework.Saves
                     logger?.Log($"LocationExpansion {locationExpansion.Name} did not get cleared.", LogLevel.Debug);
                     Game1._locationLookup.Remove(locationExpansion.Name);
                 }
-                if (gameLocation.modData.ContainsKey(FEModDataKeys.FELocationName))
+                if (gameLocation.modData.ContainsKey(IModDataKeysService.FELocationName))
                 {
                     //
                     //  remove expansion buidling interiors
@@ -280,7 +322,7 @@ namespace SDV_Realty_Core.Framework.Saves
             }
 
         }
-        internal  void DoDayStartedTasks(EventArgs e)
+        internal void DoDayStartedTasks(EventArgs e)
         {
 
             logger.Log("Running SM.DoDayStartedTasks", LogLevel.Debug);
@@ -290,18 +332,18 @@ namespace SDV_Realty_Core.Framework.Saves
             LoadBaseFarmData();
         }
 
-        private  void Save()
+        internal void SaveFile()
         {
-            Save_V1_6 dataSaver = new Save_V1_6(logger, helper,expansionManager,gridManager);
-            if (dataSaver.SaveFile(dataSaver.GetSaveFilename()))
+            Save_V1_6 dataSaver = new Save_V1_6(logger, helper, expansionManager, gridManager);
+            if (dataSaver.SaveFile(dataSaver.GetSaveFilename(GetDataDirectoryLocation())))
             {
-                 logger.Log($"Farm Expansions saved to {dataSaver.GetSaveFilename()}", LogLevel.Debug);
+                logger.Log($"Farm Expansions saved to {dataSaver.GetSaveFilename(GetDataDirectoryLocation())}", LogLevel.Debug);
                 return;
             }
             //
             //  save expansion details
             //
-            string saveFilename = Path.Combine(helper?.DirectoryPath ?? "", "pslocationdata", $"{Constants.SaveFolderName}.xml");
+            string saveFilename = Path.Combine(GetDataDirectoryLocation(), $"{Constants.SaveFolderName}.xml");
             string saveDirectory = Path.GetDirectoryName(saveFilename);
 
             if (saveDirectory == null)
@@ -360,12 +402,12 @@ namespace SDV_Realty_Core.Framework.Saves
 
             //logger.Log($"Farm Expansions saved to {saveFilename}", LogLevel.Debug);
         }
-        internal  void SaveCreated(EventArgs e)
+        internal void SaveCreated(EventArgs e)
         {
             //LoadLocations("SM.SaveCreated");
             expansionManager.expansionManager.ReAddActiveExpansions();
         }
-        internal  void LoadLocations(string loadContext)
+        internal void LoadSaveFile(string loadContext, string saveFilename = null, bool loadOnly = false)
         {
             //
             //  includes warp room
@@ -380,28 +422,32 @@ namespace SDV_Realty_Core.Framework.Saves
 
             //
             //  load expansion locations
-            //
-            expansionManager.expansionManager.LoadLocationDefinition(loadContext);
+            //  moved to expansionmanager
+            //expansionManager.expansionManager.LoadLocationDefinition(loadContext);
 
             // moved to FEFramework.GameLoop_SaveLoaded
             //SDRMultiplayer.AddHooks(helper)
-
-            if (P99Core_MultiPlayer.IsMasterGame && File.Exists(Path.Combine(helper?.DirectoryPath ?? "", "pslocationdata", $"{Constants.SaveFolderName}.xml")))
+            string filename = saveFilename;
+            if (string.IsNullOrEmpty(filename))
+            {
+                filename = Path.Combine(GetDataDirectoryLocation(), $"{Constants.SaveFolderName}.xml");
+            }
+            if (P99Core_MultiPlayer.IsMasterGame && File.Exists(filename))
             {
                 //
                 //  data exists for this save, load it
                 //
-                Load();
+                Load(filename, loadOnly);
             }
         }
 
 
-        internal  void LoadBaseFarmData()
+        internal void LoadBaseFarmData()
         {
             //
             //  read custom buildings on base farm
             //
-            string saveFilePath = Path.Combine(helper?.DirectoryPath ?? "", "pslocationdata", $"{Game1.getFarm().Name}_{Constants.SaveFolderName}.xml");
+            string saveFilePath = Path.Combine(GetDataDirectoryLocation(), $"{Game1.getFarm().Name}_{Constants.SaveFolderName}.xml");
 
             if (File.Exists(saveFilePath))
             {
@@ -515,9 +561,9 @@ namespace SDV_Realty_Core.Framework.Saves
         //        logger?.Log($"Checking building {pBuilding.NameOfIndoors ?? building.buildingType.Value}", LogLevel.Debug);
         //        logger?.Log($"Building Type {building.buildingType.Value ?? "Unknown"}", LogLevel.Debug);
 
-        //        if (!building.modData.ContainsKey(FEModDataKeys.FELocationName))
+        //        if (!building.modData.ContainsKey(IModDataKeysService.FELocationName))
         //        {
-        //            building.modData.Add(FEModDataKeys.FELocationName, sExpName);
+        //            building.modData.Add(IModDataKeysService.FELocationName, sExpName);
         //        }
 
         //        //logger?.Log($"Loading Building: {building.nameOfIndoorsWithoutUnique}", LogLevel.Debug);
@@ -526,9 +572,9 @@ namespace SDV_Realty_Core.Framework.Saves
 
         //        if (building.indoors?.Value != null && building.indoors.Value is AnimalHouse oHouse)
         //        {
-        //            if (!oHouse.modData.ContainsKey(FEModDataKeys.FELocationName))
+        //            if (!oHouse.modData.ContainsKey(IModDataKeysService.FELocationName))
         //            {
-        //                oHouse.modData.Add(FEModDataKeys.FELocationName, sExpName);
+        //                oHouse.modData.Add(IModDataKeysService.FELocationName, sExpName);
         //            }
         //            //
         //            // do animal check
@@ -586,7 +632,7 @@ namespace SDV_Realty_Core.Framework.Saves
         //    }
         //}
 
-        private  void LoadActiveExpansions()
+        private void LoadActiveExpansions()
         {
 
             if (ExpansionLoaded)
@@ -610,7 +656,7 @@ namespace SDV_Realty_Core.Framework.Saves
                         logger.Log($"     Restoring {expansionLocation.Name}", LogLevel.Debug);
                         if (expansionLocation.GridId == -1)
                         {
-                            expansionLocation.GridId = gridManager.AddMapToGrid(expansionLocation.Name);
+                            expansionLocation.GridId = gridManager.AddMapToGrid(expansionLocation.Name, -1);
                         }
                         //  add to Game1.locations
                         expansionManager.expansionManager.AddGameLocation(expansionLocation, "LoadActiveExpansions");
@@ -622,9 +668,8 @@ namespace SDV_Realty_Core.Framework.Saves
                         {
                             expansionLocation.animals.Pairs.ElementAt(animalIndex).Value.warpHome();
                         }
-                        //AfterAppendEvent?.Invoke(oExp, EventArgs.Empty);
                         //  add exit signs
-                        gridManager.AddSign(modDataService.validContents[expansionLocation.Name]);
+                        //gridManager.AddSign(modDataService.validContents[expansionLocation.Name]);
                         modDataService.expDetails[expansionLocation.Name].Active = true;
                     }
                 }
@@ -648,29 +693,29 @@ namespace SDV_Realty_Core.Framework.Saves
                 ExpansionLoaded = true;
             }
         }
-        internal  void SetupForNewDay(EventArgs e)
-        {
-            //
-            //  
-            //
-            //  called at the begining of a new day
-            //  to restored all base farm data
-            //
-            logger.Log("SaveManager.SetupForNewDay started", LogLevel.Debug);
-            //
-            //  restore active expansions
-            //
-            //LoadActiveExpansions();
-            //
-            //  re-add the warp room
-            //moved to WarpRoomManager
-            //warproomService.warproomManager.AddWarpRoom();
+        //internal void SetupForNewDay(EventArgs e)
+        //{
+        //    //
+        //    //  
+        //    //
+        //    //  called at the begining of a new day
+        //    //  to restored all base farm data
+        //    //
+        //    logger.Log("SaveManager.SetupForNewDay started", LogLevel.Debug);
+        //    //
+        //    //  restore active expansions
+        //    //
+        //    //LoadActiveExpansions();
+        //    //
+        //    //  re-add the warp room
+        //    //moved to WarpRoomManager
+        //    //warproomService.warproomManager.AddWarpRoom();
 
-            //
-            //  restore custom buildings to the base Farm
-            //
+        //    //
+        //    //  restore custom buildings to the base Farm
+        //    //
 
-            //LoadBaseFarmData(); 
-        }
+        //    //LoadBaseFarmData(); 
+        //}
     }
 }

@@ -21,6 +21,10 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.GUI;
 using SDV_Realty_Core.Framework.ServiceProviders.Services;
 using System;
 using System.IO;
+using System.Collections.Generic;
+using StardewModdingAPI.Events;
+using static SDV_MapRenderer.SDVMapRenderer;
+using SDV_MapRenderer;
 
 namespace SDV_Realty_Core.Framework.Objects
 {
@@ -50,7 +54,7 @@ namespace SDV_Realty_Core.Framework.Objects
             //
             //  initialize Service Manager
             //
-            servicesManager = new ServicesManager(new SDVServiceLogger(Monitor,helper));
+            servicesManager = new ServicesManager(new SDVServiceLogger(Monitor, helper));
             //
             //  add base mod services
             servicesManager.AddService(new ModHelperService(Helper));
@@ -65,7 +69,7 @@ namespace SDV_Realty_Core.Framework.Objects
             servicesManager.AddService(new AutoMapService());
             servicesManager.AddService(new CGCMIntergrationService());
             servicesManager.AddService(new ModAPIService());
-            servicesManager.AddService(new FrameworkService());
+            //servicesManager.AddService(new FrameworkService());
             servicesManager.AddService(new GridManager());
             servicesManager.AddService(new MapUtilities());
             servicesManager.AddService(new PatchingService());
@@ -81,9 +85,9 @@ namespace SDV_Realty_Core.Framework.Objects
             servicesManager.AddService(new GameEnviromentService());
             servicesManager.AddService(new ThreadSafeLoaderService());
             servicesManager.AddService(new ValleyStatsService());
+            servicesManager.AddService(new LocationDataProviderService());
             //
             //  add event services
-            //
             //
             servicesManager.AddService(new CustomEventsService());
             servicesManager.AddService(new GameEventsService());
@@ -102,6 +106,9 @@ namespace SDV_Realty_Core.Framework.Objects
             servicesManager.AddService(new SaveManagerService());
             servicesManager.AddService(new MineCartMenuService());
             servicesManager.AddService(new MapRendererService());
+            servicesManager.AddService(new LocationDisplayService());
+            servicesManager.AddService(new WorldMapMenuService());
+            servicesManager.AddService(new WorldMapPatchService());
             //
             //  add patch services
             //
@@ -142,13 +149,14 @@ namespace SDV_Realty_Core.Framework.Objects
             servicesManager.AddService(new JunimoHarvesterService());
             servicesManager.AddService(new FileManagerService());
             servicesManager.AddService(new PLayerMComms());
+            servicesManager.AddService(new TreasureManagerService());
             //
             //  add the main application sservice
             //
             servicesManager.AddService(new StardewRealtyService());
 
 #if DEBUG
-            servicesManager.DumpConfiguration();
+            //servicesManager.DumpConfiguration();
             servicesManager.VerifyServices();
 #endif
             //
@@ -157,13 +165,18 @@ namespace SDV_Realty_Core.Framework.Objects
             var mod = servicesManager.GetService<IStardewRealty>(typeof(IStardewRealty));
 
 #if DEBUG
-            var gameEventService = servicesManager.GetService<IGameEventsService>(typeof(IGameEventsService));
-            var customEventService = servicesManager.GetService<ICustomEventsService>(typeof(ICustomEventsService));
-            gameEventService.DumpSubscriptions();
-            customEventService.DumpSubscriptions();
+            //var gameEventService = servicesManager.GetService<IGameEventsService>(typeof(IGameEventsService));
+            //var customEventService = servicesManager.GetService<ICustomEventsService>(typeof(ICustomEventsService));
+            //gameEventService.DumpSubscriptions();
+            //customEventService.DumpSubscriptions();
 
             //  dump map renderings
             //gameEventService.AddSubscription(new SaveLoadedEventArgs(), SaveLoaded);
+            //
+            //  unit testing
+            //
+            //var saveManager=servicesManager.GetService<ISaveManagerService>(typeof(ISaveManagerService));
+            //saveManager.UnitTest();
 #endif
         }
         private void SaveLoaded(EventArgs e)
@@ -175,48 +188,78 @@ namespace SDV_Realty_Core.Framework.Objects
             //
             var dataService = servicesManager.GetService<IModDataService>(typeof(IModDataService));
             var mapRenderer = servicesManager.GetService<IMapRendererService>(typeof(IMapRendererService));
+            var locationData = servicesManager.GetService<ILocationDataProvider>(typeof(ILocationDataProvider));
+
             var logger = servicesManager.GetService<ILoggerService>(typeof(ILoggerService));
 
-            foreach (var bMap in dataService.BuildingMaps)
-            {
-                try
-                {
-                    mapRenderer.RenderMap(bMap.Value).Save($"RenderedMaps/{Path.GetFileNameWithoutExtension(bMap.Key)}.png");
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError($"Render Building Map {Path.GetFileNameWithoutExtension(bMap.Key)}", ex);
-                }
-            }
-            //
-            //  dump expansion maps only
-            //
-            //foreach(var eMap in dataService.ExpansionMaps)
+            //foreach (KeyValuePair<string, xTile.Map> bMap in dataService.BuildingMaps)
             //{
             //    try
             //    {
-            //        mapRenderer.RenderMap(eMap.Value).Save($"RenderedMaps/{eMap.Key}.png");
+            //        mapRenderer.RenderMap(bMap.Value,null,false).Save($"RenderedMaps/{Path.GetFileNameWithoutExtension(bMap.Key)}.png");
             //    }
             //    catch (Exception ex)
             //    {
-            //        string err = ex.ToString();
-            //        int xx = 1;
+            //        logger.LogError($"Render Building Map {Path.GetFileNameWithoutExtension(bMap.Key)}", ex);
             //    }
-
             //}
             //
-            //  render all location maps in the game
+            //  dump expansion maps only
             //
-            foreach (var gameLocation in Game1.locations)
+            foreach (var eMap in dataService.ExpansionMaps)
             {
                 try
                 {
-                    mapRenderer.RenderMap(gameLocation.map).Save($"RenderedMaps/{gameLocation.Name}.png");
+                    //
+                    //  get season, if active
+                    //
+                    GameLocation gl = Game1.getLocationFromName(eMap.Key);
+                    Season locationSeason = Season.Spring;
+                    if (gl != null)
+                    {
+                        locationSeason = gl.GetSeason();
+                    }
+
+                    SDVMapRenderer.MapOptions mapOptions = new SDVMapRenderer.MapOptions
+                    {
+                        ShowFishAreas = true,
+                        ShowFishAreaName = true,
+                        IsWinter = locationSeason == Season.Winter,
+                        DrawBuildings = true,
+                        DrawPropertyIndicator = true,
+                        SkipPathsLayer = true
+                    };
+
+                    //mapRenderer.RenderMap(eMap.Value.assetPath, mapOptions);
+                    mapRenderer.RenderMap(eMap.Value, locationData.GetData(eMap.Key), mapOptions).Save($"expansionmaps/{eMap.Key}.png");
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError($"Render Location Map {gameLocation.Name}", ex);
+                    servicesManager.logger.LogError($"Render Location Map {eMap.Key}", ex);
                 }
+
+                //}
+                //
+                //  render all location maps in the game
+                //
+                //foreach (var gameLocation in Game1.locations)
+                //{
+                //    try
+                //    {
+                //        SDVMapRenderer.MapOptions mapOptions = new SDVMapRenderer.MapOptions
+                //        {
+                //            ShowFishAreas = true,
+                //            ShowFishAreaName = true,
+                //            IsWinter = gameLocation.GetSeason() == Season.Winter,
+                //            DrawBuildings = true
+                //        };
+
+                //        mapRenderer.RenderMap(gameLocation, mapOptions).Save($"RenderedMaps/{gameLocation.Name}.png");
+                //    }
+                //    catch (Exception ex)
+                //    {
+                //        servicesManager.logger.LogError($"Render Location Map {gameLocation.Name}", ex);
+                //    }
 
             }
         }

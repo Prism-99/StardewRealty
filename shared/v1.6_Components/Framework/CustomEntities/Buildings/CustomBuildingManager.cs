@@ -92,12 +92,12 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Buildings
                 }
                 else
                 {
-                    logger.Log($"Missing custom Building directory '{buildingRoot}'", LogLevel.Warn);
+                    logger.Log($"Missing custom Building directory '{buildingRoot}'", LogLevel.Debug);
                 }
             }
             catch(Exception ex)
             {
-
+                logger.Log($"Error loading building defintion: {ex}", LogLevel.Error);
             }
         }
         /// <summary>
@@ -147,7 +147,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Buildings
                 //  add building map to the content manager
                 assetPath = $"Maps{FEConstants.AssetDelimiter}{buildng.Key}{FEConstants.AssetDelimiter}{buildng.Value.InteriorMapName}";
                 Maps.Add(assetPath, buildng.Value.InteriorMap);
-                logger.Log($"Loaded Building Interior map {assetPath} for building {buildng.Value.DisplayName}", LogLevel.Trace);
+                logger.Log($"Loaded Building Interior map {assetPath} for building { buildng.Value.Name}", LogLevel.Debug);
                 // FEFramework.ContentManager.ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}Buildings{FEConstants.AssetDelimiter}{buildng.Key}{FEConstants.AssetDelimiter}{buildng.Value.InteriorMapName}", buildingMap);
             }
             //
@@ -160,12 +160,12 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Buildings
 
                 string assetPath = $"SDR{FEConstants.AssetDelimiter}Buildings{FEConstants.AssetDelimiter}" + nBuild.Name;
                 ExternalReferences.Add(assetPath, new StardewBitmap(nBuild.BuildingTexture()).Texture());
-                logger.Log($"Loaded Building texture {assetPath} for building {nBuild.DisplayName}", LogLevel.Trace);
+                logger.Log($"Loaded Building texture {assetPath} for building {nBuild.DisplayName}", LogLevel.Debug);
 
                 foreach (var asset in nBuild.ExternalReferences)
                 {
                     ExternalReferences.Add(asset.Key, asset.Value);
-                    logger.Log($"Loaded Building texture {asset.Key} for building {nBuild.DisplayName}", LogLevel.Trace);
+                    logger.Log($"Loaded Building texture {asset.Key} for building {nBuild.DisplayName}", LogLevel.Debug);
                 }
 
                 //Map buildingMap = nBuild.InteriorMap;// MapLoader.LoadMap(SDVEnvironment.GamePath, nBuild.MapAssetPath(), nBuild.Name, false, true, false);
@@ -188,7 +188,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Buildings
                 //
                 assetPath = $"Maps{FEConstants.AssetDelimiter}{nBuild.Name}{FEConstants.AssetDelimiter}{nBuild.InteriorMapName}";
                 Maps.Add(assetPath, nBuild.InteriorMap);
-                logger.Log($"Loaded Building Interior map {assetPath} for building {nBuild.DisplayName}", LogLevel.Trace);               
+                logger.Log($"Loaded Building Interior map {assetPath} for building {nBuild.DisplayName}", LogLevel.Debug);               
             }
             utilitiesService.InvalidateCache("Data/Buildings");
         }

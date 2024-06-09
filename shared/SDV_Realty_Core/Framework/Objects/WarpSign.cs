@@ -13,11 +13,11 @@ namespace SDV_Realty_Core.Framework.Objects
     {
         private DateTime dtLastChange = DateTime.Now;
         private int CurrentLocationIndex = -1;
-        private Dictionary<string, Tuple<string, EntranceDetails>> CaveEntrances;
+        private static Dictionary<string, Tuple<string, EntranceDetails>> _CaveEntrances;
         public WarpSign() { }
         public WarpSign(Vector2 newLocation, Dictionary<string, Tuple<string, EntranceDetails>> CaveEntrances)
         {
-            this.CaveEntrances = CaveEntrances;
+            _CaveEntrances = CaveEntrances;
             tileLocation.Value = newLocation;
             boundingBox.Value = new Rectangle((int)tileLocation.X * 64, (int)tileLocation.Y * 64, 64, 64);
             ParentSheetIndex = 11;
@@ -54,13 +54,13 @@ namespace SDV_Realty_Core.Framework.Objects
                 if ((DateTime.Now - dtLastChange).TotalSeconds > 2)
                 {
                     CurrentLocationIndex++;
-                    if (CurrentLocationIndex > CaveEntrances.Count - 1) CurrentLocationIndex = 0;
+                    if (CurrentLocationIndex > _CaveEntrances.Count - 1) CurrentLocationIndex = 0;
                     bUpdateText = true;
                 }
             }
             if (bUpdateText)
             {
-                string caveEntrance = CaveEntrances.Keys.ToArray()[CurrentLocationIndex];
+                string caveEntrance = _CaveEntrances.Keys.ToArray()[CurrentLocationIndex];
 
                 if (caveEntrance == "FarmHouse" || caveEntrance.Contains("Cabin"))
                 {
@@ -68,7 +68,7 @@ namespace SDV_Realty_Core.Framework.Objects
                 }
                 else
                 {
-                    Text = CaveEntrances[caveEntrance].Item1;
+                    Text = _CaveEntrances[caveEntrance].Item1;
                 }
                 //
                 //  update warps points in room
@@ -82,16 +82,16 @@ namespace SDV_Realty_Core.Framework.Objects
                 {
                     Warp wTmp = GetWarp(vWarp, glWarp);
                     if (wTmp != null) glWarp.warps.Remove(wTmp);
-                    glWarp.warps.Add(new Warp((int)vWarp.X, (int)vWarp.Y, caveEntrance, CaveEntrances[caveEntrance].Item2.WarpIn.X, CaveEntrances[caveEntrance].Item2.WarpIn.Y, true));
+                    glWarp.warps.Add(new Warp((int)vWarp.X, (int)vWarp.Y, caveEntrance, _CaveEntrances[caveEntrance].Item2.WarpIn.X, _CaveEntrances[caveEntrance].Item2.WarpIn.Y, true));
                 }
 
                 dtLastChange = DateTime.Now;
             }
             spriteBatch.DrawString(Game1.smallFont, Text ?? "", locationNamePosition, Color.White);
-         }
+        }
         private Warp GetWarp(Vector2 vVector, GameLocation gl)
         {
-            var olist = gl.warps.Where(p => p.X == vVector.X && p.Y == vVector.Y).ToList();
+            List<Warp> olist = gl.warps.Where(p => p.X == vVector.X && p.Y == vVector.Y).ToList();
 
             if (olist.Any())
             {

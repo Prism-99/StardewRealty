@@ -1,6 +1,7 @@
 ﻿using StardewModdingAPI.Events;
 using System.Collections.Generic;
 using System.IO;
+using System;
 using StardewModHelpers;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks;
 using SDV_Realty_Core.Framework.Locations;
@@ -12,11 +13,12 @@ namespace SDV_Realty_Core.Framework.DataProviders
         private ContentPackLoader ContentPacks;
         private IModHelper helper;
         private Dictionary<string, object> externalReferences;
-        private LocalizationStrings localizationStrings;
-        public SDRDataProvider(ContentPackLoader cPacks, IModHelper ohelper, Dictionary<string, object> externalReferences, LocalizationStrings locStrings)
+        private Dictionary<string, string> translationDict;
+        //private LocalizationStrings localizationStrings;
+        public SDRDataProvider(ContentPackLoader cPacks, IModHelper ohelper, Dictionary<string, object> externalReferences, Dictionary<string, string> translationDict)
         {
             ContentPacks = cPacks;
-            localizationStrings= locStrings;
+            this.translationDict= translationDict;
             helper = ohelper;
             this.externalReferences = externalReferences;
         }
@@ -45,7 +47,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         }
                         else
                         {
-                            logger.Log($"CMan, could not find Building component: '{cleanAssetName}'", LogLevel.Debug);
+                            logger.Log($"SDRDataProvider, could not find Building component: '{cleanAssetName}'", LogLevel.Debug);
                         }
                         break;
                     case "Objects":
@@ -55,7 +57,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         }
                         else
                         {
-                            logger.Log($"CMan, could not find Objects component: '{cleanAssetName}'", LogLevel.Debug);
+                            logger.Log($"SDRDataProvider, could not find Objects component: '{cleanAssetName}'", LogLevel.Debug);
                         }
                         break;
                     case WarproomManager.WarpRoomLoacationName:
@@ -65,7 +67,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         }
                         else
                         {
-                            logger.Log($"CMan, could not find sdr_warproom component: '{cleanAssetName}'", LogLevel.Debug);
+                            logger.Log($"SDRDataProvider, could not find sdr_warproom component: '{cleanAssetName}'", LogLevel.Debug);
                         }
                         break;
                     case "Expansion":
@@ -75,18 +77,18 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         }
                         else
                         {
-                            logger.Log($"CMan, could not find Expansion component: '{cleanAssetName}'", LogLevel.Debug);
+                            logger.Log($"SDRDataProvider, could not find Expansion component: '{cleanAssetName}'", LogLevel.Debug);
                         }
                         break;
                     case "Maps":
-                        string mapName = Path.GetFileNameWithoutExtension(urlParts[2]);
+                        string mapName = urlParts[2].Replace(".tmx","",StringComparison.InvariantCultureIgnoreCase);
                         if (ContentPacks.ExpansionMaps.ContainsKey(mapName))
                         {
                             e.LoadFrom(() => { return ContentPacks.ExpansionMaps[mapName]; }, AssetLoadPriority.Medium);
                         }
                         break;
-                    case "Images":
-                        string imagePath = Path.Combine(helper.DirectoryPath, "data", "assets", "Images", urlParts[2]);
+                    case "images":
+                        string imagePath = Path.Combine(helper.DirectoryPath, "data", "assets", "images", urlParts[2]);
                         if (File.Exists(imagePath))
                         {
                             e.LoadFrom(() => { return new StardewBitmap(imagePath).Texture(); }, AssetLoadPriority.Medium);
@@ -99,7 +101,8 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         }
                         break;
                     case "Strings":
-                        localizationStrings.HandleEdit(e);
+                        e.LoadFrom(() => { return translationDict; }, AssetLoadPriority.Medium);
+                        //localizationStrings.HandleEdit(e);
                         break;
                     case "movies":
                         if (externalReferences.ContainsKey(cleanAssetName))
@@ -109,7 +112,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         }
                         else
                         {
-                            logger.Log($"CMan, could not find movies component: '{cleanAssetName}'", LogLevel.Debug);
+                            logger.Log($"SDRDataProvider, could not find movies component: '{cleanAssetName}'", LogLevel.Debug);
                         }
                         break;
                 }

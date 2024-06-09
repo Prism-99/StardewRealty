@@ -8,13 +8,14 @@
   </PropertyGroup>
 	<PropertyGroup>
 		<EnableHarmony>true</EnableHarmony>
+		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
 	</PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>$(DefineConstants);v2;v16;SKIA;Current</DefineConstants>
+    <DefineConstants>$(DefineConstants);Current;SKIA;v16;v2;DEBUG_LOG</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <DefineConstants>$(DefineConstants);v2;v16;SKIA;Current</DefineConstants>
+    <DefineConstants>$(DefineConstants);Current;SKIA;v16;v2;DEBUG_LOG</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
@@ -87,5 +88,7 @@
   <Import Project="..\shared\LumberJack\LumberJack.projitems" Label="Shared" />
 
   <Import Project="..\v1.6 Base Content Packs\v1.6 Base Content Packs.projitems" Label="Shared" />
+
+  <Import Project="..\shared\SDV_MapRenderer\SDV_MapRenderer.projitems" Label="Shared" />
 
 </Project>

@@ -8,6 +8,7 @@ using Prism99_Core.Utilities;
 using System;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
+using StardewValley.Buildings;
 
 namespace SDV_Realty_Core.Framework.DataProviders
 {
@@ -38,7 +39,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
             //
             //  add active locations and warproom definition, at game start
             //
-            var locations = _modDataService.farmExpansions.Values.Where(p => p.Active).ToList();
+            List<Expansions.FarmExpansionLocation> locations = _modDataService.farmExpansions.Values.Where(p => p.Active).ToList();
 
             e.Edit(asset =>
             {
@@ -64,7 +65,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                 //    ExcludeFromNpcPathfinding = true
                 //});
 
-                foreach (var location in locations)
+                foreach (Expansions.FarmExpansionLocation location in locations)
                 {
                     try
                     {
@@ -89,7 +90,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         //
                         if (expansionDetails.Artifacts != null && expansionDetails.Artifacts.Count > 0)
                         {
-                            foreach (var arti in expansionDetails.Artifacts)
+                            foreach (ArtifactData arti in expansionDetails.Artifacts)
                             {
                                 ArtifactSpotDropData artifactData = new ArtifactSpotDropData
                                 {
@@ -117,7 +118,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                                 locationData.FishAreas.Add(fishAreaKey, FishAreaDetails.GetData(contentPack.FishAreas[fishAreaKey]));
                                 if (expansionDetails.FishAreas != null && expansionDetails.FishAreas.ContainsKey(fishAreaKey))
                                 {
-                                    foreach (var stockData in expansionDetails.FishAreas[fishAreaKey].StockData)
+                                    foreach (FishStockData stockData in expansionDetails.FishAreas[fishAreaKey].StockData)
                                     {
                                         Season s;
                                         SDVUtilities.TryParseEnum(stockData.Season, out s);
@@ -133,21 +134,6 @@ namespace SDV_Realty_Core.Framework.DataProviders
                             }
                         }
 
-                        //if (ExpansionCustomizations.CustomDefinitions != null && ExpansionCustomizations.CustomDefinitions.ContainsKey(location.Name))
-                        //{
-                        //    LocationData custom = ExpansionCustomizations.CustomDefinitions[location.Name].GetLocationData();
-                        //    foreach (SpawnFishData area in custom.Fish)
-                        //    {
-                        //        lData.Fish.Add(area);
-                        //    }
-                        //}
-                        //else if (cPac.FishData != null && cPac.FishData.Count > 0)
-                        //{
-                        //    foreach (string key in cPac.FishData.Keys)
-                        //    {
-                        //        lData.Fish.AddRange(cPac.FishData[key]);
-                        //    }
-                        //}
                         if (detail.ContainsKey(location.Name))
                             detail.Remove(location.Name);
 
@@ -161,7 +147,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                 //
                 //   add custom building interiors
                 //
-                foreach (var building in _customBuildingService.customBuildingManager.CustomBuildings)
+                foreach (KeyValuePair<string, Buildings.ICustomBuilding> building in _customBuildingService.customBuildingManager.CustomBuildings)
                 {
                     try
                     {
@@ -175,6 +161,25 @@ namespace SDV_Realty_Core.Framework.DataProviders
                     catch (Exception ex)
                     {
                         logger.LogError("Locations.HandleEdit2", ex);
+                    }
+                }
+                //
+                //  add sub locations
+                //
+                foreach(var subLocation in _modDataService.SubLocations)
+                {
+                    try
+                    {
+                        detail.Add(subLocation.Key, new LocationData
+                        {
+                            DisplayName = subLocation.Value.DisplayName,
+                            ExcludeFromNpcPathfinding = true,
+                            CanPlantHere = subLocation.Value.IsGreenhouse
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError("Locations.HandleEdit3", ex);
                     }
                 }
             });

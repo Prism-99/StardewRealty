@@ -6,7 +6,7 @@ using System;
 using SDV_Realty_Core.Framework.Objects;
 
 
-namespace SDV_Realty_Core.Framework.ServiceProviders
+namespace SDV_Realty_Core.Framework.ServiceProviders.GUI
 {
     internal class ForSaleSignService : IForSaleSignService
     {

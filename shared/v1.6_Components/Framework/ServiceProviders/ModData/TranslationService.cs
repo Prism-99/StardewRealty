@@ -2,17 +2,20 @@
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using System;
+using SDV_Realty_Core.Framework.ServiceProviders.Game;
+using StardewModdingAPI.Events;
 
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.ModData
 {
     internal class TranslationService : ITranslationService
     {
+        private IUtilitiesService utilitiesService;
         public override Type ServiceType => typeof(ITranslationService);
 
         public override Type[] InitArgs => new Type[]
         {
-            typeof(IModHelperService)
+            typeof(IUtilitiesService)
         };
 
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -23,12 +26,18 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModData
                 return null;
         }
 
-        internal override void Initialize(  ILoggerService logger, object[] args)
+        internal override void Initialize(ILoggerService logger, object[] args)
         {
-            this.logger=logger;
-            IModHelperService modHelperService = (IModHelperService)args[0];
+            this.logger = logger;
+            utilitiesService = (IUtilitiesService)args[0];
 
-            I18n.Init(modHelperService.modHelper.Translation);
+            utilitiesService.GameEventsService.AddSubscription(new GameLaunchedEventArgs(), HandleGameLaunched);
+        }
+
+        private void HandleGameLaunched(EventArgs e)
+        {
+            I18n.Init(utilitiesService.ModHelperService.modHelper.Translation);
+
         }
     }
 }

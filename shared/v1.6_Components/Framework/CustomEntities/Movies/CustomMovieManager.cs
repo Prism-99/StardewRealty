@@ -1,25 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using StardewModdingAPI;
 using Prism99_Core.Utilities;
 using SDV_Realty_Core.Framework.AssetUtils;
 using Newtonsoft.Json;
-using SDV_Realty_Core.Framework.CustomEntities.Objects;
 using System.IO;
 using SDV_Realty_Core.ContentPackFramework.Utilities;
-using StardewValley;
 using StardewValley.GameData.Movies;
 
 namespace SDV_Realty_Core.Framework.CustomEntities.Movies
 {
     internal class CustomMovieManager
     {
-        private  IModHelper helper;
-        private  SDVLogger logger;
-        private  SDRContentManager conMan;
-        public  Dictionary<string, CustomMovieData> Movies;
-        public  void Initialize(SDVLogger ologger, IModHelper ohelper, SDRContentManager contentManager)
+        private IModHelper helper;
+        private SDVLogger logger;
+        private SDRContentManager conMan;
+        public Dictionary<string, CustomMovieData> Movies;
+        public void Initialize(SDVLogger ologger, IModHelper ohelper, SDRContentManager contentManager)
         {
             helper = ohelper;
             logger = ologger;
@@ -29,7 +25,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Movies
 
             //LoadMovieDefinitions(helper.Translation);
         }
-        public  void LoadMovieDefinitions(ITranslationHelper translations)
+        public void LoadMovieDefinitions(ITranslationHelper translations)
         {
             string buildingRoot = Path.Combine(helper.DirectoryPath, "data", "assets", "movies");
             string[] arDefinitions = Directory.GetFiles(buildingRoot, "moviedata.json", SearchOption.AllDirectories);
@@ -51,11 +47,11 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Movies
                     logger.Log($"Error loading movie defintion: {ex}", LogLevel.Error);
                 }
             }
-           // AddTestMovie(translations);
+            // AddTestMovie(translations);
 
 
         }
-        private  void AddTestMovie(ITranslationHelper translations)
+        private void AddTestMovie(ITranslationHelper translations)
         {
             AddMovieDefinition("test", new CustomMovieData
             {
@@ -93,7 +89,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Movies
             });
 
         }
-        public  void AddMovieDefinition(string movieKey, CustomMovieData movie)
+        public void AddMovieDefinition(string movieKey, CustomMovieData movie)
         {
             if (!string.IsNullOrEmpty(movie.MovieData.Texture))
             {

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Services;
-//using SDict = Prism99_Core.Objects.SerializableDictionary<string, SDV_Realty_Core.Framework.Expansions.FarmExpansionLocation>;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 
@@ -20,11 +19,11 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics
         internal abstract void FixGrid();
         internal abstract string SwapGridLocations(int GridIdA, int GridIdB);
         internal abstract void PatchInMap(int iGridId);
-        internal abstract int AddMapToGrid(string sExpName);
-        internal abstract void AddSign(ExpansionPack oPack);
+        internal abstract int AddMapToGrid(string sExpName,int gridId);
         internal abstract string GetNeighbourExpansionName(int iGridId, EntranceDirection side);
         internal abstract Rectangle GetExpansionWorldMapLocation(int iGridId);
         internal abstract Rectangle GetExpansionWorldMapLocation(string sExpansionName);
+        internal abstract Rectangle GetExpansionMainMapLocation(int iGridId, int left, int top);
 
     }
 }

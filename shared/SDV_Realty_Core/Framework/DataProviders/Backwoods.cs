@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using xTile;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 
@@ -37,7 +36,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
         {
             if (_expansionManager.expansionManager.GetActiveFarmExpansions().Any() || _gameEnvironmentService.ExitsLoaded)
             {
-                var mapPatch = _gameEnvironmentService.GetFarmDetails(999999).PathPatches.Values.ToArray()[0];
+                EntrancePatch mapPatch = _gameEnvironmentService.GetFarmDetails(999999).PathPatches.Values.ToArray()[0];
                 Map mExitPatchMap = _mapLoaderService.LoadMap(Path.Combine(_gameEnvironmentService.ModPath, "data", "mappatchs", mapPatch.PatchMapName).Replace(_gameEnvironmentService.GamePath, ""), "patchmap", false);
                 //
                 //   tried using PatchMap, but it did not remove the old layers
@@ -53,7 +52,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         //
                         //  add warps
                         //
-                        var destinationPatch = _modDataService.validContents[_modDataService.MapGrid[0]].EntrancePatches["1"];
+                        EntrancePatch destinationPatch = _modDataService.validContents[_modDataService.MapGrid[0]].EntrancePatches["1"];
 
                         MapWarp[] backwoodOutWarps = mapPatch.GetWarpOutList(_modDataService.MapGrid[0]).ToArray();
                         MapWarp[] destInWarps = destinationPatch.GetWarpInList("Backwoods").ToArray();

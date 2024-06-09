@@ -17,7 +17,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModData
             
         };
         private ExpansionCustomizations _expansionCustomizations;
-        public override Dictionary<string, CustomizationDetails> CustomDefinitions => _expansionCustomizations.CustomDefinitions;
+        private IModDataService _modDataService;
+        public override Dictionary<string, CustomizationDetails> CustomDefinitions => _modDataService.CustomDefinitions;
 
         public override object ToType(Type conversionType, IFormatProvider provider)
         {
@@ -32,11 +33,11 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModData
             this.logger = logger;
 
             IModHelperService modHelperService = (IModHelperService)args[0];
-            IModDataService modData = (IModDataService)args[1];
+            _modDataService = (IModDataService)args[1];
             ICustomEventsService eventsService = (ICustomEventsService)args[2];
             IUtilitiesService utilitiesService = (IUtilitiesService)args[3];
 
-            _expansionCustomizations = new ExpansionCustomizations(logger, modHelperService, modData, utilitiesService);
+            _expansionCustomizations = new ExpansionCustomizations(logger, modHelperService, _modDataService, utilitiesService);
             LoadDefinitions();
             eventsService.AddCustomSubscription("SaveExpansionCustomizations", SaveExpansionCustomizations);
         }

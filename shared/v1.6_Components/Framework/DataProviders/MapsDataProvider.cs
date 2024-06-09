@@ -7,7 +7,7 @@ using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.AssetUtils;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
+
 
 namespace SDV_Realty_Core.Framework.DataProviders
 {
@@ -46,9 +46,9 @@ namespace SDV_Realty_Core.Framework.DataProviders
 
         private void HandleBackwoods(AssetRequestedEventArgs e)
         {
-            if (_expansionManager.expansionManager.GetActiveFarmExpansions().Any() || _utilitiesService.GameEnvironment.ExitsLoaded)
+            if (_utilitiesService.HaveExpansions || _utilitiesService.GameEnvironment.ExitsLoaded)
             {
-                var mapPatch = _utilitiesService.GameEnvironment.GetFarmDetails(999999).PathPatches.Values.ToArray()[0];
+                EntrancePatch mapPatch = _utilitiesService.GameEnvironment.GetFarmDetails(999999).PathPatches.Values.ToArray()[0];
                 Map mExitPatchMap = _utilitiesService.MapLoaderService.LoadMap( Path.Combine(_utilitiesService.GameEnvironment.ModPath, "data", "mappatchs", mapPatch.PatchMapName), "patchmap", false);
                 //logger?.Log($"Getting Maps/Backwoods Map name {mExitPatchMap.Id}", LogLevel.Debug);
                 //
@@ -66,7 +66,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         //
                         //  add warps
                         //
-                        var destinationPatch = _modDataService.validContents[_modDataService.MapGrid[0]].EntrancePatches["1"];
+                        EntrancePatch destinationPatch = _modDataService.validContents[_modDataService.MapGrid[0]].EntrancePatches["1"];
 
                         MapWarp[] backwoodOutWarps = mapPatch.GetWarpOutList(_modDataService.MapGrid[0]).ToArray();
                         MapWarp[] destInWarps = destinationPatch.GetWarpInList("Backwoods").ToArray();

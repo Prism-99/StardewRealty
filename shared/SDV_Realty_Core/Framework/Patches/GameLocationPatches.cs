@@ -25,7 +25,13 @@ namespace SDV_Realty_Core.Framework.Patches
             __state = new Stopwatch();
             __state.Start();
             logger.Log($"DayUpdate, location { __instance.Name},day {dayOfMonth}", LogLevel.Debug);
-
+            foreach(var obj in __instance.Objects.Values)
+            {
+                if (obj.name == null)
+                {
+                    obj.name = "Error Item";
+                }
+            }
             return true;
         }
         public static void DayUpdate_Post(GameLocation __instance, ref int dayOfMonth, Stopwatch __state)
@@ -47,16 +53,14 @@ namespace SDV_Realty_Core.Framework.Patches
         }
         public static bool updateWarps(GameLocation __instance)
         {
-            if (!__instance.modData.ContainsKey(FEModDataKeys.FELocationName))
+            if (!__instance.modData.ContainsKey(IModDataKeysService.FELocationName))
             {
                 return true;
             }
             __instance.warps.Clear();
-#if v16
+
             __instance.map.Properties.TryGetValue("NPCWarp", out PropertyValue value);
-#else
-            __instance.map.Properties.TryGetValue("NPCWarp", out PropertyValue value);
-#endif
+
             if (value != null)
             {
                 string[] array = value.ToString().Split(' ');
@@ -73,7 +77,7 @@ namespace SDV_Realty_Core.Framework.Patches
                 string[] array2 = value.ToString().Split(' ');
                 for (int j = 0; j < array2.Length; j += 5)
                 {
-                    string locname = array2[j + 2] == "Farm" || array2[j + 2] == "Farmhouse" ? __instance.modData[FEModDataKeys.FELocationName] : array2[j + 2];
+                    string locname = array2[j + 2] == "Farm" || array2[j + 2] == "Farmhouse" ? __instance.modData[IModDataKeysService.FELocationName] : array2[j + 2];
                     __instance.warps.Add(new Warp(Convert.ToInt32(array2[j]), Convert.ToInt32(array2[j + 1]), locname, Convert.ToInt32(array2[j + 3]), Convert.ToInt32(array2[j + 4]), flipFarmer: false));
                 }
             }

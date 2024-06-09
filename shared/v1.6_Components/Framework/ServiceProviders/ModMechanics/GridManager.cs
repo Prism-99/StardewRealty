@@ -1,5 +1,4 @@
-﻿using SDV_Realty_Core.Framework.ServiceInterfaces;
-using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
+﻿using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
@@ -9,11 +8,9 @@ using System.Collections.Generic;
 using System.Linq;
 using xTile.Layers;
 using SDV_Realty_Core.Framework.Expansions;
-using SDV_Realty_Core.Framework.Integrations;
 using SDV_Realty_Core.Framework.Locations;
-using SDV_Realty_Core.Framework.Utilities;
-using SDV_Realty_Core.ContentPackFramework.Objects;
 using SDV_Realty_Core.Framework.ServiceInterfaces.GUI;
+using System.Runtime.CompilerServices;
 
 
 
@@ -56,7 +53,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         };
         public override List<string> CustomServiceEventTriggers => new List<string>
         {
-            "AddCaveEntrance"
+
         };
         internal override void Initialize(ILoggerService logger, object[] args)
         {
@@ -65,19 +62,17 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             contentManager = (IContentManagerService)args[2];
             contentPackService = (IContentPackService)args[3];
             utilitiesService = (IUtilitiesService)args[4];
-            modHelperService= (IModHelperService)args[5];
-            mineCartMenuService= (IMineCartMenuService)args[6];
+            modHelperService = (IModHelperService)args[5];
+            mineCartMenuService = (IMineCartMenuService)args[6];
             gameEnvironmentService = (IGameEnvironmentService)args[7];
-
-            //helper = modHelperService.modHelper;
 
             this.logger = logger;
 
-            MapGrid=modDataService.MapGrid;
-           
+            MapGrid = modDataService.MapGrid;
+
         }
         #region "Public Methods"
-       
+
         internal override string SwapGridLocations(int GridIdA, int GridIdB)
         {
             string result = "";
@@ -103,11 +98,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                 //  update modData
                 //
                 modDataService.farmExpansions[farmA].GridId = GridIdB;
-                modDataService.farmExpansions[farmA].modData.Remove("prism99.advize.stardewrealty.FEGridId");
-                modDataService.farmExpansions[farmA].modData.Add("prism99.advize.stardewrealty.FEGridId", GridIdB.ToString());
+                modDataService.farmExpansions[farmA].modData["prism99.advize.stardewrealty.FEGridId"] = GridIdB.ToString();
                 modDataService.farmExpansions[farmB].GridId = GridIdA;
-                modDataService.farmExpansions[farmB].modData.Remove("prism99.advize.stardewrealty.FEGridId");
-                modDataService.farmExpansions[farmB].modData.Add("prism99.advize.stardewrealty.FEGridId", GridIdA.ToString());
+                modDataService.farmExpansions[farmB].modData["prism99.advize.stardewrealty.FEGridId"] = GridIdA.ToString();
                 //
                 //  swap references
                 //
@@ -135,8 +128,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         internal override void PatchInMap(int iGridId)
         {
             string sExpansionName = MapGrid[iGridId];
+#if DEBUG_LOG
             logger.Log($"     PatchInMap {iGridId}:{sExpansionName}", LogLevel.Debug);
-
+#endif
             try
             {
                 GameLocation oExp = modDataService.farmExpansions[sExpansionName];
@@ -154,8 +148,6 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                     EntrancePatch oExpPatch;
                     int iGridRow;
                     int iGridCol;
-                    ExpansionPack oRightPack;
-                    EntrancePatch oRightExpPatch;
                     int iPatchIndex;
 
                     switch (iGridId)
@@ -356,8 +348,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             }
             catch (Exception ex)
             {
-                logger?.Log($"Error patching in map {iGridId}:{sExpansionName}", LogLevel.Error);
-                logger?.LogError($"PatchInMap", ex);
+                logger.Log($"Error patching in map {iGridId}:{sExpansionName}", LogLevel.Error);
+                logger.LogError($"PatchInMap", ex);
             }
         }
 
@@ -367,9 +359,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         /// </summary>
         /// <param name="sExpansionName"></param>
         /// <returns>A bounding Rectangle with the map placement for the specified expansion</returns>mm
-        internal override  Rectangle GetExpansionWorldMapLocation(string sExpansionName)
+        internal override Rectangle GetExpansionWorldMapLocation(string sExpansionName)
         {
-            var gridEntry = MapGrid.Where(p => p.Value == sExpansionName).ToList();
+            List<KeyValuePair<int, string>> gridEntry = MapGrid.Where(p => p.Value == sExpansionName).ToList();
             if (gridEntry.Any())
             {
                 return GetExpansionWorldMapLocation(gridEntry.First().Key);
@@ -377,6 +369,27 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             else
             {
                 return Rectangle.Empty;
+            }
+        }
+        internal override Rectangle GetExpansionMainMapLocation(int iGridId, int left, int top)
+        {
+            int iCol = (iGridId - 1) / 3;
+            int iRow = (iGridId - 1) % 3;
+
+            int iPadding = 1;
+            int iBoxWidth = 20;
+            int iBoxHeight = 10;
+            int iImageWidth = iBoxWidth - iPadding * 2;
+            int iImageHeight = iBoxHeight - iPadding * 2;
+
+            switch (iGridId)
+            {
+                case 0: //by the Backwoods
+                    return new Rectangle(left + iPadding + 70, top + iPadding - 5, iImageWidth, iImageHeight);
+                //case 1:
+                //    return new Rectangle(63, 64 + iMapIndex * 14, iImageWidth, iImageHeight);
+                default:
+                    return new Rectangle(left + (3 - iCol) * iBoxWidth + iPadding - 10, top + iRow * iBoxHeight + iPadding - 5, iImageWidth, iImageHeight);
             }
         }
         /// <summary>
@@ -409,7 +422,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
 
         }
 
-        internal override int AddMapToGrid(string sExpName)
+        internal override int AddMapToGrid(string expansionName, int gridId)
         {
             //
             //  adds an expansion map to the
@@ -419,94 +432,142 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             //  newly added expansion
             //
             int returnId = -1;
-            FarmExpansionLocation oBase = modDataService.farmExpansions[sExpName];
-
-            if (MapGrid.Where(p => p.Value == sExpName).Any())
+            if (modDataService.farmExpansions.TryGetValue(expansionName, out FarmExpansionLocation oBase))
             {
-                //
-                //  already added, return existing id
-                //
-                returnId = MapGrid.Where(p => p.Value == sExpName).First().Key;
-            }
-            else
-            {
-                //
-                //  very grid availability
-                //
-                if (oBase.GridId > -1)
+                try
                 {
-                    if (MapGrid.ContainsKey(oBase.GridId))
+                    if (gridId > -1)
                     {
+                        //addition from MP Server, not always, called  by load
                         //
-                        //  conflict grid allocations, should not happen
-                        //
-                        oBase.GridId = GetMapGridId();
-                        if (oBase.GridId > -1)
+                        if (MapGrid.Where(p => p.Value == expansionName).Any())
                         {
-                            MapGrid.Add(oBase.GridId, sExpName);
-                            returnId = oBase.GridId;
+                            int localId = MapGrid.Where(p => p.Value == expansionName).First().Key;
+                            if (localId == gridId)
+                            {
+                                //
+                                //  already added, return existing id
+                                //
+                                // skip caves, assume they were added during first additon
+                                return gridId;
+                            }
+                            else
+                            {
+                                // duplicate add, should not happen
+                                // might need extra check for multiplayer
+                                // skip caves, assume they were added during first additon
+                                return localId;
+                            }
+                        }
+                        else
+                        {
+                            //  expansion key not found, supplied id
+                            //  is invalid
+                            if (!MapGrid.ContainsKey(gridId))
+                                returnId = gridId;
+                            else
+                                returnId = GetMapGridId();
+                        }
+                        if (!MapGrid.TryAdd(returnId, expansionName))
+                        {
+                            returnId = -1;
+                            //  still screwed up, fix it up
+                            //
+                            //  try and fix it
+                            //
+                            //var addedExpansion = MapGrid.Where(p => p.Value == expansionName);
+                            //if (addedExpansion.Any())
+                            //{
+                            //    if (addedExpansion.Count() > 1)
+                            //        logger.Log($"Multiple instaces {addedExpansion.Count()} of '{expansionName}'", LogLevel.Warn);
+                            //    else
+                            //    {
+                            //        if (modDataService.farmExpansions.TryGetValue(addedExpansion.First().Value, out var expansion))
+                            //        {
+                            //            if (expansion.GridId != gridId)
+                            //            {
+                            //                logger.Log($"Expansion mapped to different gridId: {expansion.GridId}", LogLevel.Warn);
+                            //            }
+                            //        }
+                            //    }
+                            //}
                         }
                     }
                     else
                     {
-                        MapGrid.Add(oBase.GridId, sExpName);
-
-                        returnId = oBase.GridId;
-                    }
-                }
-                else
-                {
-                    oBase.GridId = GetMapGridId();
-                    if (oBase.GridId > -1)
-                    {
-                        MapGrid.Add(oBase.GridId, sExpName);
-                        returnId = oBase.GridId;
-                    }
-                }
-            }
-            if (returnId > -1)
-            {
-                //
-                //  add cave details
-                //
-                //
-                //  check for Cave entrance
-                //             
-                ExpansionPack oPackToActivate = contentPackService.contentPackLoader.ValidContents[sExpName];
-
-                if (oPackToActivate.CaveEntrance != null &&  oPackToActivate.CaveEntrance.WarpIn != null && oPackToActivate.CaveEntrance.WarpOut != null)
-                {
-                    modDataService.farmExpansions[sExpName].warps.Add(new Warp(oPackToActivate.CaveEntrance.WarpOut.X, oPackToActivate.CaveEntrance.WarpOut.Y, WarproomManager.WarpRoomLoacationName, (int)WarproomManager.WarpRoomEntrancePoint.X, (int)WarproomManager.WarpRoomEntrancePoint.Y, false));
-                    TriggerEvent("AddCaveEntrance", new object[] { sExpName, Tuple.Create(oPackToActivate.DisplayName, oPackToActivate.CaveEntrance) });
-                    //warproomService.warproomManager.AddCaveEntrance(sExpName, Tuple.Create(oPackToActivate.DisplayName, oPackToActivate.CaveEntrance));
-                    //CaveEntrances.Add(sExpName, Tuple.Create(oPackToActivate.DisplayName, oPackToActivate.CaveEntrance));
-                }
-                //
-                //  check for mine cart
-                //
-                if ((modHelperService.ModRegistry.IsLoaded("Entoarox.ExtendedMinecart")) && oPackToActivate.MineCart != null)
-                {
-                    mineCartMenuService.MineCartMenu.AddDestination(oPackToActivate.DisplayName, sExpName, oPackToActivate.MineCart.X, oPackToActivate.MineCart.Y);
-                    IExtendedMineCartAPI oAPI = modHelperService.ModRegistry.GetApi<IExtendedMineCartAPI>("Entoarox.ExtendedMinecart") ?? null;
-
-                    if (oAPI != null)
-                    {
-                        try
+                        if (MapGrid.Where(p => p.Value == expansionName).Any())
                         {
-                            oAPI.AddDestination(oPackToActivate.DisplayName, sExpName, oPackToActivate.MineCart.X, oPackToActivate.MineCart.Y);
+                            //
+                            //  already added, return existing id
+                            //  skip caves addition
+                            return MapGrid.Where(p => p.Value == expansionName).First().Key;
                         }
-                        //  ignore error either dupe or api error that we cannot fix
-                        catch { }
+                        else
+                        {
+                            //
+                            //  verify grid availability
+                            //
+                            if (oBase.GridId > -1)
+                            {
+                                if (MapGrid.ContainsKey(oBase.GridId))
+                                {
+                                    //
+                                    //  conflict grid allocations, should not happen
+                                    //
+                                    oBase.GridId = GetMapGridId();
+                                    if (oBase.GridId > -1)
+                                    {
+                                        if (MapGrid.TryAdd(oBase.GridId, expansionName))
+                                            returnId = oBase.GridId;
+                                    }
+                                }
+                                else
+                                {
+                                    if (MapGrid.TryAdd(oBase.GridId, expansionName))
+                                        returnId = oBase.GridId;
+                                }
+                            }
+                            else
+                            {
+                                oBase.GridId = GetMapGridId();
+                                if (oBase.GridId > -1)
+                                {
+                                    if (MapGrid.TryAdd(oBase.GridId, expansionName))
+                                        returnId = oBase.GridId;
+                                }
+                            }
+                        }
                     }
                 }
-                //
-                //  update grid id in moddata
-                //
-                if (oBase.modData.ContainsKey(FEModDataKeys.FEGridId))
-                    oBase.modData.Remove(FEModDataKeys.FEGridId);
 
-                oBase.modData.Add(FEModDataKeys.FEGridId, returnId.ToString());
+                catch (Exception ex)
+                {
+                    logger.LogError("AddMapToGrid", ex);
+                    logger.Log($"Location Name='{expansionName}', gridId={gridId}, returnId={returnId}", LogLevel.Debug);
+                    returnId = -1;
+                }
+                if (returnId > -1)
+                {
+                    //
+                    //  add cave details
+                    //
+                    //
+                    //  check for Cave entrance
+                    //             
+                    ExpansionPack oPackToActivate = contentPackService.contentPackLoader.ValidContents[expansionName];
 
+                    if (oPackToActivate.CaveEntrance != null && oPackToActivate.CaveEntrance.WarpIn != null && oPackToActivate.CaveEntrance.WarpOut != null)
+                    {
+                        modDataService.farmExpansions[expansionName].warps.Add(new Warp(oPackToActivate.CaveEntrance.WarpOut.X, oPackToActivate.CaveEntrance.WarpOut.Y, WarproomManager.WarpRoomLoacationName, (int)WarproomManager.WarpRoomEntrancePoint.X, (int)WarproomManager.WarpRoomEntrancePoint.Y, false));
+                        utilitiesService.CustomEventsService.TriggerCustomEvent("AddCaveEntrance", new object[] { expansionName, Tuple.Create(oPackToActivate.DisplayName, oPackToActivate.CaveEntrance) });
+                        //warproomService.warproomManager.AddCaveEntrance(sExpName, Tuple.Create(oPackToActivate.DisplayName, oPackToActivate.CaveEntrance));
+                        //CaveEntrances.Add(sExpName, Tuple.Create(oPackToActivate.DisplayName, oPackToActivate.CaveEntrance));
+                    }
+                    //
+                    //  update grid id in moddata
+                    //
+                    oBase.modData[IModDataKeysService.FEGridId] = returnId.ToString();
+                }
             }
             return returnId;
         }
@@ -520,6 +581,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                 }
             }
 
+#if DEBUG_LOG
+            logger.LogDebug($"GetMapGridId: MapGrid is full.");
+#endif
             return -1;
         }
         /// <summary>
@@ -539,38 +603,38 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                 _ => text
             };
         }
-        internal override void AddSign(ExpansionPack oPack)
-        {
-            //
-            //  need to update logic
-            //
-            return;
+        //internal override void AddSign(ExpansionPack oPack)
+        //{
+        //    //
+        //    //  need to update logic
+        //    //
+        //    return;
 
 
-            PatchingDetails oPatch = oPack.InsertDetails[oPack.ActiveRule];
+        //    PatchingDetails oPatch = oPack.InsertDetails[oPack.ActiveRule];
 
-            foreach (MapEdit oEdit in oPatch.MapEdits)
-            {
-                if (oEdit.SignPostLocation != Point.Zero && !string.IsNullOrEmpty(oEdit.SignLocationName))
-                {
-                    GameLocation gl = Game1.getLocationFromName(oEdit.SignLocationName);
-                    if (gl == null)
-                    {
-                        logger?.Log($"Invalid sign location '{oEdit.SignLocationName}'", LogLevel.Debug);
-                    }
-                    else
-                    {
-                        Vector2 oVector = new Vector2(oEdit.SignPostLocation.X, oEdit.SignPostLocation.Y);
-                        if (gl.objects.ContainsKey(oVector))
-                        {
-                            gl.objects.Remove(oVector);
-                        }
-                        FESign oSign = new FESign(oVector, oPack.DisplayName);
-                        gl.objects.Add(oVector, oSign);
-                    }
-                }
-            }
-        }
+        //    foreach (MapEdit oEdit in oPatch.MapEdits)
+        //    {
+        //        if (oEdit.SignPostLocation != Point.Zero && !string.IsNullOrEmpty(oEdit.SignLocationName))
+        //        {
+        //            GameLocation gl = Game1.getLocationFromName(oEdit.SignLocationName);
+        //            if (gl == null)
+        //            {
+        //                logger?.Log($"Invalid sign location '{oEdit.SignLocationName}'", LogLevel.Debug);
+        //            }
+        //            else
+        //            {
+        //                Vector2 oVector = new Vector2(oEdit.SignPostLocation.X, oEdit.SignPostLocation.Y);
+        //                if (gl.objects.ContainsKey(oVector))
+        //                {
+        //                    gl.objects.Remove(oVector);
+        //                }
+        //                FESign oSign = new FESign(oVector, oPack.DisplayName);
+        //                gl.objects.Add(oVector, oSign);
+        //            }
+        //        }
+        //    }
+        //}
 
         /// <summary>
         /// Add a Sign Post to the map with the name of the expansion the exit leads to
@@ -605,7 +669,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             }
             catch (Exception ex)
             {
-                logger?.Log($"Error AddingSignPost. {ex}", LogLevel.Error);
+                logger.Log($"Error AddingSignPost. {ex}", LogLevel.Error);
             }
         }
 
@@ -656,10 +720,12 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         {
             int numWarps = Math.Max(oExitPatch.WarpOut.NumberofPoints, oEntrancePath.WarpIn.NumberofPoints);
 
+#if DEBUG
             logger.Log($"       AddExpansionWarps. {glA.NameOrUniqueName} to {glB.NameOrUniqueName}", LogLevel.Debug);
             logger.Log($"       numwarps: {numWarps}", LogLevel.Debug);
             logger.Log($"       exit points: {oExitPatch.WarpOut.NumberofPoints} {oExitPatch.WarpOrientation}", LogLevel.Debug);
             logger.Log($"   entrance points: {oEntrancePath.WarpIn.NumberofPoints} {oEntrancePath.WarpOrientation}", LogLevel.Debug);
+#endif
 
             for (int iWarp = 0; iWarp < numWarps; iWarp++)
             {
@@ -676,7 +742,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                         //
                         //  remove existing warp to support swapping expansions
                         //
-                        var existingWarp = glA.warps.Where(p => p.X == oExitPatch.WarpOut.X + iExitCell && p.Y == oExitPatch.WarpOut.Y);
+                        IEnumerable<Warp> existingWarp = glA.warps.Where(p => p.X == oExitPatch.WarpOut.X + iExitCell && p.Y == oExitPatch.WarpOut.Y);
                         if (existingWarp.Any())
                         {
                             glA.warps.Remove(glA.warps.Where(p => p.X == oExitPatch.WarpOut.X + iExitCell && p.Y == oExitPatch.WarpOut.Y).First());
@@ -694,7 +760,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                     }
                     else
                     {
-                        var existingWarp = glA.warps.Where(p => p.X == oExitPatch.WarpOut.X && p.Y == oExitPatch.WarpOut.Y + iExitCell);
+                        IEnumerable<Warp> existingWarp = glA.warps.Where(p => p.X == oExitPatch.WarpOut.X && p.Y == oExitPatch.WarpOut.Y + iExitCell);
                         if (existingWarp.Any())
                         {
                             glA.warps.Remove(glA.warps.Where(p => p.X == oExitPatch.WarpOut.X && p.Y == oExitPatch.WarpOut.Y + iExitCell).First());
@@ -722,7 +788,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         /// <returns></returns>
         private FarmDetails GetFarmDetails(int farmId)
         {
-            var olist = gameEnvironmentService.GameFarms?.Where(p => p.FarmType == farmId);
+            IEnumerable<FarmDetails> olist = gameEnvironmentService.GameFarms?.Where(p => p.FarmType == farmId);
 
             if (olist != null && olist.Any())
             {
@@ -733,7 +799,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         }
         private void RemovePathBlock(Vector2 oBlockPos, GameLocation gl, WarpOrientations eBlockOrientation, int iBlockWidth)
         {
-            logger?.Log($"   Removing path block {gl.Name} {oBlockPos}, {eBlockOrientation} for {iBlockWidth}", LogLevel.Debug);
+#if DEBUG_LOG
+            logger.Log($"   Removing path block {gl.Name} {oBlockPos}, {eBlockOrientation} for {iBlockWidth}", LogLevel.Debug);
+#endif
 
             try
             {
@@ -783,7 +851,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             }
             catch (Exception ex)
             {
-                logger?.LogError($"FEFramework.RemovePathBlock", ex); ;
+                logger.LogError($"GridManager.RemovePathBlock", ex); ;
             }
         }
         private void RemoveTile(GameLocation gl, int x, int y, string sLayer, int tileIndex)
@@ -933,7 +1001,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             {
                 //if ((oPatch.PatchSide != EntranceDirection.East) || (iGridId == 2 && !ActiveFarmProfile.UseFarmExit1) || (iGridId == 3 && !ActiveFarmProfile.UseFarmExit2))
                 //{
-               utilitiesService.MapUtilities.AddPathBlock(new Vector2(oPatch.PathBlockX, oPatch.PathBlockY), glNewExp.map, oPatch.WarpOrientation, oPatch.WarpOut.NumberofPoints);
+                utilitiesService.MapUtilities.AddPathBlock(new Vector2(oPatch.PathBlockX, oPatch.PathBlockY), glNewExp.map, oPatch.WarpOrientation, oPatch.WarpOut.NumberofPoints);
 
                 //
                 // check for neighbour

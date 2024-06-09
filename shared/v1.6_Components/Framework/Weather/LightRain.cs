@@ -25,13 +25,15 @@ namespace SDV_Realty_Core.Framework.Weather
         }
         public string Name()
         {
-            return "prism99.advize.stardewrealty.lightrain";
+            return "prism99.advize.stardewrealty.light_rain";
         }
         public string DisplayName()
         {
             return "Light Rain";
         }
-
+        public void UpdateTicked(ref WeatherManager.CurrentWeather cw)
+        {
+        }
         public void OneSecondUpdateTicked(OneSecondUpdateTickedEventArgs e,ref WeatherManager.CurrentWeather cw)
         {
             switch (cw.PreviousWeather)

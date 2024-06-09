@@ -1,13 +1,11 @@
 ﻿using ContentPackFramework.Helpers;
 using ContentPackFramework.MapUtililities;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using xTile.Layers;
 using xTile.Tiles;
 using xTile;
@@ -97,7 +95,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             List<Tuple<Vector2, string, string>> tlist = tokenList.Where(p => p.Item1 == tilePos).ToList();
             List<Tuple<string, string>> cleanList = tokenList.Where(p => p.Item1 == tilePos).Select(p => Tuple.Create(p.Item2, p.Item3)).ToList();
 
-            foreach (var t in tlist)
+            foreach (Tuple<Vector2, string, string> t in tlist)
             {
                 tokenList.Remove(t);
             }
@@ -140,6 +138,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
 
             if (backLayer != null)
             {
+                //
+                //  Scan for all valid tokens
+                //
                 for (int x = 0; x < backLayer.LayerWidth; x++)
                 {
                     for (int y = 0; y < backLayer.LayerHeight; y++)
@@ -151,8 +152,6 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                             {
                                 foreach (string key in tile.Properties.Keys)
                                 {
-                                    //logger.Log($"tile prop: {key}", LogLevel.Debug);
-
                                     if (IsValidToken(key.ToLower()))
                                     {
                                         Dictionary<string, string> subTokens = new Dictionary<string, string> { };
@@ -172,6 +171,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                         }
                     }
                 }
+                //
+                //  Process all of the found tokens
+                //
                 while (tokens.Count > 0)
                 {
                     MapToken token = tokens[0];

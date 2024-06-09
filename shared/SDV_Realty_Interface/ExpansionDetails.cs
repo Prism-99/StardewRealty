@@ -7,6 +7,18 @@ namespace StardewRealty.SDV_Realty_Interface
 {
     public partial class ExpansionDetails
     {
+        public struct TreasureAreaItem
+        {
+            public string ItemId { get; set; }
+            public string Condition { get; set; }
+            public int Quantity { get; set; }
+        }
+        public struct TreasureArea
+        {
+            public Rectangle Area { get; set; }
+            public List<TreasureAreaItem> Items { get; set; }
+            public int MaxItems { get; set; }
+        }
         public ExpansionDetails() { }
 
         public Point?CaveOut { get; set; } = null;
@@ -15,6 +27,14 @@ namespace StardewRealty.SDV_Realty_Interface
         public bool? AlwaysSnowing { get; set; }
         public bool? AlwaysRaining { get; set; } 
         public bool? AlwaysSunny { get; set; } 
+        public bool AllowGrassGrowInWinter { get; set; }
+        public bool AllowGrassSurviveInWinter { get; set; }
+        public bool skipWeedGrowth { get; set; }
+        public bool SpawnGrassFromPathsOnNewYear { get; set; }
+        public bool SpawnRandomGrassOnNewYear { get; set; }
+        public string Treasure { get; set; }
+        public Dictionary<string, TreasureArea> TreasureSpots { get; set; }
+        public bool EnableGrassSpread { get; set; }
         public SDVModVersion Format { get; set; }
         public string Requirements { get; set; }
         public string MapName { get; set; }

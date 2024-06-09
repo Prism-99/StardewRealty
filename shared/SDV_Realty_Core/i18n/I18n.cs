@@ -12,6 +12,27 @@ namespace SDV_Realty_Core
         {
             Translations = translations;
         }
+        public static string GotoRanch()
+        {
+            return GetByKey("goto.ranch");
+        }
+        public static string GotoCarpenter()
+        {
+            return GetByKey("goto.carpenter");
+        }
+   
+        public static string GMCM_BuildingLights_TT()
+        {
+            return GetByKey("gmcm.realty.buildinglights.tt");
+        }
+        public static string GMCM_BuildingLights()
+        {
+            return GetByKey("gmcm.realty.buildinglights");
+        }
+        public static string GMCM_Extras()
+        {
+            return GetByKey("gmcm.realty.extras");
+        }
         public static string GMCM_LightLevel()
         {
             return GetByKey("gmcm.realty.lightlevel");

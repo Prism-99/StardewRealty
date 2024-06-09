@@ -8,14 +8,14 @@ using StardewValley;
 
 namespace SDV_Realty_Core.Framework.Buildings.Greenhouses
 {
+    /// <summary>
+    /// For loading legacy saves only (1.5.6)
+    /// </summary>
     [Serializable]
     public class GreenhouseInterior:Building
     {
         public GreenhouseInterior() { }
-#if v16
+
         public GreenhouseInterior(string type, Vector2 loc) : base(type, loc) { }
-#else
-        public GreenhouseInterior(BluePrint blueprint, Vector2 loc) : base(blueprint, loc) { }
-#endif
     }
 }

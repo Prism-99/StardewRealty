@@ -3,8 +3,8 @@ using StardewValley.Characters;
 using StardewValley.Buildings;
 using Netcode;
 using HarmonyLib;
-using Prism99_Core.Utilities;
 using StardewValley.Pathfinding;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 
 namespace Framework.StardewObjects
 {
@@ -13,10 +13,10 @@ namespace Framework.StardewObjects
         //private JunimoHut home;
         private readonly NetColor localColor = new NetColor();
         private new Rectangle nextPosition;
-        private bool destroy;
+        //private bool destroy;
         private Farm homelocation;
-        private SDVLogger logger;
-        public CustomJunimoHarvester(SDVLogger mon, Vector2 position, JunimoHut myHome, Farm glFarm, int whichJunimoNumberFromThisHut, Color? c)
+        private ILoggerService logger;
+        public CustomJunimoHarvester(ILoggerService mon, Vector2 position, JunimoHut myHome, Farm glFarm, int whichJunimoNumberFromThisHut, Color? c)
         {
             logger = mon;
             initNetFields();

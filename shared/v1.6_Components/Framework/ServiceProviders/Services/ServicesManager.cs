@@ -49,11 +49,11 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
             logger.Log("",LogLevel.Info);
             Dictionary<string, List<string>> requesters = new();
             Dictionary<string, List<string>> providers = new();
-            foreach (var service in services)
+            foreach (KeyValuePair<Type, IService> service in services)
             {
                 if (service.Value?.CustomServiceEventTriggers != null)
                 {
-                    foreach (var trigger in service.Value.CustomServiceEventTriggers)
+                    foreach (string trigger in service.Value.CustomServiceEventTriggers)
                     {
                         if (requesters.ContainsKey(trigger))
                         {
@@ -67,7 +67,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
                 }
                 if (service.Value?.CustomServiceEventSubscripitions != null)
                 {
-                    foreach (var trigger in service.Value.CustomServiceEventSubscripitions)
+                    foreach (string trigger in service.Value.CustomServiceEventSubscripitions)
                     {
                         if (providers.ContainsKey(trigger))
                         {
@@ -80,14 +80,14 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
                     }
                 }
             }
-            foreach (var requestor in requesters)
+            foreach (KeyValuePair<string, List<string>> requestor in requesters)
             {
                 logger.Log($"{requestor.Key}", LogLevel.Info);
                 logger.Log(new string('-', requestor.Key.Length), LogLevel.Info);
                 logger.Log($"Handlers:", LogLevel.Info);
                 if (providers.ContainsKey(requestor.Key))
                 {
-                    foreach (var provider in providers[requestor.Key])
+                    foreach (string provider in providers[requestor.Key])
                     {
                         logger.Log($"  =>{provider}", LogLevel.Trace);
                     }
@@ -98,7 +98,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
                     logger.Log("None", LogLevel.Info);
                 }
                 logger.Log($"Triggers:", LogLevel.Info);
-                foreach (var sink in requesters[requestor.Key])
+                foreach (string sink in requesters[requestor.Key])
                 {
                     logger.Log($"  <={sink}", LogLevel.Trace);
                 }
@@ -108,7 +108,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
             logger.Log("-------------------", LogLevel.Info);
             if (providers.Any())
             {
-                foreach (var provider in providers)
+                foreach (KeyValuePair<string, List<string>> provider in providers)
                 {
                     logger.Log($"{provider.Key} ({providers.Values.Count()})", LogLevel.Info);
                 }
@@ -123,14 +123,14 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
             logger.Log($"", LogLevel.Info);
             logger.Log($"Service Details", LogLevel.Info);
             logger.Log($"---------------", LogLevel.Info);
-            foreach (var serivce in services.OrderBy(p => p.Key.Name))
+            foreach (KeyValuePair<Type, IService> serivce in services.OrderBy(p => p.Key.Name))
             {
                 logger.Log($"{serivce.Key.Name}:", LogLevel.Info);
-                var clients = services.Values.Where(p => p.InitArgs != null && p.InitArgs.Contains(serivce.Key)).ToList();
+                List<IService> clients = services.Values.Where(p => p.InitArgs != null && p.InitArgs.Contains(serivce.Key)).ToList();
                 clients.AddRange(services.Values.Where(p => p.Dependants != null && p.Dependants.Contains(serivce.Key)));
                 if (clients.Any())
                 {
-                    foreach (var client in clients.OrderBy(p => p.ServiceType.Name))
+                    foreach (IService client in clients.OrderBy(p => p.ServiceType.Name))
                     {
                         logger.Log($" -{client.ServiceType.Name}", LogLevel.Info);
                     }
@@ -182,12 +182,12 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
                     fetchingTopLevel.Push(serviceType.Name);
                     args = new object[service.InitArgs.Length];
                     int index = 0;
-                    foreach (var serviceArgs in service.InitArgs)
+                    foreach (Type serviceArgs in service.InitArgs)
                     {
-                        var methodInfo = GetType().GetMethod("GetService", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { typeof(Type) }, null);
-                        var genericMethodInfo = methodInfo.MakeGenericMethod(serviceArgs);
+                        MethodInfo methodInfo = GetType().GetMethod("GetService", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { typeof(Type) }, null);
+                        MethodInfo genericMethodInfo = methodInfo.MakeGenericMethod(serviceArgs);
                         fetchingArgs.Push(serviceArgs.Name);
-                        var argService = (IService)genericMethodInfo.Invoke(this, new object[] { serviceArgs });
+                        IService argService = (IService)genericMethodInfo.Invoke(this, new object[] { serviceArgs });
                         if (argService == null)
                         {
                             logger.Log($"{new string(' ', GetPadding())}Cannot get argument type {serviceArgs.Name} for  Service {serviceType.Name}", LogLevel.Error);
@@ -195,7 +195,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
                         }
                         else
                         {
-                            logger.Log($"{new string(' ', GetPadding())}Loaded service {argService.GetType().Name} in {sw.ElapsedMilliseconds:N0}ms", LogLevel.Debug);
+                            //logger.Log($"{new string(' ', GetPadding())}Loaded service {argService.GetType().Name} in {sw.ElapsedMilliseconds:N0}ms", LogLevel.Debug);
                             //AddServiceHooks(argService);
                             args[index++] = argService;
                         }
@@ -209,13 +209,13 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
                     //
                     //  initialize depandant services
                     //
-                    foreach (var dependant in service.Dependants)
+                    foreach (Type dependant in service.Dependants)
                     {
-                        var methodInfo = this.GetType().GetMethod("GetService", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { typeof(Type) }, null);
-                        var genericMethodInfo = methodInfo.MakeGenericMethod(dependant);
+                        MethodInfo methodInfo = this.GetType().GetMethod("GetService", BindingFlags.Instance | BindingFlags.NonPublic, null, new Type[] { typeof(Type) }, null);
+                        MethodInfo genericMethodInfo = methodInfo.MakeGenericMethod(dependant);
                         fetchingArgs.Push(dependant.Name);
-                        var argService = (IService)genericMethodInfo.Invoke(this, new object[] { dependant });
-                        logger.Log($"{new string(' ', GetPadding())}Loaded service {serviceType.Name} in {sw.ElapsedMilliseconds:N0}ms", LogLevel.Debug);
+                        IService argService = (IService)genericMethodInfo.Invoke(this, new object[] { dependant });
+                        //logger.Log($"{new string(' ', GetPadding())}Loaded service {serviceType.Name} in {sw.ElapsedMilliseconds:N0}ms", LogLevel.Debug);
                         fetchingArgs.Pop();
                         if (argService == null)
                         {
@@ -236,11 +236,11 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
                 cachedServices.Add(serviceType, service);
                 if (fetchingArgs.Count == 0 && fetchingTopLevel.Count > 0)
                 {
-                    logger.Log($"Loaded service {fetchingTopLevel.Peek()} in {sw.ElapsedMilliseconds:N0}ms", LogLevel.Debug);
+                    //logger.Log($"Loaded service {fetchingTopLevel.Peek()} in {sw.ElapsedMilliseconds:N0}ms", LogLevel.Debug);
                 }
                 else if (fetchingArgs.Count == 0)
                 {
-                    logger.Log($"{new string(' ', GetPadding())}Loaded service {serviceType.Name} in {sw.ElapsedMilliseconds:N0}ms", LogLevel.Debug);
+                    //logger.Log($"{new string(' ', GetPadding())}Loaded service {serviceType.Name} in {sw.ElapsedMilliseconds:N0}ms", LogLevel.Debug);
                 }
                 if (fetchingArgs.Count == 0) fetchingTopLevel.Pop();
                 //fetchingTopLevel.Pop();
@@ -252,17 +252,12 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
 
             return default;
         }
-        private void AddServiceHooks(IService service)
-        {
-            service.OnRegisterEvent += Service_OnRegisterEvent;
-            service.OnTriggerEvent += Service_OnTriggerEvent;
-        }
-
+      
         private void Service_OnTriggerEvent(string eventName, object[] eventParameters)
         {
             if (eventRequesters.ContainsKey(eventName))
             {
-                foreach (var request in eventRequesters[eventName])
+                foreach (Action<object[]> request in eventRequesters[eventName])
                 {
                     request(eventParameters);
                 }
@@ -298,11 +293,11 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
         internal override void VerifyServices()
         {
             logger.Log($"Verifing Services configuration", LogLevel.Debug);
-            foreach (var service in services.Values)
+            foreach (IService service in services.Values)
             {
                 if (service?.InitArgs != null)
                 {
-                    foreach (var arg in service.InitArgs)
+                    foreach (Type arg in service.InitArgs)
                     {
                         if (services.ContainsKey(arg))
                         {
@@ -311,7 +306,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
                                 //
                                 // check for circular references
                                 //
-                                var circReference = services[arg].InitArgs.Where(p => p == service.ServiceType);
+                                IEnumerable<Type> circReference = services[arg].InitArgs.Where(p => p == service.ServiceType);
                                 if (circReference.Any())
                                 {
                                     // circular reference
@@ -327,7 +322,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
                 }
                 if (service?.Dependants != null)
                 {
-                    foreach (var dependant in service.Dependants)
+                    foreach (Type dependant in service.Dependants)
                     {
                         if (services.ContainsKey(dependant))
                         {
@@ -336,7 +331,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Services
                                 //
                                 // check for circular references
                                 //
-                                var circReference = services[dependant].InitArgs.Where(p => p == service.ServiceType);
+                                IEnumerable<Type> circReference = services[dependant].InitArgs.Where(p => p == service.ServiceType);
                                 if (circReference.Any())
                                 {
                                     // circular reference

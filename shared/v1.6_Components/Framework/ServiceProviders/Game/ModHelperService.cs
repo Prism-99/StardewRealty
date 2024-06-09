@@ -22,7 +22,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Game
         public override void WriteConfig<TConfig>(TConfig config)
         {
             modHelper.WriteConfig(config);
-            customEventsService.TriggerCustomEvent("ConfigChanged",null);
+            customEventsService.TriggerModEvent(ICustomEventsService.ModEvents.ConfigChanged, null);
         }
         public override TConfig ReadConfig<TConfig>()
         {

@@ -5,7 +5,8 @@ using SDV_Realty_Core.Framework.CustomEntities;
 using StardewModdingAPI.Events;
 using StardewValley.Buildings;
 using System;
-
+using SDV_Realty_Core.Framework.ServiceProviders.Game;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
 {
@@ -37,6 +38,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             //  add/remove lightSource when a building is removed
             utilitiesService.GameEventsService.AddSubscription(typeof( BuildingListChangedEventArgs).Name, customLightingManager.World_BuildingListChanged);
             //
+            //  change lightsource when a buidling is moved
+            
+            //
             //  set building lightsources once the save is loaded
             utilitiesService.GameEventsService.AddSubscription(new SaveLoadedEventArgs(), customLightingManager.SaveLoaded);
             //
@@ -46,7 +50,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             utilitiesService.CustomEventsService.AddCustomSubscription("SetBuildingBrightness", SetCustomBrightness);
             //
             //  conf changed, adjust gloabl brightness
-            utilitiesService.CustomEventsService.AddCustomSubscription("ConfigChanged", GlobalBrightnessChanged);
+            utilitiesService.CustomEventsService.AddModEventSubscription(ICustomEventsService.ModEvents.ConfigChanged, ConfigChanged);
         }
         private void ReturnedToToTitle(EventArgs e)
         {
@@ -56,9 +60,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         {
             customLightingManager.SetBuildingBrightness((Building)args[0], (float)args[1],true);
         }
-        private void GlobalBrightnessChanged(object[] args)
+        private void ConfigChanged(object[] args)
         {
-            customLightingManager.GlobalBrightnessValueChanged();
+            customLightingManager.ConfigChanged();
         }
     }
 }

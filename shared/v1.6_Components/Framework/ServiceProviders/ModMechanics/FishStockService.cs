@@ -43,7 +43,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         }
         private void DayStarted(EventArgs e)
         {
-            if (Game1.dayOfMonth % 7 == 0)
+            if (!Game1.IsMasterGame && Game1.dayOfMonth % 7 == 0)
             {
                 //
                 //  reset fish stocks at the beginning of the week
@@ -62,9 +62,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             //  clears out previously auto added fish stock
             //  from Expansion fishareas
             //
-            foreach (var exp in _expansionManager.expansionManager.ExpDetails)
+            foreach (KeyValuePair<string, ExpansionDetails> exp in _expansionManager.expansionManager.ExpDetails)
             {
-                foreach (var area in exp.Value.FishAreas.Where(p => p.Value.AutoFill))
+                foreach (KeyValuePair<string, FishAreaDetails> area in exp.Value.FishAreas.Where(p => p.Value.AutoFill))
                 {
                     if (string.IsNullOrEmpty(season))
                     {
@@ -117,22 +117,22 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             //
             //  get all possible fish
 
-            var allFish = Game1.objectData.Where(p => p.Value.Category == -4).ToDictionary(p => "(O)" + p.Key, p => p.Value.Price);
+            Dictionary<string, int> allFish = Game1.objectData.Where(p => p.Value.Category == -4).ToDictionary(p => "(O)" + p.Key, p => p.Value.Price);
 
             logger.Log($"FillFishAreas: allFish={allFish.Count}", LogLevel.Debug);
             //  get all fish currently defined in Expansions
-            var stockedFish = _expansionManager.expansionManager.ExpDetails.SelectMany(p => p.Value.FishAreas.SelectMany(p => p.Value.StockData.Select(p => p.FishId))).Distinct().ToList();
+            List<string> stockedFish = _expansionManager.expansionManager.ExpDetails.SelectMany(p => p.Value.FishAreas.SelectMany(p => p.Value.StockData.Select(p => p.FishId))).Distinct().ToList();
             logger.Log($"FillFishAreas: stockedFish={stockedFish.Count}", LogLevel.Debug);
             //  get max fish price
             int maxPrice = allFish.Select(p => p.Value).Max();
 
             //  remove the already stocked fish from the big list to make the candidate list
-            var newFish = allFish.Keys.Except(stockedFish).ToList();
+            List<string> newFish = allFish.Keys.Except(stockedFish).ToList();
             logger.Log($"FillFishAreas: newFish={newFish.Count()}", LogLevel.Debug);
             Random rnd = new Random(Game1.dayOfMonth + Game1.ticks);
-            foreach (var exp in _expansionManager.expansionManager.ExpDetails)
+            foreach (KeyValuePair<string, ExpansionDetails> exp in _expansionManager.expansionManager.ExpDetails)
             {
-                foreach (var area in exp.Value.FishAreas.Where(p => p.Value.AutoFill))
+                foreach (KeyValuePair<string, FishAreaDetails> area in exp.Value.FishAreas.Where(p => p.Value.AutoFill))
                 {
                     SetSeasonalStock("Spring", area.Value, maxPrice, newFish, allFish);
                     SetSeasonalStock("Summer", area.Value, maxPrice, newFish, allFish);

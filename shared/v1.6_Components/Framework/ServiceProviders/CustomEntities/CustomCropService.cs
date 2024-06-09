@@ -14,8 +14,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
 
         public override Type[] InitArgs => new Type[]
         {
-            typeof(IGameEventsService),typeof(IModHelperService)
-            
+            typeof(IModHelperService)            
         };
 
         public override Dictionary<string, CustomCropData> Crops => customCropManager.Crops;
@@ -34,8 +33,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
         {
             this.logger = logger;
 
-            IGameEventsService eventsService = (IGameEventsService)args[0];
-            IModHelperService modHelper= (IModHelperService)args[1];
+             IModHelperService modHelper= (IModHelperService)args[0];
  
             customCropManager = new CustomCropManager(logger, modHelper);
 

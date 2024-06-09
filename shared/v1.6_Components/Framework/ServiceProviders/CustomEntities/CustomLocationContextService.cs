@@ -1,5 +1,4 @@
 ﻿using SDV_Realty_Core.Framework.CustomEntities.LocationContexts;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using System;
@@ -14,7 +13,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
 
         public override Type[] InitArgs => new Type[]
             {
-                typeof(IModHelperService),typeof(IUtilitiesService)
+                typeof(IUtilitiesService)
             };
 
       
@@ -30,10 +29,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
         internal override void Initialize(ILoggerService logger, object[] args)
         {
             this.logger = logger;
-            IModHelperService modHelperService= (IModHelperService)args[0];
-            IUtilitiesService utilitiesService= (IUtilitiesService)args[1];
+            IUtilitiesService utilitiesService= (IUtilitiesService)args[0];
 
-            locationContextDataManager = new LocationContextDataManager(logger, modHelperService, utilitiesService);
+            locationContextDataManager = new LocationContextDataManager(logger,  utilitiesService);
         }
         public override void LoadDefinitions()
         {

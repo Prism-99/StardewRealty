@@ -12,11 +12,11 @@ namespace SDV_Realty_Core.Framework.GameMechanics
     internal class CropGracePeriod
     {
         private static ILoggerService logger;
-        private static IConfigService config;
-        public CropGracePeriod(ILoggerService oLog, IPatchingService Patches,  IConfigService oConfig)
+        private static IUtilitiesService _utilitiesService;
+        public CropGracePeriod(ILoggerService oLog, IPatchingService Patches, IUtilitiesService utilitiesService)
         {
             logger = oLog;
-            config = oConfig;
+            _utilitiesService = utilitiesService;
             //
             //  Add required harmony patches
             //
@@ -30,23 +30,21 @@ namespace SDV_Realty_Core.Framework.GameMechanics
         }
         public static bool IsInSeasonWithSeedId_Prefix(GameLocation location, string seedId, Crop __instance, ref bool __result)
         {
-            if (location.SeedsIgnoreSeasonsHere())
-                __result = true;
-            else
+            if (!_utilitiesService.ConfigService.config.UseGracePeriod || location.SeedsIgnoreSeasonsHere())
+                return true;
+
+            if (Crop.TryGetData(seedId, out var data))
             {
-                if (Crop.TryGetData(seedId, out var data))
-                {
-                    __result = CheckIsInSeason(data.Seasons, location.GetSeason());
-                }
-                else
-                __result = false;
+                __result = CheckIsInSeason(data.Seasons, location.GetSeason());
             }
+            else
+                __result = false;
 
             return false;
         }
-         public static bool IsInSeason_Prefix(GameLocation location, Crop __instance, ref bool __result)
+        public static bool IsInSeason_Prefix(GameLocation location, Crop __instance, ref bool __result)
         {
-            if (location.SeedsIgnoreSeasonsHere())
+            if (!_utilitiesService.ConfigService.config.UseGracePeriod || location.SeedsIgnoreSeasonsHere())
                 return true;
 
             __result = CheckIsInSeason(__instance.GetData().Seasons, location.GetSeason());
@@ -64,11 +62,11 @@ namespace SDV_Realty_Core.Framework.GameMechanics
             {
                 int gracePeriod = Game1.season switch
                 {
-                    Season.Spring =>config.config.SpringGracePeriod,
-                    Season.Summer => config.config.SummerGracePeriod,
-                    Season.Fall => config.config.FallGracePeriod,
-                    Season.Winter => config.config.WinterGracePeriod,
-                    _ => config.config.SpringGracePeriod
+                    Season.Spring =>_utilitiesService.ConfigService.config.SpringGracePeriod,
+                    Season.Summer => _utilitiesService.ConfigService.config.SummerGracePeriod,
+                    Season.Fall => _utilitiesService.ConfigService.config.FallGracePeriod,
+                    Season.Winter => _utilitiesService.ConfigService.config.WinterGracePeriod,
+                    _ => _utilitiesService.ConfigService.config.SpringGracePeriod
                 };
                 return Game1.dayOfMonth < gracePeriod;
             }

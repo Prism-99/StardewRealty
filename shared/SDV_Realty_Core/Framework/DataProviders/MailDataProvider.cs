@@ -22,13 +22,13 @@ namespace SDV_Realty_Core.Framework.DataProviders
                 {
                     if (!string.IsNullOrEmpty(contentPack.MailId) && !string.IsNullOrEmpty(contentPack.MailContent))
                     {
-                        logger?.Log("Adding mail id:" + contentPack.MailId, LogLevel.Debug);
+                        logger.Log("Adding mail id:" + contentPack.MailId, LogLevel.Debug);
                         asset.AsDictionary<string, string>().Data.Add(contentPack.MailId, contentPack.MailContent);
                     };
 
                     if (!string.IsNullOrEmpty(contentPack.VendorMailId) && !string.IsNullOrEmpty(contentPack.VendorMailContent))
                     {
-                        logger?.Log("Adding vendor mail id:" + contentPack.VendorMailId, LogLevel.Debug);
+                        logger.Log("Adding vendor mail id:" + contentPack.VendorMailId, LogLevel.Debug);
                         asset.AsDictionary<string, string>().Data.Add(contentPack.VendorMailId, contentPack.VendorMailContent);
                     }
                 }

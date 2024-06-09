@@ -21,7 +21,7 @@ namespace SDV_Realty_Core.Framework.Patches.Characters
         //
         //  version 1.6
         //
-        private  ILoggerService logger;
+        private static ILoggerService logger;
         //Tuple< int,int> seed index, cost
         private  static  Dictionary<string, Tuple<string, int>> CropToSeeds = new Dictionary<string, Tuple<string, int>>();
         private static  FEConfig config;
@@ -100,6 +100,8 @@ namespace SDV_Realty_Core.Framework.Patches.Characters
         }
         public static void update_post(JunimoHarvester __instance, int __state, GameTime time, GameLocation location)
         {
+            if (!Game1.IsMasterGame)
+                return;
             //
             //  apply fees and re-seed
             //
@@ -263,7 +265,7 @@ namespace SDV_Realty_Core.Framework.Patches.Characters
         //}
         public static bool tryToHarvestHere(JunimoHarvester __instance)
         {
-            //if (!__instance.modData.ContainsKey(FEModDataKeys.FELocationName))
+            //if (!__instance.modData.ContainsKey(IModDataKeysService.FELocationName))
             //{
             //    return true;
             //}
@@ -322,7 +324,7 @@ namespace SDV_Realty_Core.Framework.Patches.Characters
             }
             catch (Exception ex)
             {
-                //logger.Log($"Failed in {nameof(playerInRange_Prefix)}:\n{ex}", LogLevel.Error);
+                logger.Log($"Failed in {JunimoHarvestor_update_Prefix}:\n{ex}", LogLevel.Error);
                 return true;
             }
         }

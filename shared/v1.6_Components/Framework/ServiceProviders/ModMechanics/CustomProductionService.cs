@@ -1,5 +1,4 @@
-﻿using Prism99_Core.Utilities;
-using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
+﻿using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Patches;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
@@ -31,7 +30,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             ICustomEntitiesServices customEntitiesServices = (ICustomEntitiesServices)args[1];
 
             customProductionManager = new CustomProductionManager();
-            customProductionManager.Initialize((SDVLogger)logger.CustomLogger, patchingService.patches, customEntitiesServices);
+            customProductionManager.Initialize(logger, patchingService.patches, customEntitiesServices);
         }
     }
 }

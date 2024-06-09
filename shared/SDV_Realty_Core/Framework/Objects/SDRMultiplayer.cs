@@ -8,11 +8,12 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
 using HarmonyLib;
 using StardewValley.Network;
+using StardewModdingAPI.Enums;
 using Netcode;
 using Prism99_Core.MultiplayerUtils;
 using Prism99_Core.Utilities;
 using SDV_Realty_Core.Framework.Locations;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 
 namespace SDV_Realty_Core.Framework.Objects
 {
@@ -28,15 +29,16 @@ namespace SDV_Realty_Core.Framework.Objects
         private const string client_conn = "clientconn";
         private const string warproom_status = "warp_status";
         private const string logPrefix = "SDRMP: ";
-        private  int clientCount = 0;
-        private  IModHelper helper;
-        private  SDVLogger logger;
-        public  int defaultInterpolationTicks = 15;
+        private int clientCount = 0;
+        private IModHelper helper;
+        private ILoggerService logger;
+        public int defaultInterpolationTicks = 15;
         //private IWarproomService warproomService;
         //private IFrameworkService frameworkService;
         private IExpansionManager expansionManager;
         private ILandManager landManager;
         private IExitsService exitsService;
+        private IUtilitiesService utilitiesService;
         private enum WarpRoomStatus
         {
             Free,
@@ -50,73 +52,97 @@ namespace SDV_Realty_Core.Framework.Objects
             public long Player { get; set; }
             public BinaryReader Reader;
         }
-        public  void Initialize(SDVLogger olog,IModHelper oHelper,IExpansionManager expansionManager, ILandManager landManager, IExitsService exitsService )
+        public void Initialize(ILoggerService olog, IModHelper oHelper, IExpansionManager expansionManager, ILandManager landManager, IExitsService exitsService, IUtilitiesService utilitiesService)
         {
             helper = oHelper;
             logger = olog;
-            //this.warproomService= warproomService;
-            //this.frameworkService= frameworkService;
             this.expansionManager = expansionManager;
             this.landManager = landManager;
             this.exitsService = exitsService;
+            this.utilitiesService = utilitiesService;
 
-            P99Core_MultiPlayer.Initialize(helper, logger);
+            P99Core_MultiPlayer.Initialize(helper, (SDVLogger)logger.CustomLogger);
+            utilitiesService.CustomEventsService.AddCustomSubscription("SendLandBought", HandleLandBought);
         }
-        public  void AddHooks(EventArgs e)
+        private void HandleLandBought(object[] args)
         {
+            SendLandSold(-1, args[0].ToString(), (int)args[1]);
+        }
+        private void LogError(string message, Exception ex)
+        {
+            string log_message = $"[{LogLevel.Error}] {message} {ex}";
+            P99Core_MultiPlayer.AddNetLogMessage(log_message);
+            logger.LogError(message, ex);
+        }
+        private void Log(string message)
+        {
+            Log(message, LogLevel.Debug);
+        }
+        private void Log(string message, LogLevel level)
+        {
+            string log_message = $"[{level}] {message}";
+            P99Core_MultiPlayer.AddNetLogMessage(log_message);
+            logger.Log(message, level);
+        }
+        public void AddHooks(EventArgs ep)
+        {
+            LoadStageChangedEventArgs e = (LoadStageChangedEventArgs)ep;
+            Log($"SDRMP loadstage {e.NewStage}", LogLevel.Debug);
+            if (e.NewStage != LoadStage.Loaded)// && e.NewStage!=LoadStage.SaveLoadedBasicInfo)
+                return;
             //
             //  add required hooks for multiplayer games
             //
-            if (P99Core_MultiPlayer.IsMasterGame)
+            if (utilitiesService.IsMasterGame())
             {
                 P99Core_MultiPlayer.Add_PeerContextReceivedCallback(Handle_PeerContextReceived);
                 P99Core_MultiPlayer.Add_PeerDisconnectedCallback(Multiplayer_PeerDisconnected);
                 P99Core_MultiPlayer.Add_PeerConnectedCallback(Multiplayer_PeerConnected);
                 P99Core_MultiPlayer.Add_ModMessageReceivedCallback(Handle_ModMessageReceived);
 
-                logger.Log($"{logPrefix}Server, adding hooks", LogLevel.Trace);
-                logger.Log($"My PlayerId is: {Game1.player.UniqueMultiplayerID}", LogLevel.Debug);
-                //oHelper.Events.Multiplayer.PeerConnected += SDRMultiplayer.Multiplayer_PeerConnected;
-                //oHelper.Events.Multiplayer.PeerDisconnected += SDRMultiplayer.Multiplayer_PeerDisconnected;
-                //oHelper.Events.Multiplayer.ModMessageReceived += SDRMultiplayer.Multiplayer_ServerMessageReceived;
+                Log($"{logPrefix}===SDRMP Adding hooks===", LogLevel.Debug);
+                Log($"{logPrefix}Mode: Server", LogLevel.Debug);
+                Log($"My PlayerId is: {Game1.player.UniqueMultiplayerID}", LogLevel.Debug);
+                Log($"{logPrefix}========================", LogLevel.Debug);
             }
-            else if (true || P99Core_MultiPlayer.IsMultiplayer)
+            else if (P99Core_MultiPlayer.IsMultiplayer)
             {
-                logger.Log($"{logPrefix}Client, adding hooks", LogLevel.Trace);
-                logger.Log($"My PlayerId is: {Game1.player.UniqueMultiplayerID}", LogLevel.Debug);
-                logger.Log($"Master PlayerId is: {Game1.MasterPlayer.UniqueMultiplayerID}", LogLevel.Debug);
-                P99Core_MultiPlayer.Add_ModMessageReceivedCallback(Multiplayer_ClientModMessageReceived);
-                //oHelper.Events.Multiplayer.PeerDisconnected += SDRMultiplayer.Multiplayer_ServerDisconnected;
+                P99Core_MultiPlayer.Add_ModMessageReceivedCallback(Multiplayer_ClientReceivedMessage);
+                Log($"{logPrefix}===SDRMP Adding hooks===", LogLevel.Debug);
+                Log($"{logPrefix}Mode: Client", LogLevel.Debug);
+                Log($"My PlayerId is: {Game1.player.UniqueMultiplayerID}", LogLevel.Debug);
+                Log($"Master PlayerId is: {Game1.MasterPlayer.UniqueMultiplayerID}", LogLevel.Debug);
+                Log($"{logPrefix}========================", LogLevel.Debug);
                 Multiplayer_SendPeerReady();
             }
         }
-        public  void Handle_PeerContextReceived(PeerContextReceivedEventArgs e)
+        public void Handle_PeerContextReceived(PeerContextReceivedEventArgs e)
         {
 
         }
-        public  void broadcastSprites(GameLocation location, params TemporaryAnimatedSprite[] sprites)
+        public void broadcastSprites(GameLocation location, params TemporaryAnimatedSprite[] sprites)
         {
             Traverse.Create(Game1.game1).Field("multiplayer").Method("broadcastSprites", new object[] { location, sprites });
         }
-        public  void SendFarmHandPurchase(string expansionName)
+        public void SendFarmHandPurchase(string expansionName)
         {
-            logger.Log($"{logPrefix}Send land purchase '{expansionName}', to {Game1.player.UniqueMultiplayerID}");
+            Log($"{logPrefix}Send land purchase '{expansionName}', to {Game1.player.UniqueMultiplayerID}");
             SendMessageToClient(new FEMessage() { Locations = new List<Tuple<int, string>>() { Tuple.Create(-1, expansionName) } }, action_purchase, Game1.MasterPlayer.UniqueMultiplayerID);
 
         }
-        public  void SendNewLandForSale(long clientId, string expansionName)
+        public void SendNewLandForSale(long clientId, string expansionName)
         {
-            logger.Log($"{logPrefix}Send land for sale '{expansionName}', to {clientId}");
+            Log($"{logPrefix}Send land for sale '{expansionName}', to {clientId}");
             SendMessageToClient(new FEMessage() { Locations = new List<Tuple<int, string>>() { Tuple.Create(-1, expansionName) } }, action_forsale, clientId);
         }
-        public  void SendLandSold(long clientId, string expansionNam)
+        public void SendLandSold(long clientId, string expansionName, int gridId)
         {
-            logger.Log($"{logPrefix}Send land sold '{expansionNam}', to {clientId}");
-            SendMessageToClient(new FEMessage() { Locations = new List<Tuple<int, string>>() { Tuple.Create(-1, expansionNam) } }, action_sold, clientId);
+            Log($"{logPrefix}Send land sold '{expansionName}', to {clientId}");
+            SendMessageToClient(new FEMessage() { Locations = new List<Tuple<int, string>>() { Tuple.Create(-gridId, expansionName) } }, action_sold, clientId);
         }
-        public  void SendActivateExpansions(long clientId, List<FarmExpansionLocation> expansions)
+        public void SendActivateExpansions(long clientId, List<FarmExpansionLocation> expansions)
         {
-            logger.Log($"{logPrefix}Sending Activate Expansions to {clientId}", LogLevel.Debug);
+            Log($"{logPrefix}Sending Activate Expansions to {clientId}", LogLevel.Debug);
 
             FEMessage message = new FEMessage()
             {
@@ -137,12 +163,12 @@ namespace SDV_Realty_Core.Framework.Objects
             //    }
             //}
         }
-        public  void SendActivateFarmExits(long clienId)
+        public void SendActivateFarmExits(long clienId)
         {
 
             SendMessageToClient(new FEMessage(), action_openexits, clienId);
         }
-        public  void SendMessageToClient(FEMessage message, string action, long clientId = -1)
+        public void SendMessageToClient(FEMessage message, string action, long clientId = -1)
         {
             P99Core_MultiPlayer.SendMessage(message, action, clientId);
             //logger.Log($"{logPrefiex}Sending '{action}', to {clientId}", StardewModdingAPI.LogLevel.Info);
@@ -155,19 +181,20 @@ namespace SDV_Realty_Core.Framework.Objects
             //    FEFramework.helper.Multiplayer.SendMessage(message, action, new string[] { FEFramework.helper.ModRegistry.ModID }, new long[] { clientId });
             //}
         }
-        public  bool HaveClients()
+        public bool HaveClients()
         {
             return clientCount > 0;
         }
-        private  void SendMessageToServer(object message, string action)
+        private void SendMessageToServer(object message, string action)
         {
             P99Core_MultiPlayer.SendMessage(message, action, Game1.MasterPlayer.UniqueMultiplayerID);
         }
-        public  void Multiplayer_SendPeerReady()
+        public void Multiplayer_SendPeerReady()
         {
+            Log("Sending client_conn to Server", LogLevel.Debug);
             SendMessageToServer(new FEMessage(), client_conn);
         }
-        public  void Multiplayer_PeerConnected(PeerConnectedEventArgs e)
+        public void Multiplayer_PeerConnected(PeerConnectedEventArgs e)
         {
             clientCount++;
             //
@@ -176,7 +203,7 @@ namespace SDV_Realty_Core.Framework.Objects
             logger.Log($"{logPrefix}[Server] Received peer connect from {e.Peer.PlayerID}", LogLevel.Info);
             //SendClientActiveExpansionList(e.Peer.PlayerID);
         }
-        public  void Handle_PeerDisconnected(PeerDisconnectedEventArgs e)
+        public void Handle_PeerDisconnected(PeerDisconnectedEventArgs e)
         {
             if (P99Core_MultiPlayer.IsMasterGame)
             {
@@ -187,30 +214,31 @@ namespace SDV_Realty_Core.Framework.Objects
                 Multiplayer_ServerDisconnected(e);
             }
         }
-        public  void Multiplayer_PeerDisconnected(PeerDisconnectedEventArgs e)
+        public void Multiplayer_PeerDisconnected(PeerDisconnectedEventArgs e)
         {
             clientCount--;
+            utilitiesService.CustomEventsService.TriggerCustomEvent("ClientDisconnected", new object[] { e.Peer.PlayerID });
         }
-        public  void Multiplayer_ServerDisconnected(PeerDisconnectedEventArgs e)
+        public void Multiplayer_ServerDisconnected(PeerDisconnectedEventArgs e)
         {
             //FEFramework.ResetForNewGame();
         }
-        public  void Handle_ModMessageReceived(ModMessageReceivedEventArgs e)
+        public void Handle_ModMessageReceived(ModMessageReceivedEventArgs e)
         {
-            logger.Log($"{logPrefix}Message Received", LogLevel.Debug);
+            Log($"{logPrefix}Message Received", LogLevel.Debug);
 
             if (P99Core_MultiPlayer.IsMasterGame)
             {
-                Multiplayer_ClientModMessageReceived(e);
+                Multiplayer_MasterPlayerReceivedMessage(e);
             }
             else
             {
-                Multiplayer_ServerMessageReceived(e);
+                Multiplayer_ClientReceivedMessage(e);
             }
         }
-        private  void SendClientActiveExpansionList(long clientId)
+        private void SendClientActiveExpansionList(long clientId)
         {
-            logger.Log($"{logPrefix}Sending Active Expansion list to {clientId}", LogLevel.Debug);
+            Log($"{logPrefix}Sending Active Expansion list to {clientId}", LogLevel.Debug);
             //
             //  send activated expansions
             //
@@ -230,12 +258,12 @@ namespace SDV_Realty_Core.Framework.Objects
             }
 
         }
-        public  void Multiplayer_ServerMessageReceived(ModMessageReceivedEventArgs e)
+        public void Multiplayer_MasterPlayerReceivedMessage(ModMessageReceivedEventArgs e)
         {
             //
             //  message processing for master player
             //
-            logger.Log($"{logPrefix}[Server] Received {e.Type}, from modId={e.FromModID}", LogLevel.Debug);
+            Log($"{logPrefix}[Server] Received {e.Type}, from modId={e.FromModID}", LogLevel.Debug);
             if (e.FromModID == helper.ModRegistry.ModID)
             {
 
@@ -287,14 +315,17 @@ namespace SDV_Realty_Core.Framework.Objects
                     case action_purchase:
                         foreach (var expansion in e.ReadAs<FEMessage>().Locations)
                         {
-                            landManager.PurchaseLand(expansion.Item2, true,e.FromPlayerID);
+                            landManager.PurchaseLand(expansion.Item2, true, e.FromPlayerID);
                         }
+                        break;
+                    default:
+                        Log($"Unknown Master messssage type {e.Type}", LogLevel.Debug);
                         break;
 
                 }
             }
         }
-        public  void SendWarpRooomStatus(bool inUse, long userId)
+        public void SendWarpRooomStatus(bool inUse, long userId)
         {
             FEMessage fEMessage = new FEMessage()
             {
@@ -304,9 +335,9 @@ namespace SDV_Realty_Core.Framework.Objects
             SendMessageToClient(fEMessage, warproom_status, -1);
 
         }
-        public  void Multiplayer_ClientModMessageReceived(ModMessageReceivedEventArgs e)
+        public void Multiplayer_ClientReceivedMessage(ModMessageReceivedEventArgs e)
         {
-            logger.Log($"{logPrefix}[Client] Received {e.Type}, from clientId={e.FromPlayerID}", LogLevel.Debug);
+            Log($"{logPrefix}[Client] Received {e.Type}, from clientId={e.FromPlayerID}", LogLevel.Debug);
 
             FEMessage inboud = e.ReadAs<FEMessage>();
 
@@ -337,10 +368,11 @@ namespace SDV_Realty_Core.Framework.Objects
                 case action_activations:
                     foreach (var activation in inboud.Locations)
                     {
-                        string logmsg = $"{logPrefix}Activating {activation.Item1},{activation.Item2}";
-                        logger.Log(logmsg, LogLevel.Debug);
+                        string logmsg = $"{logPrefix}SDRMP Activating {activation.Item2}, GridId={activation.Item1}";
+                        Log(logmsg, LogLevel.Debug);
                         P99Core_MultiPlayer.AddNetLogMessage(logmsg);
-                        expansionManager.expansionManager.ActivateExpansion(activation.Item2, activation.Item1);
+                        //expansionManager.ActivateExpansionOnRemote(activation.Item2, activation.Item1);
+                        expansionManager.ActivateExpansion(activation.Item2, activation.Item1);
                     }
                     break;
                 case action_forsale:
@@ -356,6 +388,8 @@ namespace SDV_Realty_Core.Framework.Objects
                         {
                             landManager.LandForSale.Remove(forsale.Item2);
                         }
+                        Log($"Received 'action_sold' msg for {forsale.Item2}[{forsale.Item1}]", LogLevel.Debug);
+                        expansionManager.ActivateExpansion(forsale.Item2, forsale.Item1);
                     }
                     break;
                 case data_location:
@@ -363,10 +397,10 @@ namespace SDV_Realty_Core.Framework.Objects
                     {
                         inboud.Reader = new BinaryReader(new MemoryStream(inboud.Data));
 
-                        logger.Log($"Location length {inboud.Reader.BaseStream.Length}", LogLevel.Debug);
+                        Log($"Location length {inboud.Reader.BaseStream.Length}", LogLevel.Debug);
 
                         NetRoot<GameLocation> root = readObjectFull<GameLocation>(inboud.Reader);
-                        logger.Log($"{logPrefix}Received GameLocation for '{root.Value.NameOrUniqueName}'", LogLevel.Debug);
+                        Log($"{logPrefix}Received GameLocation for '{root.Value.NameOrUniqueName}'", LogLevel.Debug);
                         if (Game1.getLocationFromName(root.Value.NameOrUniqueName) == null)
                         {
                             root.Value.reloadMap();
@@ -376,13 +410,16 @@ namespace SDV_Realty_Core.Framework.Objects
                         }
                         else
                         {
-                            logger.Log($"{logPrefix}Duplicate GameLocation received {root.Value.NameOrUniqueName}", LogLevel.Trace);
+                            Log($"{logPrefix}Duplicate GameLocation received {root.Value.NameOrUniqueName}", LogLevel.Trace);
                         }
                     }
                     catch (Exception ex)
                     {
-                        logger.LogError($"{logPrefix}Error receiving location data", ex);
+                        LogError($"{logPrefix}Error receiving location data", ex);
                     }
+                    break;
+                default:
+                    Log($"Unknown Client messssage type {e.Type}", LogLevel.Debug);
                     break;
             }
 
@@ -391,7 +428,7 @@ namespace SDV_Realty_Core.Framework.Objects
         //
         //  game code
         //
-        public  NetRoot<T> readObjectFull<T>(BinaryReader reader) where T : class, INetObject<INetSerializable>
+        public NetRoot<T> readObjectFull<T>(BinaryReader reader) where T : class, INetObject<INetSerializable>
         {
             NetRoot<T> netRoot = NetRoot<T>.Connect(reader);
             netRoot.Clock.InterpolationTicks = defaultInterpolationTicks;
@@ -463,11 +500,11 @@ namespace SDV_Realty_Core.Framework.Objects
             }
             Game1.locationRequest = null;
         }
-        public  void sendMessage(long peerId, byte messageType, Farmer sourceFarmer, params object[] data)
+        public void sendMessage(long peerId, byte messageType, Farmer sourceFarmer, params object[] data)
         {
             sendMessage(peerId, new OutgoingMessage(messageType, sourceFarmer, data));
         }
-        public  void sendLocation(long peer, GameLocation location, bool force_current = false)
+        public void sendLocation(long peer, GameLocation location, bool force_current = false)
         {
             logger.Log($"{logPrefix}Sending location_data for {location.NameOrUniqueName}", LogLevel.Debug);
             //location.Root.Value = null;
@@ -479,7 +516,7 @@ namespace SDV_Realty_Core.Framework.Objects
             SendMessageToClient(message, data_location, peer);
             //sendMessage(peer, 3, Game1.serverHost.Value, force_current, writeObjectFullBytes(locationRoot(location), peer));
         }
-        public  void sendMessage(long peerId, OutgoingMessage message)
+        public void sendMessage(long peerId, OutgoingMessage message)
         {
 
             Traverse.Create(Game1.game1).Field("server").Method("sendMessage", new object[] { peerId, message });
@@ -488,14 +525,14 @@ namespace SDV_Realty_Core.Framework.Objects
             //    server.sendMessage(peerId, message);
             //}
         }
-        public  byte[] writeObjectFullBytes<T>(NetRoot<T> root, long? peer) where T : class, INetObject<INetSerializable>
+        public byte[] writeObjectFullBytes<T>(NetRoot<T> root, long? peer) where T : class, INetObject<INetSerializable>
         {
             using MemoryStream stream = new MemoryStream();
             using BinaryWriter writer = createWriter(stream);
             root.CreateConnectionPacket(writer, peer);
             return stream.ToArray();
         }
-        public  NetRoot<GameLocation> locationRoot(GameLocation location)
+        public NetRoot<GameLocation> locationRoot(GameLocation location)
         {
             if (location.Root.Value == null && Game1.IsMasterGame)
             {
@@ -505,7 +542,7 @@ namespace SDV_Realty_Core.Framework.Objects
             }
             return location.Root;
         }
-        protected  BinaryWriter createWriter(Stream stream)
+        protected BinaryWriter createWriter(Stream stream)
         {
             BinaryWriter writer = new BinaryWriter(stream);
             //if (logging.IsLogging)
@@ -514,7 +551,7 @@ namespace SDV_Realty_Core.Framework.Objects
             //}
             return writer;
         }
-        public  int interpolationTicks()
+        public int interpolationTicks()
         {
             if (!allowSyncDelay())
             {
@@ -526,7 +563,7 @@ namespace SDV_Realty_Core.Framework.Objects
             }
             return defaultInterpolationTicks;
         }
-        public  bool allowSyncDelay()
+        public bool allowSyncDelay()
         {
             return Game1.newDaySync == null;
         }

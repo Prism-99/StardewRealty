@@ -7,10 +7,12 @@ using System;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+using StardewValley.GameData.Machines;
+using StardewValley.GameData;
 
 namespace SDV_Realty_Core.Framework.CustomEntities.Machines
 {
-    public  class CustomMachineDataManager
+    public class CustomMachineDataManager
     {
         /// <summary>
         /// Handles Custom Game MachineData items
@@ -18,17 +20,17 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Machines
         private static IModHelperService helper;
         private static ILoggerService logger;
         private static List<CustomMachineData> additonalRecipes = new List<CustomMachineData>();
-        public  Dictionary<string, CustomMachineData> Machines = new Dictionary<string, CustomMachineData>();
+        public Dictionary<string, CustomMachineData> Machines = new Dictionary<string, CustomMachineData>();
         private static IContentManagerService conMan;
         internal CustomMachineDataManager(ILoggerService ologger, IModHelperService ohelper, IContentManagerService contentMan)
         {
             helper = ohelper;
             logger = ologger;
-            conMan= contentMan;
+            conMan = contentMan;
             //LoadDefinitions();
         }
 
-        public  void LoadDefinitions()
+        public void LoadDefinitions()
         {
             try
             {
@@ -57,7 +59,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Machines
                         catch (Exception ex)
                         {
                             logger.Log($"Error loading machinedata definition: {definition}", LogLevel.Error);
-                            logger.LogError("CustomMachineDataManager.LoadDefinitions", ex);
+                            logger.LogError(ex);
                         }
                     }
                 }
@@ -66,16 +68,19 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Machines
                     logger.Log($"Missing custom MachineData directory '{machineRootPath}'", LogLevel.Warn);
                 }
             }
-            catch(Exception ex) { }
+            catch (Exception ex)
+            {
+                logger.LogError(ex);
+            }
         }
         /// <summary>
         /// Add additional recipes to a machine
         /// </summary>
         /// <param name="machine"></param>
         /// <param name="recipes"></param>
-        private  void AddRecipes(CustomMachineData machine, CustomMachineData recipes)
+        private void AddRecipes(CustomMachineData machine, CustomMachineData recipes)
         {
-            foreach (var recipe in recipes.MachineData.OutputRules)
+            foreach (MachineOutputRule recipe in recipes.MachineData.OutputRules)
             {
                 if (!machine.MachineData.OutputRules.Where(p => p.Id == recipe.Id).Any())
                 {
@@ -89,7 +94,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Machines
                 }
             }
         }
-        public  void AddMachine(CustomMachineData machine)
+        public void AddMachine(CustomMachineData machine)
         {
             if (machine.IsMachineDefinition)
             {
@@ -98,14 +103,14 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Machines
                 //  main definition for the machine, not additional recipes
                 if (machine.MachineData.WorkingEffects != null)
                 {
-                    foreach (var effect in machine.MachineData.WorkingEffects)
+                    foreach (MachineEffects effect in machine.MachineData.WorkingEffects)
                     {
                         //
                         //  added any animated sprites
                         //
                         if (effect.TemporarySprites != null)
                         {
-                            foreach (var sprite in effect.TemporarySprites)
+                            foreach (TemporaryAnimatedSpriteDefinition sprite in effect.TemporarySprites)
                             {
                                 if (!string.IsNullOrEmpty(sprite.Texture))
                                 {
@@ -146,15 +151,15 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Machines
                 }
                 Machines.Add(machine.MachineId, machine);
                 //  check for recipes waiting
-                var waitingRecipes = additonalRecipes.Where(p => p.MachineId ==machine.MachineId).ToList();
+                List<CustomMachineData> waitingRecipes = additonalRecipes.Where(p => p.MachineId == machine.MachineId).ToList();
                 if (waitingRecipes.Any())
                 {
                     logger.Log($"Adding queued recipes to {machine.MachineId}", LogLevel.Debug);
-                    foreach (var recipe in waitingRecipes)
+                    foreach (CustomMachineData recipe in waitingRecipes)
                     {
                         AddRecipes(machine, recipe);
                     }
-                    additonalRecipes.RemoveAll(p=>p.MachineId == machine.MachineId);
+                    additonalRecipes.RemoveAll(p => p.MachineId == machine.MachineId);
                 }
                 logger.Log($"Custom Machinedata for {machine.MachineId} added", LogLevel.Info);
             }

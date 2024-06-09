@@ -11,11 +11,214 @@ using StardewValley.GameData.Locations;
 
 namespace ContentPackFramework.Helpers
 {
-    internal partial class AutoMapTokens
-    {
+    internal class AutoMapTokens
+    {       
         //
-        //  common
+        //  internal token utilities
         //
+        private static string GetSubTokenValue(string tokenName, Dictionary<string, string> subTokens)
+        {
+            //
+            //  get the value of a Tile property
+            //
+            return subTokens.Where(p => p.Key == tokenName).Select(p => p.Value).FirstOrDefault();
+        }
+        private static List<MapToken> GetTokenListByName(string tokenName, List<MapToken> tokens, string tokenValue = null)
+        {
+            //
+            //  get the Token with the specified name (and TokenValue == tokenValue)
+            //
+            if (string.IsNullOrEmpty(tokenValue))
+            {
+                return tokens.Where(p => p.TokenName == tokenName).ToList();
+            }
+
+            return tokens.Where(p => p.TokenName == tokenName && p.TokenValue == tokenValue).ToList();
+        }
+        private static void DeleteToken(Point pos, string tokenName, List<MapToken> tokens)
+        {
+            //
+            //  removes a used token from the list
+            //
+            IEnumerable<MapToken> token = tokens.Where(p => p.Position == pos && p.TokenName == tokenName);
+            if (token.Count() == 1)
+            {
+                tokens.Remove(token.First());
+            }
+        }
+
+        //
+        //  map tokens
+        //
+
+        private static Tuple<bool, string> setup_minecart(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
+        {
+            MapToken landingToken = null;
+            List<MapToken> actionTokens = new List<MapToken> { };
+
+            if (token.TokenName == "minecart_action")
+            {
+                actionTokens.Add(token);
+                landingToken = GetTokenListByName("minecart_landing", tokens, token.TokenValue).FirstOrDefault();
+                DeleteToken(landingToken.Position, "minecart_landing", tokens);
+            }
+            else
+            {
+                landingToken = token;
+            }
+            List<MapToken> actionTokenList = GetTokenListByName("minecart_action", tokens, landingToken?.TokenValue);
+            actionTokens.AddRange(actionTokenList);
+
+            foreach (MapToken actionToken in actionTokens)
+            {
+                DeleteToken(actionToken.Position, actionToken.TokenName, tokens);
+            }
+            if (actionTokens.Count == 0)
+            {
+                return Tuple.Create(false, "No minecart_action token");
+            }
+            else if (landingToken == null)
+            {
+                return Tuple.Create(false, "No minecart_landing token");
+            }
+            else
+            {
+                cPac.MineCarts.Add(new ExpansionPack.MineCartSpot
+                {
+                    Exit = new EntranceWarp { NumberofPoints = 1, X = (int)landingToken.Position.X, Y = (int)landingToken.Position.Y },
+                    MineCartActionPoints = actionTokens.Select(p => p.Position).ToList(),
+                    MineCartDisplayName = GetSubTokenValue("displayname", landingToken.TokenProperties),
+                    Condition = GetSubTokenValue("condition", landingToken.TokenProperties),
+                    MineCartDirection = GetSubTokenValue("direction", landingToken.TokenProperties) ?? "down",
+                    MineCartEnabled = true
+                });
+            }
+
+
+            return Tuple.Create(false, "minecart_landing");
+        }
+        public static Tuple<bool, string> minecart_action(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
+        {
+            return setup_minecart(token, cPac, tokens);
+        }
+        public static Tuple<bool, string> minecart_landing(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
+        {
+            return setup_minecart(token, cPac, tokens);
+        }
+        public static Tuple<bool, string> treasure_area_end(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
+        {
+            //
+            //  sould not be called. treasure_area_start should alway be first in map
+            //
+            return Tuple.Create(false, "treasure_area_start should not be called.");
+        }
+        public static Tuple<bool, string> treasure_area_start(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
+        {
+            //
+            //  add a Treasure Area
+            //
+            bool bError = false;
+            string result = "";
+            string areaName = token.TokenValue.Trim();
+
+            List<MapToken> endOfArea = tokens.Where(p => p.TokenName == "treasure_area_end" && p.TokenValue == areaName).ToList();
+
+            switch (endOfArea.Count)
+            {
+                case 0:
+                    result = $"No closure for 'treasure_area_start' [{areaName}]";
+                    bError = true;
+                    break;
+                case 1:
+                    // good entry
+                    result = "treasure_area_start";
+                    //  get map positions
+                    Point endPos = endOfArea.First().Position;
+                    // remove end token from token list
+                    tokens.Remove(endOfArea.First());
+
+                    if (endPos != Point.Zero)
+                    {
+                        Rectangle treasureArea = new Rectangle(token.Position.X, token.Position.Y, endPos.X - token.Position.X, endPos.Y - token.Position.Y);
+                        int maxItems = 5;
+                        ExpansionDetails.TreasureArea treasureAreaDetails = new ExpansionDetails.TreasureArea
+                        {
+                            Items = new List<ExpansionDetails.TreasureAreaItem> { },
+                            Area = treasureArea,
+                            MaxItems = maxItems
+                        };
+
+                        foreach (string tprop in token.TokenProperties.Keys)
+                        {
+                            switch (tprop.ToLower())
+                            {
+                                case "maxitems":
+                                    if (int.TryParse(token.TokenProperties[tprop], out maxItems))
+                                        treasureAreaDetails.MaxItems = maxItems;
+                                    break;
+                                case string a when a.StartsWith("items"):
+                                    string[] arDetails = token.TokenProperties[tprop].Split(' ');
+
+                                    switch (arDetails.Length)
+                                    {
+                                        case 2:
+                                            treasureAreaDetails.Items.Add(new ExpansionDetails.TreasureAreaItem
+                                            {
+                                                ItemId = arDetails[1],
+                                                Quantity = int.Parse(arDetails[0])
+                                            });
+                                            break;                                      
+                                        case >= 3:
+                                            if (arDetails[1] == "Arch" || arDetails[1] == "Object")
+                                            {
+                                                treasureAreaDetails.Items.Add(new ExpansionDetails.TreasureAreaItem
+                                                {
+                                                    Quantity = int.Parse(arDetails[0]),
+                                                    ItemId = arDetails[1] + " " + arDetails[2],
+                                                    Condition = string.Join(" ", arDetails.Skip(3))
+                                                });
+
+                                            }
+                                            else
+                                            {
+                                                treasureAreaDetails.Items.Add(new ExpansionDetails.TreasureAreaItem
+                                                {
+                                                    Quantity = int.Parse(arDetails[0]),
+                                                    ItemId = arDetails[1],
+                                                    Condition = string.Join(" ", arDetails.Skip(2))
+                                                });
+                                            }
+                                            break;
+                                    }
+                                    break;
+                            }
+                        }
+                        if (treasureAreaDetails.Items.Any())
+                        {
+                            cPac.TreasureSpots.Add(areaName, treasureAreaDetails);
+                        }
+                        else
+                        {
+                            // no item details
+                            result = $"No Item property for TreasureArea [{areaName}]";
+                            bError = true;
+                        }
+                    }
+                    else
+                    {
+                        result = $"treasure_area_start {areaName}: map points wrong";
+                        bError = true;
+                    }
+                    break;
+                default:
+                    result = $"more than 1 treasure_area_end for '{areaName}'";
+                    bError = true;
+                    break;
+
+            }
+
+            return Tuple.Create(bError, result);
+        }
         public static Tuple<bool, string> suspension_bridge(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
         {
             cPac.suspensionBridges.Add(token.Position);
@@ -38,7 +241,7 @@ namespace ContentPackFramework.Helpers
             string result = "";
             string areaName = token.TokenValue.Trim();
 
-            var endOfArea = tokens.Where(p => p.TokenName == "fish_area_end" && p.TokenValue == areaName).ToList();
+            List<MapToken> endOfArea = tokens.Where(p => p.TokenName == "fish_area_end" && p.TokenValue == areaName).ToList();
 
             switch (endOfArea.Count)
             {
@@ -61,9 +264,9 @@ namespace ContentPackFramework.Helpers
                             Position = new Rectangle(token.Position.X, token.Position.Y, endPos.X - token.Position.X, endPos.Y - token.Position.Y)
                         };
                         fdata.StockData = new List<FishStockData> { };
-#if v16
+
                         List<SpawnFishData> fishTypes = new List<SpawnFishData>();
-#endif                    
+
                         foreach (string tprop in token.TokenProperties.Keys)
                         {
                             switch (tprop.ToLower())
@@ -93,14 +296,14 @@ namespace ContentPackFramework.Helpers
                                     {
                                         if (i + 1 < arData.Length)
                                         {
-#if v16
+
                                             fishTypes.Add(new SpawnFishData
                                             {
                                                 FishAreaId = areaName,
                                                 ItemId = arData[i],
                                                 IgnoreFishDataRequirements = true
                                             });
-#endif
+
                                             if (float.TryParse(arData[i + 1], out float chance))
                                             {
                                                 fdata.StockData.Add(new FishStockData
@@ -121,7 +324,7 @@ namespace ContentPackFramework.Helpers
                             cPac.FishAreas = new Dictionary<string, FishAreaDetails> { };
 
                         cPac.FishAreas.Add(areaName, fdata);
-#if v16
+
                         if (fishTypes.Count > 0)
                         {
                             if (cPac.FishData == null)
@@ -129,7 +332,6 @@ namespace ContentPackFramework.Helpers
 
                             cPac.FishData.Add(areaName, fishTypes);
                         }
-#endif
                     }
                     else
                     {
@@ -146,7 +348,6 @@ namespace ContentPackFramework.Helpers
 
             return Tuple.Create(bError, result);
         }
-
         public static Tuple<bool, string> bush(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
         {
             if (Int32.TryParse(token.TokenValue, out int iSize))
@@ -184,7 +385,6 @@ namespace ContentPackFramework.Helpers
 
             return Tuple.Create(error, "northsign");
         }
-
         public static Tuple<bool, string> eastsign(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
         {
             bool error = false;
@@ -212,7 +412,6 @@ namespace ContentPackFramework.Helpers
 
             return Tuple.Create(error, "eastsign");
         }
-
         public static Tuple<bool, string> southsign(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
         {
             bool error = false;
@@ -240,7 +439,6 @@ namespace ContentPackFramework.Helpers
 
             return Tuple.Create(error, "southsign");
         }
-
         public static Tuple<bool, string> westsign(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
         {
             bool error = false;
@@ -268,7 +466,6 @@ namespace ContentPackFramework.Helpers
 
             return Tuple.Create(error, "westsign");
         }
-
         public static Tuple<bool, string> north(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
         {
             bool error = false;
@@ -351,7 +548,6 @@ namespace ContentPackFramework.Helpers
 
             return Tuple.Create(error, tokename);
         }
-
         public static Tuple<bool, string> south(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
         {
             bool error = false;
@@ -434,7 +630,6 @@ namespace ContentPackFramework.Helpers
 
             return Tuple.Create(error, tokename);
         }
-
         public static Tuple<bool, string> cavein(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
         {
             bool error = false;

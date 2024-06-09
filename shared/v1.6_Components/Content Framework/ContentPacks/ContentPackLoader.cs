@@ -13,9 +13,9 @@ using xTile;
 using xTile.Format;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
 using xTile.Layers;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+using SDV_Realty_Core.Framework.CustomEntities.Movies;
 
 namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
 {
@@ -35,8 +35,8 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
             ValidContents = modDataService.validContents;// new Dictionary<string, ExpansionPack> { };
             ExpansionMaps = modDataService.ExpansionMaps;
             helper = utilitiesService.ModHelperService.modHelper;
-            _utilitiesService= utilitiesService; 
-            _autoMapperService= autoMapperService;
+            _utilitiesService = utilitiesService;
+            _autoMapperService = autoMapperService;
             this.customEntitiesServices = customEntitiesServices;
             this.gameEnvironmentService = gameEnvironmentService;
         }
@@ -57,17 +57,17 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                 new CustomBigCraftableData(), new ExpansionPack(),
                 new GenericBuilding(), new CustomObjectData(),
                 new CustomMachineData(), new CustomCropData(),
-                new CustomLocationContext(), new CustomMachine()
-               
+                new CustomLocationContext(), new CustomMachine(),
+                new CustomMovieData()
             };
 
             List<ISDRContentPack> foundPacks = new List<ISDRContentPack>();
-            foreach (var contentPack in contentPacks)
+            foreach (IContentPack contentPack in contentPacks)
             {
                 foreach (ISDRContentPack packType in contentPackTypes)
                 {
-                    var packs = Directory.GetFiles(contentPack.DirectoryPath, packType.PackFileName, SearchOption.AllDirectories);
-                    foreach (var pack in packs)
+                    string[] packs = Directory.GetFiles(contentPack.DirectoryPath, packType.PackFileName, SearchOption.AllDirectories);
+                    foreach (string pack in packs)
                     {
                         //
                         //  check for disabled directories
@@ -85,7 +85,7 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                             newPack.ModPath = Path.GetDirectoryName(pack);// contentPack.DirectoryPath;
                             newPack.Owner = contentPack;
                             newPack.SetLogger(logger);
-                            logger.Log($"Loaded content pack {newPack.Owner.Manifest.Name}.{newPack.GetType().Name}", LogLevel.Debug);
+                            logger.Log($"Loaded content pack {newPack.Owner.Manifest.Name}.{newPack.GetType().Name}", LogLevel.Debug,false);
                             foundPacks.Add(newPack);
                         }
                         catch (Exception ex)
@@ -96,7 +96,7 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                     }
                 }
             }
-            foreach (var newPack in foundPacks)
+            foreach (ISDRContentPack newPack in foundPacks)
             {
                 try
                 {
@@ -126,6 +126,9 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                             break;
                         case CustomMachine machine:
                             //CustomMachineManager.AddMachine(machine);
+                            break;
+                        case CustomMovieData movieData:
+                            customEntitiesServices.customMovieService.AddMovieDefinition(movieData.MovieId, movieData);
                             break;
                     }
                 }
@@ -206,15 +209,15 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                     {
                         bool mapIsValid = true;
                         Map mNewMap = _utilitiesService.MapLoaderService.Loader.LoadMap(gameEnvironmentService.GamePath, Path.Combine(oPack.ModPath, "assets", oPack.MapName), sPackName, false);
-                        //mNewMap.Properties.Add("LocationContext", "sdr.always_winter");
                         //
                         //  parse map for tags
                         //
                         ExpansionPack autoParse = _autoMapperService.ParseMap(mNewMap);
-
+#if DEBUG_LOG
                         logger.Log($"Auto-mapping: {sPackName}", LogLevel.Info);
-
+#endif
                         oPack.Bushes.AddRange(autoParse.Bushes);
+                        oPack.TreasureSpots=autoParse.TreasureSpots;
                         if (autoParse.CaveEntrance.WarpIn.X != -1 && autoParse.CaveEntrance.WarpIn.Y != -1)
                         {
                             logger.Log($"   auto-mapping CaveEntrance.WarpIn", LogLevel.Debug);
@@ -307,28 +310,26 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
 
                         oPack.FishData = autoParse.FishData;
 
+                        oPack.MineCarts = autoParse.MineCarts;
 
-                        oPack.MineCartEnabled = autoParse.MineCartEnabled;
-
-                        if (autoParse.MineCartEnabled)
+                        if (autoParse.MineCarts.Any())
                         {
                             Layer backLayer = mNewMap.GetLayer("Buildings");
 
                             if (backLayer == null)
                             {
-                                oPack.MineCartEnabled = false;
-                                logger.Log($"    Could not find Buildings layer for minecart mapping.", LogLevel.Debug);
+                                 logger.Log($"    Could not find Buildings layer for minecart mapping.", LogLevel.Debug);
                             }
                             else
                             {
-                                foreach (var aTile in autoParse.MineCartActionPoints)
+                                foreach (ExpansionPack.MineCartSpot mineCartStation in autoParse.MineCarts)
                                 {
-                                    backLayer.Tiles[aTile.X, aTile.Y].Properties.Add("Action", $"MinecartTransport Default {sPackName}");
+                                    foreach (Point aTile in mineCartStation.MineCartActionPoints)
+                                    {
+                                        backLayer.Tiles[aTile.X, aTile.Y].Properties.Add("Action", $"MinecartTransport Default {oPack.LocationName}.{mineCartStation.MineCartDisplayName}");
+                                    }
+                                    logger.Log($"    Added minecart Action square(s)", LogLevel.Debug);
                                 }
-                                logger.Log($"    Added minecart Action square(s)", LogLevel.Debug);
-                                oPack.MineCart = autoParse.MineCart;
-                                oPack.MineCartDirection = autoParse.MineCartDirection;
-                                oPack.MineCartDisplayName = autoParse.MineCartDisplayName;
                             }
                         }
                         logger.Log($"    FishData: {(oPack.FishData == null ? 0 : oPack.FishData.Count())}", LogLevel.Debug);
@@ -339,7 +340,9 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
 
                         if (mapIsValid)
                         {
+#if DEBUG_LOG
                             logger.Log($"Loaded map 'Maps/{sPackName}' for {sPackName}", LogLevel.Trace);
+#endif
                             ExpansionMaps.Add(sPackName, mNewMap);
                             bHaveActive = true;
                         }
@@ -352,7 +355,7 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                 }
                 catch (Exception ex)
                 {
-                    logger.Log(ex.ToString(), LogLevel.Error);
+                    logger.LogError(ex);
                     logger.Log($"Unable to load map file '{sPackName}', unloading mod. Please try re-installing the mod.", LogLevel.Alert);
                     lFailedPacks.Add(sPackName);
                 }

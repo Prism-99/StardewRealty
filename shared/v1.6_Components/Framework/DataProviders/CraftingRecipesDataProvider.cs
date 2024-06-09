@@ -2,6 +2,9 @@
 using StardewModdingAPI.Events;
 using System.Linq;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using System.Collections.Generic;
+using SDV_Realty_Core.Framework.CustomEntities.BigCraftables;
+
 
 namespace SDV_Realty_Core.Framework.DataProviders
 {
@@ -25,12 +28,12 @@ namespace SDV_Realty_Core.Framework.DataProviders
             //
             //  get a list of potential activations
             //
-            var potential = customEntitiesServices.customBigCraftableService.customBigCraftableManager.BigCraftables.Where(p => !p.Value.Added && !string.IsNullOrEmpty(p.Value.Conditions)).ToList();
+            List<KeyValuePair<string, CustomBigCraftableData>> potential = customEntitiesServices.customBigCraftableService.customBigCraftableManager.BigCraftables.Where(p => !p.Value.Added && !string.IsNullOrEmpty(p.Value.Conditions)).ToList();
             bool haveNew = false;
             //
             //  check candidates to see if they can be activated
             //
-            foreach (var recipe in potential)
+            foreach (KeyValuePair<string, CustomBigCraftableData> recipe in potential)
             {
                 if (Game1.hasLoadedGame && GameStateQuery.CheckConditions(recipe.Value.Conditions))
                 {
@@ -48,18 +51,25 @@ namespace SDV_Realty_Core.Framework.DataProviders
         {
             e.Edit(asset =>
             {
-                foreach (var bigCraftable in customEntitiesServices.customBigCraftableService.customBigCraftableManager.BigCraftables.Values)
+                var recipes = asset.AsDictionary<string, string>().Data;
+                //
+                //  add crafting recipe for Mushroom Box
+                //
+                if (utilitiesService.ConfigService.config.AddMushroomBoxRecipe)
+                    recipes.Add("Mushroom Box", "388 5/Home/128/true/default/");
+
+                foreach (CustomBigCraftableData bigCraftable in customEntitiesServices.customBigCraftableService.customBigCraftableManager.BigCraftables.Values)
                 {
                     if (string.IsNullOrEmpty(bigCraftable.Conditions))
                     {
-                        asset.AsDictionary<string, string>().Data.Add(bigCraftable.BigCraftableData.Name, bigCraftable.CraftingRecipe());
+                        recipes.Add(bigCraftable.BigCraftableData.Name, bigCraftable.CraftingRecipe());
                     }
                     else
                     {
                         //check if conditions are met
                         if (Game1.hasLoadedGame && GameStateQuery.CheckConditions(bigCraftable.Conditions))
                         {
-                            asset.AsDictionary<string, string>().Data.Add(bigCraftable.BigCraftableData.Name, bigCraftable.CraftingRecipe());
+                            recipes.Add(bigCraftable.BigCraftableData.Name, bigCraftable.CraftingRecipe());
                             bigCraftable.Added = true;
                         }
                     }
@@ -69,7 +79,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
 
         public override void OnGameLaunched()
         {
-           
+
         }
     }
 }

@@ -8,9 +8,14 @@ using Prism99_Core.Extensions;
 using System.Linq;
 using SDV_Realty_Core.Framework.Utilities;
 using SDV_Realty_Core.Framework.Locations;
-using SDV_Realty_Core.Framework.ServiceInterfaces;
 using SDV_Realty_Core.Framework.ServiceInterfaces.GameMechanics;
 using StardewValley.GameData.Locations;
+using StardewValley.TerrainFeatures;
+using SDV_Realty_Core.Framework.ServiceInterfaces.GUI;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using SDV_Realty_Core.Framework.ServiceProviders.Utilities;
 
 
 namespace SDV_Realty_Core.ContentPackFramework.Utilities
@@ -28,7 +33,8 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
         private IModDataService modDataService;
         private IContentManagerService contentManagerService;
         private IValleyStatsService valleyStatsService;
-        public ConsoleCommands(ILoggerService olog, IUtilitiesService utilitiesService, IFishStockService fishStockService, ILandManager landManager, IJunimoHarvesterService junimoHarvesterService, IModDataService modDataService, IContentManagerService contentManagerService, IValleyStatsService valleyStatsService)
+        private IMapRendererService mapRendererService;
+        public ConsoleCommands(ILoggerService olog, IUtilitiesService utilitiesService, IFishStockService fishStockService, ILandManager landManager, IJunimoHarvesterService junimoHarvesterService, IModDataService modDataService, IContentManagerService contentManagerService, IValleyStatsService valleyStatsService, IMapRendererService mapRendererService)
         {
             logger = olog;
             this.utilitiesService = utilitiesService;
@@ -38,10 +44,12 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             this.modDataService = modDataService;
             this.contentManagerService = contentManagerService;
             this.valleyStatsService = valleyStatsService;
+            this.mapRendererService = mapRendererService;
         }
 
         public void AddCommands(IModHelper helper)
         {
+            helper.ConsoleCommands.Add("sdr", "SDR Commands.", HandleSDRCommand);
             helper.ConsoleCommands.Add("sdr_packs", "List the status of installed Farm Expansion Content Packs.", fe_packs);
             helper.ConsoleCommands.Add("sdr_forsale", "List the of Expansion packs that are For Sale.", fe_forsale);
             helper.ConsoleCommands.Add("sdr_mail", "List of messages the player has received.", fe_mail);
@@ -55,8 +63,131 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             helper.ConsoleCommands.Add("sdr_reset_fishstocks", "Resets auto filled expansion fish stocks.", fe_reset_fishstocks);
             helper.ConsoleCommands.Add("sdr_serving", "Dump a list of external assets served by SDR.", sdr_serving);
             helper.ConsoleCommands.Add("sdr_brightness", "Set the global building brightness.", sdr_brightness);
+            helper.ConsoleCommands.Add("sdr_grass", "Dump location grass.", sdr_grass);
+            helper.ConsoleCommands.Add("sdr_gsq", "Test GSQs.", sdr_gsq);
+            helper.ConsoleCommands.Add("sdr_togglecheats", "Toggle cheat mode.", sdr_togglecheat);
+            helper.ConsoleCommands.Add("sdr_render_location", "Render location's map to a png file %1 location, %2 save filename. Images are stored in the User\\Pictures directory.", sdr_render_location);
+            helper.ConsoleCommands.Add("sdr_config", "Dumps the current configuration settings to the console.", sdr_config);
             //helper.ConsoleCommands.Add("fe_perf", "Displays perf data.", fe_perf);
 
+        }
+        private void HandleSDRCommand(string name, string[] args)
+        {
+            if (args.Length == 0)
+            {
+                //
+                //  dump command list
+                //
+                WriteLine("Command list:");
+                WriteLine("purchase expansionName   : purchases the named expansion");
+                    
+            }
+            else
+            {
+                switch(args[0].ToLower())
+                {
+                    case "purchase":
+                        Purchase(args.Skip(1).ToArray());
+                        break;
+                }
+            }
+        }
+        private void Purchase(string[] args)
+        {
+            if (landManager.PurchaseLand(args[0], true, Game1.player.UniqueMultiplayerID))
+                WriteLine($"Suceesfully purchased expansion '{args[0]}'");
+            else
+                WriteLine($"Could not purchase expansion '{args[0]}'");
+        }
+        /// <summary>
+        /// Dumps the configuration to the console
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="args"></param>
+        private void sdr_config(string name, string[] args)
+        {
+            foreach (PropertyInfo prop in utilitiesService.ConfigService.config.GetType().GetProperties().OrderBy(p=>p.Name))
+            {
+                //var type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                //if (type == typeof(DateTime))
+                //{
+                    WriteLine($"{prop.Name}: {prop.GetValue(utilitiesService.ConfigService.config, null)}");
+                //}
+            }
+        }
+        private void sdr_render_location(string name, string[] args)
+        {
+            //
+            //  0 - location name
+            //  1 - save filename
+            //  2 - with details (bool)
+            //
+            if (args.Length < 2)
+            {
+                WriteLine($"Missing required argument");
+                WriteLine($"sdr_render_location locationname savename");
+                return;
+            }
+            bool withDetails = false;
+            if (args.Length > 2)
+            {
+                bool.TryParse(args[2], out withDetails);
+            }
+            GameLocation gl = Game1.getLocationFromName(args[0]);
+            if (gl == null)
+            {
+                WriteLine($"Unknown location '{args[0]}'");
+                return;
+            }
+            try
+            {
+                string picfile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Path.GetFileNameWithoutExtension(args[1]));
+                mapRendererService.RenderMap(gl).Save($"{picfile}.png");
+                WriteLine($"Map saved to {picfile}.png");           
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"Render Location Map {args[0]}", ex);
+            }
+        }
+        private void sdr_togglecheat(string name, string[] args)
+        {
+            Program.enableCheats = !Program.enableCheats;
+            WriteLine($"Cheats enabled {Program.enableCheats}");
+        }
+        private void sdr_gsq(string name, string[] args)
+        {
+            try
+            {
+                string query = string.Join(" ", args);
+                if (GameStateQuery.IsImmutablyTrue(query))
+                {
+                    WriteLine($"GSQ '{query}' will always return true");
+                }
+                else if (GameStateQuery.IsImmutablyFalse(query))
+                {
+                    WriteLine($"GSQ '{query}' will always return false");
+                }
+                else
+                {
+                    bool result = GameStateQuery.CheckConditions(query);
+                    WriteLine($"GSQ '{query}' returns {result}");
+                }
+            }
+            catch (Exception ex)
+            {
+                WriteLine($"GSQ error: {ex}");
+            }
+        }
+        private void sdr_grass(string name, string[] args)
+        {
+            foreach (KeyValuePair<Vector2, TerrainFeature> feature in Game1.player.currentLocation.terrainFeatures.Pairs)
+            {
+                if (feature.Value is Grass gr)
+                {
+                    WriteLine($"{feature.Key}: {gr.numberOfWeeds.Value} ({gr.Location})");
+                }
+            }
         }
         private void sdr_brightness(string name, string[] args)
         {
@@ -81,7 +212,7 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             {
                 WriteLine($"{key}: {contentManagerService.ExternalReferences[key].GetType().Name}");
             }
-            foreach (var map in contentManagerService.contentManager.Maps)
+            foreach (KeyValuePair<string, xTile.Map> map in contentManagerService.contentManager.Maps)
             {
                 WriteLine($"{map.Key}: {map.Value.GetType().Name}");
             }
@@ -111,7 +242,7 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
                     , "Terr2","LTerr","Objs1","Objs2" };
 
                 WriteLine(" " + string.Join('|', headers.Select(p => p.PadLeft(7, ' '))));
-                foreach (var data in GamePerfMonData.PerfRecords[loc].OrderBy(p => p.GameDay))
+                foreach (GamePerfMonData.GameDataRecord data in GamePerfMonData.PerfRecords[loc].OrderBy(p => p.GameDay))
                 {
                     WriteLine($"{GamePerfMonData.FormatData(data)}");
                 }
@@ -123,7 +254,7 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             bool notFiltered = args.Count() > 0;
 
             WriteLine($".locations ({Game1.locations.Count()})");
-            foreach (var loc in Game1.locations)
+            foreach (GameLocation loc in Game1.locations)
             {
                 if (notFiltered || modDataService.farmExpansions.ContainsKey(loc.Name) || loc.Name == WarproomManager.WarpRoomLoacationName)
                 {
@@ -133,7 +264,7 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             }
             index = 0;
             WriteLine($"._locationLookup ({Game1._locationLookup.Count()})");
-            foreach (var loc in Game1._locationLookup)
+            foreach (KeyValuePair<string, GameLocation> loc in Game1._locationLookup)
             {
                 if (notFiltered || modDataService.farmExpansions.ContainsKey(loc.Key) || loc.Key.StartsWith("fe.") || loc.Key == WarproomManager.WarpRoomLoacationName)
                 {
@@ -143,9 +274,9 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             }
 
             index = 0;
-            var always = Game1._locationLookup.Where(p => p.Value.isAlwaysActive.Value);
+            IEnumerable<KeyValuePair<string, GameLocation>> always = Game1._locationLookup.Where(p => p.Value.isAlwaysActive.Value);
             WriteLine($"always active ({always.Count()})");
-            foreach (var loc in always)
+            foreach (KeyValuePair<string, GameLocation> loc in always)
             {
                 if (notFiltered || modDataService.farmExpansions.ContainsKey(loc.Key) || loc.Key.StartsWith("fe.") || loc.Key == WarproomManager.WarpRoomLoacationName)
                 {
@@ -156,21 +287,27 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
         }
         private void fe_loc_details(string name, string[] args)
         {
+            string locationName = "";
             if (args.Length == 0)
             {
-                WriteLine("No location name supplied.");
-                return;
+                locationName = Game1.player.currentLocation.Name;
+                //WriteLine("No location name supplied.");
+                //return;
             }
-            GameLocation gl = Game1.getLocationFromName(args[0]);
+            else
+            {
+                locationName = args[0];
+            }
+            GameLocation gl = Game1.getLocationFromName(locationName);
 
             if (gl == null)
             {
-                WriteLine($"Unknown location '{args[0]}'");
+                WriteLine($"Unknown location '{locationName}'");
 
             }
             else
             {
-                WriteLine($"Location name: {gl?.DisplayName ?? "--"} ({args[0]})");
+                WriteLine($"Location name: {gl?.DisplayName ?? "--"} ({locationName})");
                 WriteLine($"Season override: {(gl.GetSeason() == Game1.season ? "None" : gl.GetSeason())}");
                 WriteLine($"Fishing Areas ({gl.GetData()?.FishAreas.Count ?? -1})");
                 if (gl.GetData().FishAreas != null && gl.GetData().FishAreas.Count > 0)
@@ -187,8 +324,8 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
                 }
                 if (gl.GetData().Fish != null && gl.GetData().Fish.Count > 0)
                 {
-                    WriteLine($"ID           |Rules|Area Id     |RandomItemId");
-                    WriteLine($"---------------------------------------------");
+                    WriteLine($"ID           |Rules|Area Id      |RandomItemId");
+                    WriteLine($"----------------------------------------------");
                     foreach (SpawnFishData fd in gl.GetData().Fish.OrderBy(p => p.FishAreaId))
                     {
                         string id = fd.Id;
@@ -199,6 +336,14 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
                         WriteLine($"{(id ?? "??").PadRight(13, ' ')}|{(fd.IgnoreFishDataRequirements ? "  N  " : "  Y  ")}|{(fd.FishAreaId ?? "??").PadRight(10, ' ')}  |{(fd.RandomItemId == null ? "".PadRight(20, ' ') : string.Join(',', fd.RandomItemId).PadRight(20, ' '))}");
                     }
                     WriteLine("");
+                }
+                WriteLine($" Out   |  Destination       |  In  ");
+                WriteLine($"-----------------------------------");
+                foreach (Warp warp in gl.warps)
+                {
+                    string outWarp = $" {warp.X},{warp.Y}";
+                    string inWarp = $" {warp.TargetX},{warp.TargetY}";
+                    WriteLine($"{outWarp.PadRight(7)}|{warp.TargetName.PadRight(20)}|{inWarp}");
                 }
             }
         }
@@ -272,43 +417,46 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             //  Dump the details of an expansion pack
             //  to the console
             //
+            string expansionName;
             if (args.Length < 1)
             {
-                WriteLine("No Expansion Pack Name supplied.");
+                expansionName = Game1.player.currentLocation.Name;
+                //WriteLine("No Expansion Pack Name supplied.");
             }
             else
             {
-                if (modDataService.validContents.ContainsKey(args[0]))
-                {
-                    ExpansionPack oPack = modDataService.validContents[args[0]];
+                expansionName = args[0];
+            }
+            if (modDataService.validContents.ContainsKey(expansionName))
+            {
+                ExpansionPack oPack = modDataService.validContents[expansionName];
 
-                    WriteLine($"Pack Name: '{args[0]}'");
-                    WriteLine($"Display Name: '{oPack.DisplayName ?? oPack.LocationName}'");
-                    WriteLine($"Description: '{oPack.Description ?? ""}'");
-                    WriteLine($"Cost: {oPack.Cost}");
-                    WriteLine($"Map name: '{oPack.MapName ?? "????"}'");
-                    WriteLine($"Thumbnail name: '{oPack.ThumbnailName ?? ""}'");
-                    WriteLine($"Requirements: '{oPack.Requirements ?? ""}'");
-                    WriteLine($"Entrances");
-                    foreach (string sEntranceId in oPack.EntrancePatches.Keys)
-                    {
-                        WriteLine("--------------------------------------------");
-                        WriteLine($"         Entrance Id '{sEntranceId}'");
-                        WriteLine("--------------------------------------------");
-                        EntrancePatch oPatch = oPack.EntrancePatches[sEntranceId];
-                        WriteLine($"Map to Patch: '" + (oPatch.PatchMapName ?? "") + "'");
-                        WriteLine($"MapPatchPoint: ({oPatch.MapPatchPointX},{oPatch.MapPatchPointY})");
-                        WriteLine($"PathBlock: ({oPatch.PathBlockX},{oPatch.PathBlockY})");
-                        WriteLine($"WarpOrientation: {oPatch.WarpOrientation}");
-                        WriteLine($"WarpIn: ({oPatch.WarpIn.X},{oPatch.WarpIn.Y}) x{oPatch.WarpIn.NumberofPoints}");
-                        WriteLine($"WarpOut: ({oPatch.WarpOut.X},{oPatch.WarpOut.Y}) x{oPatch.WarpOut.NumberofPoints}");
-                        WriteLine("");
-                    }
-                }
-                else
+                WriteLine($"Pack Name: '{expansionName}'");
+                WriteLine($"Display Name: '{oPack.DisplayName ?? oPack.LocationName}'");
+                WriteLine($"Description: '{oPack.Description ?? ""}'");
+                WriteLine($"Cost: {oPack.Cost}");
+                WriteLine($"Map name: '{oPack.MapName ?? "????"}'");
+                WriteLine($"Thumbnail name: '{oPack.ThumbnailName ?? ""}'");
+                WriteLine($"Requirements: '{oPack.Requirements ?? ""}'");
+                WriteLine($"Entrances");
+                foreach (string sEntranceId in oPack.EntrancePatches.Keys)
                 {
-                    WriteLine($"Unknown Content Pack '{args[1]}'");
+                    WriteLine("--------------------------------------------");
+                    WriteLine($"         Entrance Id '{sEntranceId}'");
+                    WriteLine("--------------------------------------------");
+                    EntrancePatch oPatch = oPack.EntrancePatches[sEntranceId];
+                    WriteLine($"Map to Patch: '" + (oPatch.PatchMapName ?? "") + "'");
+                    WriteLine($"MapPatchPoint: ({oPatch.MapPatchPointX},{oPatch.MapPatchPointY})");
+                    WriteLine($"PathBlock: ({oPatch.PathBlockX},{oPatch.PathBlockY})");
+                    WriteLine($"WarpOrientation: {oPatch.WarpOrientation}");
+                    WriteLine($"WarpIn: ({oPatch.WarpIn.X},{oPatch.WarpIn.Y}) x{oPatch.WarpIn.NumberofPoints}");
+                    WriteLine($"WarpOut: ({oPatch.WarpOut.X},{oPatch.WarpOut.Y}) x{oPatch.WarpOut.NumberofPoints}");
+                    WriteLine("");
                 }
+            }
+            else
+            {
+                WriteLine($"Unknown Expansion Pack '{expansionName}'");
             }
 
         }

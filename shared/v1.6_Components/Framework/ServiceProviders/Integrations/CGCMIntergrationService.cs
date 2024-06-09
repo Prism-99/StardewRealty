@@ -28,7 +28,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Integrations
 
             IUtilitiesService utilitiesService = (IUtilitiesService)args[0];
 
-            CGCMIntegration = new CGCM_Integration(utilitiesService.ModHelperService,utilitiesService.ManifestService.manifest,utilitiesService.ConfigService.config,logger);
+            CGCMIntegration = new CGCM_Integration(utilitiesService.ModHelperService,utilitiesService.ManifestService.manifest,utilitiesService.ConfigService,logger);
 
             utilitiesService.GameEventsService.AddSubscription(new GameLaunchedEventArgs() , RegisterMenu);
         }

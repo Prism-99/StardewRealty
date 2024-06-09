@@ -15,12 +15,10 @@ namespace SDV_Realty_Core.Framework.CustomEntities.LocationContexts
     {
         private ILoggerService logger;
         public Dictionary<string, CustomLocationContext> LocationContexts = new();
-        private IModHelperService _modHelperService;
-        private IUtilitiesService _utilitiesService;
-        internal LocationContextDataManager(ILoggerService olog, IModHelperService helper, IUtilitiesService utilitiesService)
+         private IUtilitiesService _utilitiesService;
+        internal LocationContextDataManager(ILoggerService olog,  IUtilitiesService utilitiesService)
         {
             logger = olog;
-            _modHelperService = helper;
             _utilitiesService = utilitiesService;
         }
         public void LoadDefinitions()
@@ -33,7 +31,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.LocationContexts
             //
             //  add custom weather contexts
             //
-            string customContextRoot = Path.Combine(_modHelperService.DirectoryPath, "data", "assets", "locationcontexts");
+            string customContextRoot = Path.Combine(_utilitiesService.ModHelperService.DirectoryPath, "data", "assets", "locationcontexts");
             try
             {
                 if (Directory.Exists(customContextRoot))
@@ -48,7 +46,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.LocationContexts
                             string fileContent = File.ReadAllText(defin);
                             CustomLocationContext nObject = JsonConvert.DeserializeObject<CustomLocationContext>(fileContent);
                             nObject.ModPath = Path.GetDirectoryName(defin);
-                            nObject.translations = _modHelperService.Translation;
+                            nObject.translations = _utilitiesService.ModHelperService.Translation;
                             AddLocationContext(nObject.ContextName, nObject);
                         }
                         catch (Exception ex)

@@ -6,7 +6,7 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 
-namespace SDV_Realty_Core.Framework.ServiceProviders
+namespace SDV_Realty_Core.Framework.ServiceProviders.GUI
 {
     internal class ForSaleMenuService : IForSaleMenuService
     {

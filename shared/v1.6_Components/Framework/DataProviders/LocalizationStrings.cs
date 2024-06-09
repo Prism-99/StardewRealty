@@ -1,6 +1,9 @@
 ﻿using SDV_Realty_Core.Framework.Buildings;
 using SDV_Realty_Core.Framework.CustomEntities.BigCraftables;
 using SDV_Realty_Core.Framework.CustomEntities.Objects;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Services;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using StardewModdingAPI.Events;
 using System;
 using System.Collections.Generic;
@@ -13,10 +16,15 @@ namespace SDV_Realty_Core.Framework.DataProviders
     {
         private static ITranslationHelper Translations;
         public static Dictionary<string, string> TranslationDict;
-        public void Intialize(ITranslationHelper translations)
+        private Dictionary<string, ITranslationHelper> _toTranslate;
+        private IUtilitiesService _services;
+        public void Intialize(ITranslationHelper translations, IUtilitiesService utilitiesService)
         {
             Translations = translations;
             TranslationDict = new Dictionary<string, string>();
+            _toTranslate = new Dictionary<string, ITranslationHelper>();
+            _services = utilitiesService;
+            //_services.GameEventsService.AddSubscription(new GameLaunchedEventArgs(), HandleGameLaunched);
         }
         public override string Name => "SDR/Strings";
         /// <summary>
@@ -26,50 +34,49 @@ namespace SDV_Realty_Core.Framework.DataProviders
         /// <param name="customObjects"></param>
         public void AddStrings(Dictionary<string, CustomObjectData> customObjects)
         {
-            foreach (var customObject in customObjects)
+            foreach (KeyValuePair<string, CustomObjectData> customObject in customObjects)
             {
                 if (customObject.Value.ObjectData.DisplayName.StartsWith("[LocalizedText"))
                 {
                     if (TryGetTranslationKey(customObject.Value.ObjectData.DisplayName, out string displayNameKey))
-                        TryAddStringToDictionary(displayNameKey, customObject.Value.translations);
+                        AddTranslationToQueue(displayNameKey, customObject.Value.translations);
                 }
                 if (customObject.Value.ObjectData.Description.StartsWith("[LocalizedText"))
                 {
                     if (TryGetTranslationKey(customObject.Value.ObjectData.Description, out string descriptionKey))
-                        TryAddStringToDictionary(descriptionKey, customObject.Value.translations);
+                        AddTranslationToQueue(descriptionKey, customObject.Value.translations);
                 }
             }
         }
         public void AddStrings(Dictionary<string, ICustomBuilding> customBuildings)
         {
-            foreach (var customBuilding in customBuildings)
+            foreach (KeyValuePair<string, ICustomBuilding> customBuilding in customBuildings)
             {
                 if (customBuilding.Value.DisplayName.StartsWith("[LocalizedText"))
                 {
                     if (TryGetTranslationKey(customBuilding.Value.DisplayName, out string displayNameKey))
-                        TryAddStringToDictionary(displayNameKey, customBuilding.Value.translations);
+                        AddTranslationToQueue(displayNameKey, customBuilding.Value.translations);
                 }
                 if (customBuilding.Value.Description.StartsWith("[LocalizedText"))
                 {
                     if (TryGetTranslationKey(customBuilding.Value.Description, out string descriptionKey))
-                        TryAddStringToDictionary(descriptionKey, customBuilding.Value.translations);
+                        AddTranslationToQueue(descriptionKey, customBuilding.Value.translations);
                 }
             }
         }
-      
-        public void AddStrings(Dictionary<string,CustomBigCraftableData> customBC)
+        public void AddStrings(Dictionary<string, CustomBigCraftableData> customBC)
         {
-            foreach (var bigCraftable in customBC.Values)
+            foreach (CustomBigCraftableData bigCraftable in customBC.Values)
             {
                 if (bigCraftable.BigCraftableData.DisplayName.StartsWith("[LocalizedText"))
                 {
                     if (TryGetTranslationKey(bigCraftable.BigCraftableData.DisplayName, out string displayNameKey))
-                        TryAddStringToDictionary(displayNameKey, bigCraftable.translations);
+                        AddTranslationToQueue(displayNameKey, bigCraftable.translations);
                 }
                 if (bigCraftable.BigCraftableData.Description.StartsWith("[LocalizedText"))
                 {
                     if (TryGetTranslationKey(bigCraftable.BigCraftableData.Description, out string descriptionKey))
-                        TryAddStringToDictionary(descriptionKey, bigCraftable.translations);
+                        AddTranslationToQueue(descriptionKey, bigCraftable.translations);
                 }
             }
             //foreach (var bigCraftable in customBC)
@@ -92,7 +99,14 @@ namespace SDV_Realty_Core.Framework.DataProviders
             }
             catch (Exception ex)
             {
-
+                logger.LogError("LocalizationStrings.TryAddStringToDictionary", ex);
+            }
+        }
+        private void AddTranslationToQueue(string translationKey, ITranslationHelper translations)
+        {
+            if (!_toTranslate.ContainsKey(translationKey))
+            {
+                _toTranslate.Add(translationKey, translations);
             }
         }
         private bool TryGetTranslationKey(string fieldText, out string translationKey)
@@ -106,14 +120,26 @@ namespace SDV_Realty_Core.Framework.DataProviders
                 return true;
             }
 
-
             return false;
+        }
+        public void HandleGameLaunched(EventArgs e)
+        {
+            PopulateDictionary();
+        }
+        public void PopulateDictionary()
+        {
+            foreach (var translateItem in _toTranslate)
+            {
+                TryAddStringToDictionary(translateItem.Key, translateItem.Value);
+            }
         }
         /// <summary>
         /// Lookup all requested translations
         /// </summary>
         public void GenerateDictionary()
         {
+            logger.Log($"Generating String Dictionary",LogLevel.Debug);
+            PopulateDictionary();
             foreach (string key in TranslationDict.Where(p => string.IsNullOrEmpty(p.Value)).Select(p => p.Key))
             {
                 if (Translations.Get(key) == null)

@@ -23,6 +23,7 @@ namespace Prism99_Core.MultiplayerUtils
         private static List<Action<PeerDisconnectedEventArgs>> PeerDisconnectedCallbacks = new List<Action<PeerDisconnectedEventArgs>>();
         private static List<Action<ModMessageReceivedEventArgs>> ModMessageReceivedCallbacks = new List<Action<ModMessageReceivedEventArgs>>();
         private static string LogPrefix = "[MP] ";
+        private static bool initialized = false;
         public static bool IsMultiplayer { get { return Game1.IsMultiplayer || Context.ScreenId > 0; } }
         public static bool IsMasterGame
         {
@@ -36,6 +37,8 @@ namespace Prism99_Core.MultiplayerUtils
 
         public static void Initialize(IModHelper oHelper, SDVLogger ologger)
         {
+            //ologger.Log($"{initialized} Initialize Stack: {Environment.StackTrace}", LogLevel.Debug);
+            if (initialized) return;
             helper = oHelper;
             mPlayer = oHelper.Reflection.GetField<Multiplayer>(typeof(Game1), "multiplayer").GetValue();
             logger = ologger;
@@ -50,7 +53,7 @@ namespace Prism99_Core.MultiplayerUtils
             helper.Events.Multiplayer.ModMessageReceived += Multiplayer_ModMessageReceived;
             helper.Events.Multiplayer.PeerDisconnected += Multiplayer_PeerDisconnected;
             helper.Events.GameLoop.TimeChanged += GameLoop_TimeChanged;
-
+            initialized = true;
         }
         private static void GetGameServer()
         {

@@ -12,6 +12,13 @@ namespace SDV_Realty_Core.Framework.Objects
         // version 1.6
         //    
         public double? GetDirtDecayChance { get; set; } = null;
+        public bool? AllowGrassGrowInWinter { get; set; }
+        public bool? AllowGrassSurviveInWinter { get; set; }
+        public bool ?skipWeedGrowth { get; set; }
+        public bool? SpawnGrassFromPathsOnNewYear { get; set; }
+        public bool? SpawnRandomGrassOnNewYear { get; set; }
+        public string Treasure { get; set; } = null;
+        public bool ?EnableGrassSpread { get; set; }
 
         public LocationData GetLocationData()
         {

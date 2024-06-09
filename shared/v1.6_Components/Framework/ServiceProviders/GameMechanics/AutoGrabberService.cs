@@ -14,21 +14,27 @@ using StardewValley.TerrainFeatures;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
+using StardewValley.GameData.Objects;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 {
+    /// <summary>
+    /// Implements IAutograbberService providing auto-grabbing functionality
+    /// </summary>
     internal class AutoGrabberService : IAutoGrabberService
     {
+        private IUtilitiesService _utilitiesService;
         public override Type[] InitArgs => new Type[]
         {
             typeof(IUtilitiesService),typeof(IModDataService)
         };
         private FEConfig config;
-         private IModDataService modDataService;
+        private IModDataService modDataService;
         private List<string> quality = new List<string> { "basic", "silver", "gold", "3", "iridium" };
         private readonly int FARMING = 0;
         private readonly int FORAGING = 2;
-
+        private bool hooksAdded = false;
         public override object ToType(Type conversionType, IFormatProvider provider)
         {
             if (conversionType == ServiceType)
@@ -41,15 +47,108 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
         {
             this.logger = logger;
 
-            IUtilitiesService utilitiesService = (IUtilitiesService)args[0];
+            _utilitiesService = (IUtilitiesService)args[0];
             modDataService = (IModDataService)args[1];
 
-            config = utilitiesService.ConfigService.config;
+            config = _utilitiesService.ConfigService.config;
+            // add subscription to load hooks once contetn is loaded
+            _utilitiesService.GameEventsService.AddSubscription(IGameEventsService.EventTypes.ContentLoaded, HandleContentLoaded);
+            // add subscription to load hooks on configuration change
+            _utilitiesService.CustomEventsService.AddModEventSubscription(ICustomEventsService.ModEvents.ConfigChanged, HandleConfigChanged);
 
-            utilitiesService.GameEventsService.AddSubscription(typeof(ObjectListChangedEventArgs).Name, LocationEvents_ObjectsChanged);
-            utilitiesService.GameEventsService.AddSubscription(new DayStartedEventArgs(), DayStarted);
+        }
 
+        #region "Event Handlers"
+        private void HandleConfigChanged(object[] args)
+        {
+            AddHooks();
+        }
+        private void HandleContentLoaded()
+        {
+            AddHooks();
+        }
+        private void HandleDayStarted(EventArgs e)
+        {
+            //
+            //  only run if Main player
+            //
+            if (Context.IsMainPlayer && (config.EnableDeluxeAutoGrabberOnExpansions || config.EnableDeluxeAutoGrabberOnHomeFarm))
+            {
+                logger.Log($"SDR.Autograbber DayStarted", LogLevel.Debug);
 
+                try
+                {
+                    AutoGrabIndoorCrops();
+                    AutoGrabOutdoorCrops();
+                    GlobalAutoGrab();
+                }
+                catch (Exception ex) { logger.LogError("AutoGrabber.DayStarted", ex); }
+            }
+        }
+        private void HandleObjectsChanged(EventArgs ep)
+        {
+            ObjectListChangedEventArgs e = (ObjectListChangedEventArgs)ep;
+            if (!Game1.IsMasterGame || !config.DoHarvestTruffles || string.IsNullOrEmpty(config.GlobalForageMap))
+            {
+                return;
+            }
+            GameLocation foragerMap = Game1.getLocationFromName(config.GlobalForageMap);
+            if (foragerMap == null)
+            {
+                logger.LogOnce($"Invalid GlobalForageMap name: {config.GlobalForageMap}", LogLevel.Error);
+                return;
+            }
+            foragerMap.Objects.TryGetValue(new Vector2(config.GlobalForageTileX, config.GlobalForageTileY), out var grabber);
+            if (grabber == null || !grabber.Name.Contains("Grabber"))
+            {
+                logger.LogOnce($"Object is not a valid grabber ({config.GlobalForageTileX},{config.GlobalForageTileY})", LogLevel.Error);
+                return;
+            }
+            if (grabber.heldObject.Value == null)
+            {
+                logger.LogOnce($"Grabber heldObject is null", LogLevel.Error);
+                return;
+            }
+            Random random = new Random();
+            foreach (KeyValuePair<Vector2, SDObject> pair in e.Added)
+            {
+                if (pair.Value.ParentSheetIndex != 430 || pair.Value.bigCraftable.Value)
+                {
+                    continue;
+                }
+
+                AddTruffleToChest(pair, grabber);
+                e.Location.Objects.Remove(pair.Key);
+            }
+            prism_Chest pChest = new prism_Chest(grabber.heldObject.Value as Chest);
+            if (pChest.items.Count > 0)
+            {
+                grabber.showNextIndex.Value = true;
+            }
+        }
+        #endregion
+
+        #region "Private Methods"
+        private void AddHooks()
+        {
+            if (Context.IsMainPlayer && (config.EnableDeluxeAutoGrabberOnExpansions || config.EnableDeluxeAutoGrabberOnHomeFarm))
+            {
+                // check for Dluxe Auto Grabber
+                //if (_utilitiesService.ModHelperService.ModRegistry.IsLoaded("Nykal145.DeluxeGrabberRedux16"))
+                //{
+                //    logger.Log($"Deluxe Grabber Redux16 installed. Disabling Stardew Realty autograbber.", LogLevel.Info);
+                //}
+                //else
+                //{
+                if (!hooksAdded)
+                {
+                    // add required game event hooks
+                    _utilitiesService.GameEventsService.AddSubscription(typeof(ObjectListChangedEventArgs).Name, HandleObjectsChanged);
+                    _utilitiesService.GameEventsService.AddSubscription(new DayStartedEventArgs(), HandleDayStarted);
+                    hooksAdded = true;
+                }
+                //}
+            }
         }
         private bool IsGrabbableCoop(SDObject obj)
         {
@@ -67,31 +166,34 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
         {
             Game1.player.gainExperience(skill, xp);
         }
-        private void AutograbBuildings()
+        /// <summary>
+        /// Check enabled locations for buildings to scan for auto-grabbers
+        /// </summary>
+        private void AutoGrabIndoorCrops()
         {
-
             SDObject grabber = null;
             List<Vector2> grabbables = new List<Vector2>();
             Dictionary<string, int> itemsAdded = new Dictionary<string, int>();
 
-            List<GameLocation> blocations = Game1.locations.Where(p => p.IsBuildableLocation()).Select(q => q as GameLocation).ToList();
-
+            List<GameLocation> buildableLocations = Game1.locations.Where(p => p.IsBuildableLocation()).Select(q => q).ToList();
 #if DEBUG
-            logger.Log($"Found {blocations.Count} buildable locations.", LogLevel.Debug);
+            logger.Log($"Found {buildableLocations.Count} buildable locations.", LogLevel.Debug);
 #endif
 
-            foreach (GameLocation bloc in blocations)
+            foreach (GameLocation buildableLocation in buildableLocations)
             {
-                if ((modDataService.farmExpansions.ContainsKey(bloc.NameOrUniqueName) && config.EnableDeluxeAutoGrabberOnExpansions) || (config.EnableDeluxeAutoGrabberOnHomeFarm && bloc is Farm))
+                if ((modDataService.farmExpansions.ContainsKey(buildableLocation.NameOrUniqueName) && config.EnableDeluxeAutoGrabberOnExpansions) || (config.EnableDeluxeAutoGrabberOnHomeFarm && buildableLocation is Farm))
                 {
-                    foreach (Building building in bloc.buildings)
+                    foreach (Building building in buildableLocation.buildings)
                     {
                         grabber = null;
                         grabbables.Clear();
                         itemsAdded.Clear();
                         if (building.buildingType.Contains("Coop") || building.buildingType.Contains("Slime"))
                         {
+#if DEBUG
                             logger.Log($"Searching {building.buildingType} at <{building.tileX},{building.tileY}> for auto-grabber", LogLevel.Debug);
+#endif
                             GameLocation location = building.indoors.Value;
                             if (location != null)
                             {
@@ -105,7 +207,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                                         if (pair2.Value.Name.Contains("Grabber"))
                                         {
 #if DEBUG
-                                            logger.Log($"  Grabber found  at {building.GetIndoorsName()}: {pair2.Key}", LogLevel.Debug);
+                                            logger.Log($"  Grabber found at {building.GetIndoorsName()}: {pair2.Key}", LogLevel.Debug);
 #endif
                                             grabber = pair2.Value;
                                         }
@@ -124,7 +226,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                                 }
                                 if (grabber == null)
                                 {
+#if DEBUG
                                     logger.Log("  No grabber found", LogLevel.Info);
+#endif
                                     continue;
                                 }
                                 bool full = false;
@@ -139,7 +243,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                                     if (location.objects[tile].Name.Contains("Slime Ball"))
                                     {
                                         Random random = new Random((int)Game1.stats.DaysPlayed + (int)Game1.uniqueIDForThisGame + (int)tile.X * 77 + (int)tile.Y * 777 + 2);
-                                        (grabber.heldObject.Value as Chest).addItem(new SDObject("(O)766", random.Next(10, 21)));
+                                        (grabber.heldObject.Value as Chest).addItem(new SDObject("766", random.Next(10, 21)));
                                         int i = 0;
                                         while (random.NextDouble() < 0.33)
                                         {
@@ -147,7 +251,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                                         }
                                         if (i > 0)
                                         {
-                                            (grabber.heldObject.Value as Chest).addItem(new SDObject("(O)557", i));
+                                            (grabber.heldObject.Value as Chest).addItem(new SDObject("557", i));
                                         }
                                     }
                                     else if ((grabber.heldObject.Value as Chest).addItem(location.Objects[tile]) != null)
@@ -194,11 +298,18 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                 }
             }
         }
+        /// <summary>
+        /// Harvests any fruits on a Tree
+        /// </summary>
+        /// <param name="fruitTree">Tree to be harvested</param>
+        /// <param name="tile">Tree tile location</param>
+        /// <param name="location">GameLocation of the Tree</param>
+        /// <returns></returns>
         private List<Item> GetFruit(FruitTree fruitTree, Vector2 tile, GameLocation location)
         {
             List<Item> fruitsReturned = new List<Item> { };
             prism_FruitTree pFruit = new prism_FruitTree(fruitTree);
-            int quality = 0;
+
             if (fruitTree == null)
             {
                 return null;
@@ -219,32 +330,12 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                 fruitTree.fruit.Clear();
             }
 
-            //if (fruitTree.growthStage.Value >= 4 && pFruit.fruitsOnTree > 0)
-            //{
-            //    if (fruitTree.daysUntilMature.Value <= -112)
-            //    {
-            //        quality = 1;
-            //    }
-            //    if (fruitTree.daysUntilMature.Value <= -224)
-            //    {
-            //        quality = 2;
-            //    }
-            //    if (fruitTree.daysUntilMature.Value <= -336)
-            //    {
-            //        quality = 4;
-            //    }
-            //    if (fruitTree.struckByLightningCountdown.Value > 0)
-            //    {
-            //        quality = 0;
-            //    }
-            //    fruit = new SDObject(pFruit.indexOfFruit.ToString(), pFruit.fruitsOnTree, isRecipe: false, -1, quality);
-            //    pFruit.fruitsOnTree = 0;
-            //    pFruit.fruit.Clear();
-            //    return fruit;
-            //}
             return fruitsReturned;
         }
-        private void AutograbCrops()
+        /// <summary>
+        /// Scan for Crops to be harvested
+        /// </summary>
+        private void AutoGrabOutdoorCrops()
         {
             if (!config.DoHarvestCrops && !config.DoHarvestTruffles)
             {
@@ -260,10 +351,10 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 
             List<GameLocation> buildings = Game1.locations.Where(p => p.IsBuildableLocation()).ToList();
 
-            foreach (GameLocation bgl in buildings)
-            {
-                searchLocs.AddRange(bgl.buildings.Where(p => p.indoors.Value != null).Select(p => p.indoors.Value).ToList());
-            }
+            //foreach (GameLocation bgl in buildings)
+            //{
+            //    searchLocs.AddRange(bgl.buildings.Where(p => p.indoors.Value != null).Select(p => p.indoors.Value).ToList());
+            //}
 
             foreach (GameLocation location in searchLocs)
             {
@@ -282,14 +373,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 #endif
                             if (pair.Value.heldObject.Value == null)
                             {
-                                //if(location.objects.TryGetValue(pair.Key, out SDObject emptChest))
-                                //{
                                 grabber = pair.Value;
                                 grabber.heldObject.Value = new Chest();
-                                //grabber = emptChest;
-                                //}
-
-                                //SDObject emptChest = location.getObjectAt((int)pair.Key.X, (int)pair.Key.Y);
                             }
                             else
                             {
@@ -308,7 +393,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                         }
                         Chest grabberChest = grabber.heldObject.Value as Chest;
                         bool full = false;
+#if DEBUG
                         logger.Log($"      Grabber not null or full: {full}", LogLevel.Debug);
+#endif
                         for (int x = (int)pair.Key.X - range; (float)x < pair.Key.X + (float)range + 1f; x++)
                         {
                             for (int y = (int)pair.Key.Y - range; (float)y < pair.Key.Y + (float)range + 1f; y++)
@@ -388,15 +475,6 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                                                     gainExperience(FORAGING, 3);
                                                 }
                                             }
-
-                                            //if (fruit != null)
-                                            //{
-                                            //    grabberChest.addItem(fruit);
-                                            //    if (config.DoGainExperience)
-                                            //    {
-                                            //        gainExperience(FORAGING, 3);
-                                            //    }
-                                            //}
                                         }
                                         else if (config.DoHarvestTruffles && location.Objects.ContainsKey(tile))
                                         {
@@ -404,7 +482,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                                             //  look for truffles
                                             //
                                             SDObject truffle = location.Objects[tile];
-                                            if (truffle != null && truffle.ParentSheetIndex == 430)
+                                            if (truffle != null && truffle.itemId.Value == "430")
                                             {
                                                 AddTruffleToChest(new KeyValuePair<Vector2, SDObject>(tile, truffle), grabberChest);
                                                 location.Objects.Remove(tile);
@@ -452,22 +530,26 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 
             if (!config.DoHarvestFlowers)
             {
-
-                switch (crop.IndexOfHarvest)
+                if (Game1.objectData.TryGetValue(dirt.crop.indexOfHarvest.Value, out ObjectData cropData))
                 {
-                    case "421":
-                        return null;
-                    case "593":
-                        return null;
-                    case "595":
-                        return null;
-                    case "591":
-                        return null;
-                    case "597":
-                        return null;
-                    case "376":
+                    if (cropData.Category == -80 && (cropData.ContextTags == null || !cropData.ContextTags.Contains("flower_cannabinoid")))
                         return null;
                 }
+                //switch (crop.IndexOfHarvest)
+                //{
+                //    case "421":
+                //        return null;
+                //    case "593":
+                //        return null;
+                //    case "595":
+                //        return null;
+                //    case "591":
+                //        return null;
+                //    case "597":
+                //        return null;
+                //    case "376":
+                //        return null;
+                //}
             }
             //if (crop.currentPhase.Value >= crop.phaseDays.Count - 1 && (!crop.fullyGrown.Value || crop.dayOfCurrentPhase.Value <= 0))
             if (dirt.readyForHarvest())
@@ -512,31 +594,27 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                 }
                 if (crop.harvestMethod == HarvestMethod.Scythe)
                 {
-                    for (int i = 0; i < num1; i++)
-                    {
-                        stack++;
-                    }
-                    if (crop.RegrowAfterHarvest != -1)
+                    stack += num1;
+                    if (dirt.crop.RegrowsAfterHarvest())
                     {
                         dirt.crop.currentPhase.Value = crop.RegrowAfterHarvest;
                         dirt.crop.dayOfCurrentPhase.Value = 0;
-                        dirt.crop.fullyGrown.Value = false;
+                        dirt.crop.fullyGrown.Value = true;
                     }
                     else
                     {
                         dirt.destroyCrop(true);
                     }
-
-                    return new SDObject(crop.indexOfHarvest, stack, isRecipe: false, -1, num2);
+                    return (SDObject)ItemRegistry.Create(crop.indexOfHarvest, stack, num2);
                 }
                 SDObject harvest;
                 if (!crop.programColored.Value)
                 {
-                    harvest = new SDObject(crop.indexOfHarvest, 1, isRecipe: false, -1, num2);
+                    harvest = (SDObject)ItemRegistry.Create(crop.indexOfHarvest, stack, num2);
                 }
                 else
                 {
-                    ColoredObject coloredObject = new ColoredObject(crop.indexOfHarvest, 1, crop.tintColor.Value);
+                    ColoredObject coloredObject = new ColoredObject(crop.indexOfHarvest, stack, crop.tintColor.Value);
                     coloredObject.Quality = num2;
                     harvest = coloredObject;
                 }
@@ -544,10 +622,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                 {
                     dirt.crop.currentPhase.Value = crop.RegrowAfterHarvest;
                     dirt.crop.dayOfCurrentPhase.Value = 0;
-                    dirt.crop.fullyGrown.Value = false;
-
-                    //crop.dayOfCurrentPhase.Value = crop.RegrowAfterHarvest;
-                    //crop.fullyGrown.Value = false;
+                    dirt.crop.fullyGrown.Value = true;
                 }
                 else
                 {
@@ -563,55 +638,62 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
             {
                 return false;
             }
-            switch (obj.ParentSheetIndex)
-            {
-                case 16:
-                case 18:
-                case 20:
-                case 22:
-                case 78:
-                case 88:
-                case 90:
-                case 257:
-                case 259:
-                case 281:
-                case 283:
-                case 296:
-                case 372:
-                case 392:
-                case 393:
-                case 394:
-                case 396:
-                case 397:
-                case 398:
-                case 399:
-                case 402:
-                case 404:
-                case 406:
-                case 408:
-                case 410:
-                case 412:
-                case 414:
-                case 416:
-                case 418:
-                case 420:
-                case 430:
-                case 718:
-                case 719:
-                case 723:
-                    return true;
-                default:
-                    //return false;
 #if v16
-                    SDObject grab = new SDObject(obj.ParentSheetIndex.ToString(), 1);
+            SDObject grab = (SDObject)ItemRegistry.Create(obj.ItemId);
 #else
-                    SDObject grab = new SDObject(obj.ParentSheetIndex, 1);
+            SDObject grab = new SDObject(obj.ParentSheetIndex, 1);
 #endif
-                    if (grab is null) { return false; }
-                    return grab.Category == -23;
-            }
+            if (grab is null) { return false; }
+            return grab.Category == -23;
+            //            switch (obj.ParentSheetIndex)
+            //            {
+            //                case 16:
+            //                case 18:
+            //                case 20:
+            //                case 22:
+            //                case 78:
+            //                case 88:
+            //                case 90:
+            //                case 257:
+            //                case 259:
+            //                case 281:
+            //                case 283:
+            //                case 296:
+            //                case 372:
+            //                case 392:
+            //                case 393:
+            //                case 394:
+            //                case 396:
+            //                case 397:
+            //                case 398:
+            //                case 399:
+            //                case 402:
+            //                case 404:
+            //                case 406:
+            //                case 408:
+            //                case 410:
+            //                case 412:
+            //                case 414:
+            //                case 416:
+            //                case 418:
+            //                case 420:
+            //                case 430:
+            //                case 718:
+            //                case 719:
+            //                case 723:
+            //                    return true;
+            //                default:
+            //                    //return false;
+            //#if v16
+            //                    SDObject grab = (SDObject)ItemRegistry.Create(obj.ItemId);// new SDObject(obj.ItemId, 1);
+            //#else
+            //                    SDObject grab = new SDObject(obj.ParentSheetIndex, 1);
+            //#endif
+            //                    if (grab is null) { return false; }
+            //                    return grab.Category == -23;
+            //}
         }
-        private void AutograbWorld()
+        private void GlobalAutoGrab()
         {
             if (!config.DoGlobalForage)
             {
@@ -682,7 +764,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                         {
                             continue;
                         }
-                        SDObject onion = new SDObject("(O)399", 1);
+                        SDObject onion = (SDObject)ItemRegistry.Create("(O)399", 1);
                         if (Game1.player.professions.Contains(16))
                         {
                             onion.Quality = 4;
@@ -747,7 +829,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                     inBloom = bush.inBloom();
                     if (bush != null && inBloom && bush.tileSheetOffset.Value == 1)
                     {
-                        SDObject berry = new SDObject(berryIndex.ToString(), 1 + Game1.player.FarmingLevel / 4);
+                        SDObject berry = (SDObject)ItemRegistry.Create($"(O){berryIndex}", 1 + Game1.player.FarmingLevel / 4);
                         if (Game1.player.professions.Contains(16))
                         {
                             berry.Quality = 4;
@@ -822,7 +904,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                                 logger.Log("Global grabber full", LogLevel.Info);
                                 return;
                             }
-                            if (obj.bigCraftable.Value && obj.ParentSheetIndex == 128 && obj.heldObject.Value != null)
+                            if (obj.bigCraftable.Value && obj.ItemId == "128" && obj.heldObject.Value != null)
                             {
                                 (grabber.heldObject.Value as Chest).addItem(obj.heldObject.Value);
                                 string name = grabber.heldObject.Value.Name;
@@ -850,7 +932,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                     {
                         plural = "s";
                     }
+#if DEBUG
                     logger.Log($"  {location} - found {pair.Value} {pair.Key}{plural}", LogLevel.Debug);
+#endif
                 }
                 if (pChest.items.Count > 0)
                 {
@@ -891,7 +975,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                     obj.Stack++;
                 }
             }
+#if DEBUG
             logger.Log($"Grabbing truffle: {obj.Stack}x{quality[obj.Quality]}", LogLevel.Debug);
+#endif
             grabber.addItem(obj);
             if (config.DoGainExperience)
             {
@@ -899,78 +985,6 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
             }
 
         }
-        private void DayStarted(EventArgs e)
-        {
-            //
-            //  only run if Main player
-            //
-            if (config.EnableDeluxeAutoGrabberOnExpansions || config.EnableDeluxeAutoGrabberOnHomeFarm)
-            {
-                if (Context.IsMainPlayer)
-                {
-                    logger.Log($"SDR.Autograbber DayStarted", LogLevel.Debug);
-
-                    if (config.EnableDeluxeAutoGrabberOnHomeFarm || config.EnableDeluxeAutoGrabberOnExpansions)
-                    {
-                        try
-                        {
-                            AutograbBuildings();
-                            AutograbCrops();
-                            AutograbWorld();
-                        }
-                        catch (Exception ex) { logger.LogError("AutoGrabber.DayStarted", ex); }
-                    }
-                }
-            }
-        }
-
-        private void LocationEvents_ObjectsChanged(EventArgs ep)
-        {
-            ObjectListChangedEventArgs e = (ObjectListChangedEventArgs)ep;
-            if (!config.DoHarvestTruffles || string.IsNullOrEmpty(config.GlobalForageMap))
-            {
-                return;
-            }
-            GameLocation foragerMap = Game1.getLocationFromName(config.GlobalForageMap);
-            if (foragerMap == null)
-            {
-                logger.LogOnce($"Invalid GlobalForageMap name: {config.GlobalForageMap}", LogLevel.Error);
-                return;
-            }
-            foragerMap.Objects.TryGetValue(new Vector2(config.GlobalForageTileX, config.GlobalForageTileY), out var grabber);
-            if (grabber == null || !grabber.Name.Contains("Grabber"))
-            {
-                logger.LogOnce($"Object is not a valid grabber ({config.GlobalForageTileX},{config.GlobalForageTileY})", LogLevel.Error);
-                return;
-            }
-            if (grabber.heldObject.Value == null)
-            {
-                logger.LogOnce($"Grabber heldObject is null", LogLevel.Error);
-                return;
-            }
-            Random random = new Random();
-            foreach (KeyValuePair<Vector2, SDObject> pair in e.Added)
-            {
-                if (pair.Value.ParentSheetIndex != 430 || pair.Value.bigCraftable.Value)
-                {
-                    continue;
-                }
-#if v16
-#else
-                if (IsChestFull(grabber))
-                {
-                    return;
-                }
-#endif
-                AddTruffleToChest(pair, grabber);
-                e.Location.Objects.Remove(pair.Key);
-            }
-            prism_Chest pChest = new prism_Chest(grabber.heldObject.Value as Chest);
-            if (pChest.items.Count > 0)
-            {
-                grabber.showNextIndex.Value = true;
-            }
-        }
-
+        #endregion
     }
 }

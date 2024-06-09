@@ -3,7 +3,6 @@ using StardewValley.Buildings;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using SDV_Realty_Core.Framework.Utilities;
 using Prism99_Core.Extensions;
 using StardewValley.Locations;
 using StardewValley.Objects;
@@ -105,10 +104,10 @@ namespace SDV_Realty_Core.Framework.Buildings
                     }
                 }
                 interior.TransferDataFromSavedLocation(b.indoors.Value);
-                if (!interior.modData.ContainsKey(FEModDataKeys.FELocationName))
-                    interior.modData.Add(FEModDataKeys.FELocationName, LocationName);
-                if (!interior.modData.ContainsKey(FEModDataKeys.FELargeGreenhouse))
-                    interior.modData.Add(FEModDataKeys.FELargeGreenhouse, "Y");
+                if (!interior.modData.ContainsKey(IModDataKeysService.FELocationName))
+                    interior.modData.Add(IModDataKeysService.FELocationName, LocationName);
+                if (!interior.modData.ContainsKey(IModDataKeysService.FELargeGreenhouse))
+                    interior.modData.Add(IModDataKeysService.FELargeGreenhouse, "Y");
 
                 if (b.indoors.Value.warps.Count > 0)
                 {

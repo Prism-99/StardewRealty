@@ -10,59 +10,48 @@ using xTile.Tiles;
 using xTile;
 using System.Linq;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
+using SDV_Realty_Core.Framework.DataProviders;
 
 namespace SDV_Realty_Core.Framework.AssetUtils
 {
-    //
-    //  common code
-    //
-    internal partial class SDRContentManager
+    /// <summary>
+    /// Handles assets to be accessed by the game
+    /// -Map Strings
+    /// -External References
+    /// -Chair Tiles
+    /// -NPC Tastes
+    /// -Expansion Maps
+    /// -Translation Strings
+    /// </summary>
+    internal class SDRContentManager
     {
         private ILoggerService logger;
-        //private ContentPackLoader ContentPacks;
-        private IModHelper helper;
-        //internal DataProviderManager dataProviderManager;
-        public Dictionary<string, string> stringFromMaps =null;
-        public Dictionary<string, object> ExternalReferences = new ();
-        //private NPCGiftTastes NPCTastes;
-        public Dictionary<string, string> ChairTiles = new ();
-        public Dictionary<string, Dictionary<string, List<string>>> NPCTastes = new ();
-        public Dictionary<string, Map> Maps = new ();
+        private IModHelperService helper;
+        public Dictionary<string, string> stringFromMaps = null;
+        public Dictionary<string, object> ExternalReferences = new();
+        public Dictionary<string, string> ChairTiles = new();
+        public Dictionary<string, Dictionary<string, List<string>>> NPCTastes = new();
+        public Dictionary<string, Map> Maps = new();
         private IModDataService modDataService;
-        //
-        //  new services model
-        //
-        //private ChairTiles chairTiles;
-
-        public SDRContentManager( IModHelper ohelper, ILoggerService errorLogger, IModDataService modDataService)
+        private IUtilitiesService utilitiesService;
+        //internal LocalizationStrings localizationStrings;
+        internal IStringService stringService;
+        public SDRContentManager(IUtilitiesService utilitiesService, IModDataService modDataService)
         {
-            logger = errorLogger;
-            //ContentPacks = contentPacks;
-            helper = ohelper;
+            this.utilitiesService= utilitiesService;
+            logger = utilitiesService.logger;
+            helper = utilitiesService.ModHelperService;
             this.modDataService = modDataService;
             Maps = modDataService.BuildingMaps;
-            stringFromMaps =modDataService.stringFromMaps;
-            Initialize();
-            //dataProviderManager = dpManager;
-
-            //LocalizationStrings = new LocalizationStrings();
-            //LocalizationStrings.Intialize(helper.Translation);
+            stringFromMaps = modDataService.stringFromMaps;
+            //Initialize();
         }
-        public void Initialize()
-        {
-            //dataProviderManager = new DataProviderManager();
-            //dataProviderManager.Initialize(ContentPacks, stringFromMaps);
-
-            //AssetsServed.Initialize();
-
-            //  disabled for Services
-            //helper.Events.Content.AssetRequested += Content_AssetRequested;
-
-            //AddExpansionFiles();
-
-            VersionSpecificSetup();
-
-        }
+        //public void Initialize()
+        //{
+        //    localizationStrings = new LocalizationStrings();
+        //    localizationStrings.Intialize(helper.Translation, utilitiesService);
+        //}
         public void AddMap(string mapName, Map map)
         {
             Maps.Add(mapName, map);
@@ -83,15 +72,14 @@ namespace SDV_Realty_Core.Framework.AssetUtils
                 //
                 if (!string.IsNullOrEmpty(modDataService.validContents[expansionKey].WorldMapTexture))
                 {
-                    //string worldMap = SDVPathUtilities.NormalizePath($"{FEConstants.MapPathPrefix}{expansionKey}{FEConstants.AssetDelimiter}{modDataService.validContents[expansionKey].WorldMapTexture}");
-                    string worldMap = $"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{expansionKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{modDataService.validContents[expansionKey].WorldMapTexture}";
+                    string worldMap = $"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{expansionKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{Path.GetFileName( modDataService.validContents[expansionKey].WorldMapTexture)}";
                     logger.Log($"Loaded WorldMap Texture: '{worldMap}' for expansion {expansionKey}", LogLevel.Trace);
-                    ExternalReferences.Add(worldMap, new StardewBitmap(Path.Combine(modDataService.validContents[expansionKey].ModPath, "assets", Path.GetFileName(modDataService.validContents[expansionKey].WorldMapTexture))).Texture());
+                    //ExternalReferences.Add(worldMap, new StardewBitmap(Path.Combine(modDataService.validContents[expansionKey].ModPath, "assets", Path.GetFileName(modDataService.validContents[expansionKey].WorldMapTexture))).Texture());
+                    ExternalReferences.Add(worldMap, new StardewBitmap(Path.Combine(modDataService.validContents[expansionKey].ModPath, "assets", modDataService.validContents[expansionKey].WorldMapTexture)).Texture());
                 }
                 Map expansionMap = modDataService.ExpansionMaps[expansionKey];
                 if (!string.IsNullOrEmpty(modDataService.validContents[expansionKey].MapName))
                 {
-                    //string sMapPath = SDVPathUtilities.NormalizePath($"{FEConstants.MapPathPrefix}{expansionKey}{FEConstants.AssetDelimiter}{modDataService.validContents[expansionKey].MapName}");
                     string sMapPath = $"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{expansionKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{modDataService.validContents[expansionKey].MapName}";
                     logger.Log($"Loaded Map: '{sMapPath}' for expansion {expansionKey}", LogLevel.Trace);
                     ExternalReferences.Add(sMapPath, expansionMap);
@@ -101,7 +89,7 @@ namespace SDV_Realty_Core.Framework.AssetUtils
                 //
                 if (modDataService.validContents[expansionKey].SeatTiles != null)
                 {
-                    foreach (var tile in modDataService.validContents[expansionKey].SeatTiles)
+                    foreach (KeyValuePair<string, string> tile in modDataService.validContents[expansionKey].SeatTiles)
                     {
                         AddChairTile(tile.Key, tile.Value);
                     }
@@ -111,14 +99,14 @@ namespace SDV_Realty_Core.Framework.AssetUtils
                     if (string.IsNullOrEmpty(tileSheet.ImageSource)) logger?.Log($"Tilesheet: {tileSheet.ImageSource}", LogLevel.Debug);
                     if (!string.IsNullOrEmpty(tileSheet.ImageSource))
                     {
-                        tileSheet.ImageSource = tileSheet.ImageSource.Replace("\\", "/");
+                        tileSheet.ImageSource = tileSheet.ImageSource.Replace("\\", FEConstants.AssetDelimiter);
                         // fix up old expansion maps
                         if (tileSheet.ImageSource.StartsWith($"Maps{FEConstants.AssetDelimiter}femaps{FEConstants.AssetDelimiter}{expansionKey}", StringComparison.CurrentCultureIgnoreCase))
                         {
-                            string[] arParts = tileSheet.ImageSource.Split('/');
+                            string[] arParts = tileSheet.ImageSource.Split(FEConstants.AssetDelimiter);
                             tileSheet.ImageSource = $"SDR{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}" + arParts[arParts.Length - 1];
                         }
-                        if (tileSheet.ImageSource.StartsWith($"SDR{FEConstants.AssetDelimiter}assets/", StringComparison.CurrentCultureIgnoreCase))
+                        if (tileSheet.ImageSource.StartsWith($"SDR{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}", StringComparison.CurrentCultureIgnoreCase))
                         {
                             tileSheet.ImageSource = $"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{expansionKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{Path.GetFileNameWithoutExtension(tileSheet.ImageSource)}";
                             string rawSource = Path.Join(modDataService.validContents[expansionKey].ModPath, "assets", Path.GetFileName(tileSheet.ImageSource) + ".png");
@@ -161,33 +149,24 @@ namespace SDV_Realty_Core.Framework.AssetUtils
             }
 
         }
- 
+
         public void AddChairTile(string tileRef, string seatDetails)
         {
             ChairTiles.Add(tileRef, seatDetails);
-            //chairTiles.AddSeatTile(tileRef, seatDetails);
         }
         private void CheckForLooseFiles(AssetRequestedEventArgs e, string cleanAssetName)
         {
             string sModName = "";
             string normName = SDVPathUtilities.NormalizeKey(cleanAssetName);
-            //if (AssetsServed.ContainsKey(normName))
-            //{
-            //    //
-            //    //  asset froms content packs
-            //    //
-            //    sModName = AssetsServed.AssetList[normName];
-            //}
-            //else
-            //{
-                //
-                //  custom locations added by the mod
-                //
-                string[] assetNameParts = normName.Split(FEConstants.AssetDelimiter[0]);
-                if (assetNameParts.Length > 2)
-                {
-                    sModName = assetNameParts[2];
-                }
+           
+            //
+            //  custom locations added by the mod
+            //
+            string[] assetNameParts = normName.Split(FEConstants.AssetDelimiter[0]);
+            if (assetNameParts.Length > 2)
+            {
+                sModName = assetNameParts[2];
+            }
             //}
 
             if (!string.IsNullOrEmpty(sModName))
@@ -208,7 +187,7 @@ namespace SDV_Realty_Core.Framework.AssetUtils
                 {
                     if (modDataService.validContents.ContainsKey(sModName))
                     {
-                        logger?.Log($"    Mod Name: {sModName}", LogLevel.Debug);
+                        logger.Log($"    Mod Name: {sModName}", LogLevel.Debug);
                         filePath = Path.Combine(modDataService.validContents[sModName].ModPath, "assets", sAssetPath);
                     }
                     else
@@ -261,7 +240,7 @@ namespace SDV_Realty_Core.Framework.AssetUtils
                 }
                 catch (Exception ex)
                 {
-                    logger?.LogError($"CheckForLooseFiles.  Asset={normName}", ex);
+                    logger.LogError($"CheckForLooseFiles.  Asset={normName}", ex);
                 }
             }
         }

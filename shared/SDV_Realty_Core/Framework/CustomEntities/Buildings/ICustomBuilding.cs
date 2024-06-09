@@ -119,18 +119,20 @@ namespace SDV_Realty_Core.Framework.Buildings
                     string filename = Path.Combine(ModPath, Path.GetFileNameWithoutExtension(ts.ImageSource) + ".png");
                     try
                     {
-                        ExternalReferences.Add(ts.ImageSource.Replace("\\", "/"), new StardewBitmap(filename).Texture());
-                        logger.Log($"CustomBuilding.LoadExternalReferences: Added tilesheet: {ts.ImageSource}", StardewModdingAPI.LogLevel.Debug);
+                        ExternalReferences.Add(ts.ImageSource.Replace("\\", FEConstants.AssetDelimiter), new StardewBitmap(filename).Texture());
+#if DEBUG_LOG
+                        logger.Log($"Added tilesheet: {ts.ImageSource}", LogLevel.Debug);
+#endif
                     }
                     catch (Exception ex)
                     {
-                        logger.Log($"Error loading building TileSheet: {ex}", StardewModdingAPI.LogLevel.Error);
-                        logger.Log($"Filename: {filename}", StardewModdingAPI.LogLevel.Error);
+                        logger.Log($"Error loading building TileSheet: {ex}", LogLevel.Error);
+                        logger.Log($"Filename: {filename}", LogLevel.Error);
                     }
                 }
                 else
                 {
-                    logger.Log($"CustomBuilding.LoadExternalReferences: Skipping tilesheet: {ts.ImageSource}", StardewModdingAPI.LogLevel.Debug);
+                    logger.Log($"Skipping tilesheet: {ts.ImageSource}", LogLevel.Debug);
                 }
             }
         }

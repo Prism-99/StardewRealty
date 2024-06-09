@@ -22,7 +22,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         };
         public override List<string> CustomServiceEventSubscripitions => new List<string>
         {
-            "AddCaveEntrance"
+            
         };
         public override object ToType(Type conversionType, IFormatProvider provider)
         {
@@ -42,9 +42,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             IContentPackService contentPackService = (IContentPackService)args[4];
 
             warproomManager = new WarproomManager(logger, contentManager.contentManager, utilitiesService, multiplayerService, expansionManager, contentPackService);
-            RegisterEventHandler("AddCaveEntrance", AddCaveEntrance);
+            utilitiesService.CustomEventsService.AddCustomSubscription("AddCaveEntrance", HandleAddCaveEntrance);
         }
-        private void AddCaveEntrance(object[] args)
+        private void HandleAddCaveEntrance(object[] args)
         {
             warproomManager.AddCaveEntrance(args[0].ToString(), (Tuple<string, EntranceDetails>)args[1]);
         }

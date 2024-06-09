@@ -27,6 +27,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
         {
             return assetName == Name;
         }
+        public virtual void ConfigChanged() { }
         public abstract void OnGameLaunched();
         public abstract void CheckForActivations();
         internal bool UseLore {  get; set; }
