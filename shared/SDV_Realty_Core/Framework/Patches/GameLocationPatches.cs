@@ -1,5 +1,10 @@
-﻿using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+﻿using Microsoft.Xna.Framework.Graphics;
+using SDV_Realty_Core.Framework.Locations;
+using SDV_Realty_Core.Framework.Objects;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using SDV_Realty_Core.Framework.ServiceProviders.ModMechanics;
 using SDV_Realty_Core.Framework.Utilities;
+using StardewValley.BellsAndWhistles;
 using System;
 using System.Diagnostics;
 using xTile.ObjectModel;
@@ -10,7 +15,6 @@ namespace SDV_Realty_Core.Framework.Patches
     internal  class GameLocationPatches
     {
         private static ILoggerService logger;
-
         // call this method from your Entry class
         public GameLocationPatches(ILoggerService monitor)
         {
@@ -34,6 +38,7 @@ namespace SDV_Realty_Core.Framework.Patches
             }
             return true;
         }
+       
         public static void DayUpdate_Post(GameLocation __instance, ref int dayOfMonth, Stopwatch __state)
         {
             //
@@ -43,7 +48,7 @@ namespace SDV_Realty_Core.Framework.Patches
             __state.Stop();
             logger.Log($"DayUpdate, location {__instance.Name},day {dayOfMonth} took {__state.ElapsedMilliseconds}ms", LogLevel.Debug);
 
-            
+           
         }
         public static bool seasonUpdate(GameLocation __instance, ref string season, ref bool onLoad)
         {

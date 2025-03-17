@@ -15,6 +15,10 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
 using StardewValley.Buildings;
 using StardewValley.GameData.Buildings;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using SDV_Realty_Core.Framework.ServiceProviders.Utilities;
+using SDV_Realty_Core.Framework.Locations;
+using xTile.Dimensions;
+
 
 namespace SDV_Realty_Core.Framework.Saves
 {
@@ -29,13 +33,23 @@ namespace SDV_Realty_Core.Framework.Saves
         private static XmlSerializer locationSerializer = new XmlSerializer(typeof(SDict));
         private IExpansionManager expansionManager;
         private IGridManager gridManager;
+        private IModDataService modDataService;
+        private IUtilitiesService utilitiesService;
         public Save_V1_6() { }
-        internal Save_V1_6(ILoggerService sdvLogger, IModHelper modHelper, IExpansionManager expansionManager, IGridManager gridManager)
+        internal Save_V1_6(ILoggerService sdvLogger, IUtilitiesService utilitiesService, IModDataService modDataService, IModHelper modHelper, IExpansionManager expansionManager, IGridManager gridManager)
         {
             logger = sdvLogger;
             helper = modHelper;
+            this.utilitiesService = utilitiesService;
             this.expansionManager = expansionManager;
             this.gridManager = gridManager;
+            this.modDataService = modDataService;
+            FarmExpansions = new();
+            foreach (var activeExpansion in modDataService.farmExpansions.Where(p => p.Value.Active))
+            {
+                FarmExpansions.Add(activeExpansion.Key, activeExpansion.Value);
+            }
+            StardewMeadows = WarproomManager.StardewMeadows;// (FarmExpansionLocation) Game1.getLocationFromName(WarproomManager.StardewMeadowsLoacationName);
         }
         public override string Version => "2.0.0";
 
@@ -70,8 +84,27 @@ namespace SDV_Realty_Core.Framework.Saves
                     {
                         if (saveData.Version == Version)
                         {
-                            FarmExpansions = saveData.FarmExpansions;
-                            ProcessSaveDate(FarmExpansions, loadOnly);
+                            LoadedExpansions = new();
+                            foreach (var expanansion in saveData.FarmExpansions)
+                            {
+                                LoadedExpansions.Add(expanansion.Key, expanansion.Value);
+                            }
+                            ProcessSaveDate(LoadedExpansions, loadOnly);
+                            if (saveData.StardewMeadows != null)
+                            {
+                                FarmExpansionLocation? location =(FarmExpansionLocation) Game1.getLocationFromName(WarproomManager.StardewMeadowsLoacationName);
+                                TransferSaveData(saveData.StardewMeadows, location);
+                                //saveData.StardewMeadows.mapPath.Value = WarproomManager.StardewMeadowsMapAssetPath;
+                                //saveData.StardewMeadows.reloadMap();
+                                
+                                //if (location != null)
+                                //{
+                                //    Game1.locations.Remove(location);
+                                //    Game1._locationLookup.Remove(location.Name);
+                                //}
+
+                                //Game1.locations.Add(saveData.StardewMeadows);
+                            }
                             return true;
                         }
                     }
@@ -222,14 +255,11 @@ namespace SDV_Realty_Core.Framework.Saves
                     try
                     {
                         XmlSerializer dataSerializer = new XmlSerializer(typeof(Save_V1_6));
-                        Save_V1_6 saveData = new Save_V1_6(logger, helper, expansionManager, gridManager)
-                        {
-                            FarmExpansions = expansionManager.expansionManager.farmExpansions
-                        };
+                        Save_V1_6 saveData = new Save_V1_6(logger,utilitiesService, modDataService, helper, expansionManager, gridManager);
                         dataSerializer.Serialize(writer, saveData);
                         // serialization completed, save results to file
                         File.WriteAllBytes(saveFilename, ms.ToArray());
- 
+
                         //ms.WriteTo(saveFilename);
                         return true;
                     }
@@ -239,11 +269,11 @@ namespace SDV_Realty_Core.Framework.Saves
                         logger.Log("Your Stardew Realty data is not saved.  The base game save is still valid.", LogLevel.Error);
                         if (ioe.InnerException.InnerException == null)
                         {
-                            logger.Log($"Unexpected Type: {ioe.InnerException.Message}",LogLevel.Error);
+                            logger.Log($"Unexpected Type: {ioe.InnerException.Message}", LogLevel.Error);
                         }
                         else
                         {
-                            logger.Log($"Unexpected Type: {ioe.InnerException.InnerException.Message}",LogLevel.Error);
+                            logger.Log($"Unexpected Type: {ioe.InnerException.InnerException.Message}", LogLevel.Error);
                         }
 
                     }
@@ -257,7 +287,40 @@ namespace SDV_Realty_Core.Framework.Saves
             }
             return false;
         }
+        private void TransferSaveData(FarmExpansionLocation saveData,FarmExpansionLocation target)
+        {
+            foreach (var building in saveData.buildings)
+            {
+                building.load();
+                target.buildings.Add(building);
+            }
+            if (saveData.objects != null) target.objects.ReplaceWith(saveData.objects);
 
+            if (target.objects != null)
+            {
+                foreach (KeyValuePair<Vector2, SDObject> current in target.objects.Pairs)
+                {
+                    current.Value.initializeLightSource(current.Key);
+                    current.Value.reloadSprite();
+                }
+            }
+            target.furniture.ReplaceWith(saveData.furniture);
+            foreach (Furniture furniture in target.furniture)
+            {
+                furniture.resetState();
+                furniture.reloadSprite();
+                furniture.InitializeAtTile(furniture.tileLocation.Value);
+            }
+            if (saveData.terrainFeatures != null) target.terrainFeatures.ReplaceWith(saveData.terrainFeatures);
+            target.largeTerrainFeatures.ReplaceWith(saveData.largeTerrainFeatures);
+            target.resourceClumps.ReplaceWith(saveData.resourceClumps);
+
+            if (target.terrainFeatures != null)
+            {
+                foreach (KeyValuePair<Vector2, TerrainFeature> terrainFeature in target.terrainFeatures.Pairs)
+                    terrainFeature.Value.loadSprite();
+            }
+        }
         /// <summary>
         /// Reload all required entities in the expansions
         /// </summary>
@@ -266,156 +329,255 @@ namespace SDV_Realty_Core.Framework.Saves
         {
             if (saveData != null)
             {
-                foreach (string expansionName in saveData.Keys)
+                foreach (string saveExpansionKey in saveData.Keys)
                 {
                     try
                     {
-                        logger.Log($"     Setting up '{expansionName}'", LogLevel.Trace);
-                        if (expansionManager.expansionManager.farmExpansions.ContainsKey(expansionName))
+                        string saveExpansionName = saveExpansionKey;
+                        bool addSaveExpansion = modDataService.validContents.ContainsKey(saveExpansionName);
+                        if (!addSaveExpansion)
                         {
-                            FarmExpansionLocation expansionLocation = expansionManager.expansionManager.farmExpansions[expansionName];
-                            expansionLocation.Active = saveData[expansionName].Active;
-                            expansionLocation.PurchasedBy = saveData[expansionName].PurchasedBy;
-                            if (saveData[expansionName].animals != null) expansionLocation.animals.CopyFrom(saveData[expansionName].animals.Pairs);
-                            expansionLocation.characters.ReplaceWith(saveData[expansionName].characters);
-                            if (saveData[expansionName].terrainFeatures != null) expansionLocation.terrainFeatures.ReplaceWith(saveData[expansionName].terrainFeatures);
-                            expansionLocation.largeTerrainFeatures.ReplaceWith(saveData[expansionName].largeTerrainFeatures);
-                            expansionLocation.resourceClumps.ReplaceWith(saveData[expansionName].resourceClumps);
-                            if (saveData[expansionName].objects != null) expansionLocation.objects.ReplaceWith(saveData[expansionName].objects);
-                            expansionLocation.furniture.ReplaceWith(saveData[expansionName].furniture);
-                            expansionLocation.numberOfSpawnedObjectsOnMap = saveData[expansionName].numberOfSpawnedObjectsOnMap;
-                            expansionLocation.piecesOfHay.Value = saveData[expansionName].piecesOfHay.Value;
-                            expansionLocation.GridId = saveData[expansionName].GridId;
-                            expansionLocation.OfferLetterRead = saveData[expansionName].OfferLetterRead;
-                            expansionLocation.SeasonOverride = expansionManager.expansionManager.GetExpansionSeasonalOverride(expansionName);
-                            expansionLocation.CrowsEnabled = saveData[expansionName].CrowsEnabled;
-
-                            foreach (Building building in saveData[expansionName].buildings)
+                            // check FormerLocationNames
+                            var alias = modDataService.validContents.Where(p => p.Value.FormerLocationNames.Contains(saveExpansionName));
+                            if (alias.Any())
                             {
-                                if (building.indoors.Value == null)
+                                saveExpansionName = alias.First().Value.LocationName;
+                                addSaveExpansion = true;
+                            }
+                        }
+
+
+                        if (addSaveExpansion)
+                        {
+                            logger.Log($"     Setting up '{saveExpansionName}'", LogLevel.Trace);
+
+                            //expansionManager.expansionManager.ActivateExpansion(saveExpansionName, saveData[saveExpansionKey].GridId);
+
+                            if (modDataService.farmExpansions.TryGetValue(saveExpansionKey, out FarmExpansionLocation expansionLocation))
+                            {
+                                //FarmExpansionLocation expansionLocation = expansionManager.expansionManager.farmExpansions[saveExpansionName];
+                                expansionLocation.Active = saveData[saveExpansionKey].Active;
+                                expansionLocation.PurchasedBy = saveData[saveExpansionKey].PurchasedBy;
+                                if (saveData[saveExpansionKey].animals != null) expansionLocation.animals.CopyFrom(saveData[saveExpansionKey].animals.Pairs);
+                                expansionLocation.characters.ReplaceWith(saveData[saveExpansionKey].characters);
+                                if (saveData[saveExpansionKey].terrainFeatures != null) expansionLocation.terrainFeatures.ReplaceWith(saveData[saveExpansionKey].terrainFeatures);
+                                expansionLocation.largeTerrainFeatures.ReplaceWith(saveData[saveExpansionKey].largeTerrainFeatures);
+                                expansionLocation.resourceClumps.ReplaceWith(saveData[saveExpansionKey].resourceClumps);
+                                if (saveData[saveExpansionKey].objects != null) expansionLocation.objects.ReplaceWith(saveData[saveExpansionKey].objects);
+                                expansionLocation.furniture.ReplaceWith(saveData[saveExpansionKey].furniture);
+                                expansionLocation.numberOfSpawnedObjectsOnMap = saveData[saveExpansionKey].numberOfSpawnedObjectsOnMap;
+                                expansionLocation.piecesOfHay.Value = saveData[saveExpansionKey].piecesOfHay.Value;
+                                expansionLocation.GridId = saveData[saveExpansionKey].GridId;
+                                expansionLocation.OfferLetterRead = saveData[saveExpansionKey].OfferLetterRead;
+                                expansionLocation.SeasonOverride = expansionManager.expansionManager.GetExpansionSeasonalOverride(saveExpansionName);
+                                expansionLocation.CrowsEnabled = saveData[saveExpansionKey].CrowsEnabled;
+                                expansionLocation.AllowBlueGrass = saveData[saveExpansionKey].AllowBlueGrass;
+
+                                //  remove auto added buildings as they are stored in the save
+                                expansionLocation.buildings.Clear();
+                                foreach (Building building in saveData[saveExpansionKey].buildings)
                                 {
-                                    try
+                                    if (building.indoors.Value == null)
                                     {
-                                        building.load();
+                                        try
+                                        {
+                                            building.load();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            logger.Log($"Error loading building {building.buildingType.Value}", LogLevel.Error);
+                                        }
                                     }
-                                    catch (Exception ex)
+                                    else
                                     {
-                                        logger.Log($"Error loading building {building.buildingType.Value}", LogLevel.Error);
+                                        //
+                                        //  a kludge to get giant crops transferred from the save
+                                        //
+                                        //
+                                        //  move the clumps to temp storage
+                                        //
+                                        NetCollection<ResourceClump> resourceClumps = new NetCollection<ResourceClump>();
+                                        foreach (ResourceClump oldclump in building.indoors.Value.resourceClumps)
+                                        {
+                                            resourceClumps.Add(oldclump);
+                                        }
+                                        //
+                                        //  do normal load
+                                        //
+                                        try
+                                        {
+                                            building.load();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            logger.Log($"Error loading building {building.buildingType.Value}", LogLevel.Error);
+                                        }
+                                        //
+                                        //  re-add clumps & load
+                                        //
+                                        foreach (ResourceClump clump in resourceClumps)
+                                        {
+                                            clump.loadSprite();
+                                            building.indoors.Value.resourceClumps.Add(clump);
+                                        }
+                                    }
+                                    utilitiesService.FixBuildingWarps(building, saveExpansionKey);
+                                    expansionLocation.buildings.Add(building);
+                                }
+                                expansionLocation.FixAnimals();
+
+                                expansionLocation.modData.Clear();
+                                foreach (string expansionKey in saveData[saveExpansionKey].modData.Keys)
+                                {
+                                    expansionLocation.modData.Add(expansionKey, saveData[saveExpansionKey].modData[expansionKey]);
+                                }
+
+                                for (int characterIndex = expansionLocation.characters.Count - 1; characterIndex >= 0; characterIndex--)
+                                {
+                                    if (!expansionLocation.characters[characterIndex].DefaultPosition.Equals(Vector2.Zero))
+                                        expansionLocation.characters[characterIndex].position.Value = expansionLocation.characters[characterIndex].DefaultPosition;
+
+                                    expansionLocation.characters[characterIndex].currentLocation = expansionLocation;
+
+                                    if (characterIndex < expansionLocation.characters.Count)
+                                        expansionLocation.characters[characterIndex].reloadSprite();
+                                }
+
+                                if (expansionLocation.terrainFeatures != null)
+                                {
+                                    foreach (KeyValuePair<Vector2, TerrainFeature> terrainFeature in expansionLocation.terrainFeatures.Pairs)
+                                        terrainFeature.Value.loadSprite();
+                                }
+
+                                if (expansionLocation.objects != null)
+                                {
+                                    foreach (KeyValuePair<Vector2, SDObject> current in expansionLocation.objects.Pairs)
+                                    {
+                                        current.Value.initializeLightSource(current.Key);
+                                        current.Value.reloadSprite();
                                     }
                                 }
-                                else
+
+                                foreach (Furniture furniture in expansionLocation.furniture)
+                                {
+                                    furniture.resetState();
+                                    furniture.reloadSprite();
+                                }
+
+                                if (modDataService.farmExpansions[saveExpansionName].GridId > -1)
                                 {
                                     //
-                                    //  a kludge to get giant crops transferred from the save
+                                    //  re-add expansions to the grid
                                     //
-                                    //
-                                    //  move the clumps to temp storage
-                                    //
-                                    NetCollection<ResourceClump> resourceClumps = new NetCollection<ResourceClump>();
-                                    foreach (ResourceClump oldclump in building.indoors.Value.resourceClumps)
+                                    if (modDataService.farmExpansions[saveExpansionName].Active)
                                     {
-                                        resourceClumps.Add(oldclump);
+                                        modDataService.validContents[saveExpansionName].Added = true;
+                                        gridManager.AddMapToGrid(saveExpansionName, modDataService.farmExpansions[saveExpansionName].GridId);
+
+                                        //
+                                        //  refactor sublocations that have Farm warps
+                                        //
+                                        foreach (string location in modDataService.validContents[saveExpansionName].SubLocations)
+                                        {
+                                            GameLocation subLocation = Game1.getLocationFromName(location);
+                                            if (subLocation != null)
+                                            {
+                                                utilitiesService.MapUtilities.AdjustMapActions(subLocation.Map, modDataService.validContents[saveExpansionName].LocationName);
+
+                                                List<Warp> warpsToRemove = new();
+                                                if (subLocation != null)
+                                                {
+                                                    foreach (var warp in subLocation.warps)
+                                                    {
+                                                        if (warp.TargetName == "Farm")
+                                                        {
+                                                            warp.TargetName = modDataService.validContents[saveExpansionName].LocationName;
+                                                        }
+                                                        //  remove Backwoods warps
+                                                        if (warp.TargetName == "Backwoods")
+                                                        {
+                                                            warpsToRemove.Add(warp);
+                                                        }
+                                                    }
+                                                    foreach (var oldWarp in warpsToRemove)
+                                                    {
+                                                        subLocation.warps.Remove(oldWarp);
+                                                    }
+                                                }
+                                            }
+                                        }
+
+
                                     }
-                                    //
-                                    //  do normal load
-                                    //
-                                    try
+                                    else
                                     {
-                                        building.load();
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        logger.Log($"Error loading building {building.buildingType.Value}", LogLevel.Error);
-                                    }
-                                    //
-                                    //  re-add clumps & load
-                                    //
-                                    foreach (ResourceClump clump in resourceClumps)
-                                    {
-                                        clump.loadSprite();
-                                        building.indoors.Value.resourceClumps.Add(clump);
+                                        modDataService.farmExpansions[saveExpansionName].GridId = -1;
                                     }
                                 }
-                                expansionManager.expansionManager.FixBuildingWarps(building, expansionName);
-                                expansionLocation.buildings.Add(building);
+                                //if (!loadOnly)
+                                //expansionManager.expansionManager.AddGameLocation(expansionLocation, "Save_V1_6");
                             }
-                            expansionLocation.FixAnimals();
-
-                            expansionLocation.modData.Clear();
-                            foreach (string expansionKey in saveData[expansionName].modData.Keys)
+                            else
                             {
-                                expansionLocation.modData.Add(expansionKey, saveData[expansionName].modData[expansionKey]);
+                                logger.Log($"   Save contains unknown expansion '{saveExpansionName}'.  Expansion ignored.", LogLevel.Warn);
                             }
-
-                            for (int characterIndex = expansionLocation.characters.Count - 1; characterIndex >= 0; characterIndex--)
-                            {
-                                if (!expansionLocation.characters[characterIndex].DefaultPosition.Equals(Vector2.Zero))
-                                    expansionLocation.characters[characterIndex].position.Value = expansionLocation.characters[characterIndex].DefaultPosition;
-
-                                expansionLocation.characters[characterIndex].currentLocation = expansionLocation;
-
-                                if (characterIndex < expansionLocation.characters.Count)
-                                    expansionLocation.characters[characterIndex].reloadSprite();
-                            }
-
-                            if (expansionLocation.terrainFeatures != null)
-                            {
-                                foreach (KeyValuePair<Vector2, TerrainFeature> terrainFeature in expansionLocation.terrainFeatures.Pairs)
-                                    terrainFeature.Value.loadSprite();
-                            }
-
-                            if (expansionLocation.objects != null)
-                            {
-                                foreach (KeyValuePair<Vector2, SDObject> current in expansionLocation.objects.Pairs)
-                                {
-                                    current.Value.initializeLightSource(current.Key);
-                                    current.Value.reloadSprite();
-                                }
-                            }
-
-                            foreach (Furniture furniture in expansionLocation.furniture)
-                            {
-                                furniture.resetState();
-                                furniture.reloadSprite();
-                            }
-                            //if (!loadOnly)
-                            //expansionManager.expansionManager.AddGameLocation(expansionLocation, "Save_V1_6");
                         }
                         else
                         {
-                            logger.Log($"   Save contains unknown expansion '{expansionName}'.  Expansion ignored.", LogLevel.Warn);
+                            logger.Log($"   Save contains unknown expansion '{saveExpansionName}'.  Expansion ignored.", LogLevel.Warn);
                         }
                     }
                     catch (Exception ex)
                     {
-                        logger.Log($"Error loading Expansion {expansionName}", LogLevel.Error);
+                        logger.Log($"Error loading Expansion {saveExpansionKey}", LogLevel.Error);
                         logger.LogError(ex);
                     }
                 }
                 //
                 //  now things are loaded, re-add active expansions to the grid
                 //
-                logger.Log($"     Adding active expansions to map grid.", LogLevel.Debug);
-                foreach (string expansionName in saveData.Keys)
-                {
-                    if (expansionManager.expansionManager.farmExpansions.ContainsKey(expansionName))
-                    {
-                        if (expansionManager.expansionManager.farmExpansions[expansionName].GridId > -1)
-                        {
-                            //
-                            //  re-add expansions to the grid
-                            //
-                            if (expansionManager.expansionManager.farmExpansions[expansionName].Active)
-                            {
-                                gridManager.AddMapToGrid(expansionName, expansionManager.expansionManager.farmExpansions[expansionName].GridId);
-                            }
-                            else
-                            {
-                                expansionManager.expansionManager.farmExpansions[expansionName].GridId = -1;
-                            }
-                        }
-                    }
-                }
+                //logger.Log($"     Adding active expansions to map grid.", LogLevel.Debug);
+                //foreach (string saveExpansionName in saveData.Keys)
+                //{
+                //    //
+                //    //  added to support FormerLocationNames
+                //    //
+                //    bool addToGrid;
+                //    string currentName = saveExpansionName;
+                //    addToGrid = expansionManager.expansionManager.farmExpansions.ContainsKey(saveExpansionName);
+
+                //    if (!addToGrid)
+                //    {
+                //        // check FormerLocationNames
+                //        var alias = contentPackService.contentPackLoader.ValidContents.Where(p => p.Value.FormerLocationNames.Contains(saveExpansionName));
+                //        if (alias.Any())
+                //        {
+                //            currentName = alias.First().Value.LocationName;
+                //            addToGrid = true;
+                //        }
+                //    }
+                //    if (addToGrid)
+                //    {
+                //        if (expansionManager.expansionManager.farmExpansions[currentName].GridId > -1)
+                //        {
+                //            //
+                //            //  re-add expansions to the grid
+                //            //
+                //            if (expansionManager.expansionManager.farmExpansions[currentName].Active)
+                //            {
+                //                gridManager.AddMapToGrid(currentName, expansionManager.expansionManager.farmExpansions[currentName].GridId);
+                //            }
+                //            else
+                //            {
+                //                expansionManager.expansionManager.farmExpansions[currentName].GridId = -1;
+                //            }
+                //        }
+                //    }
+                //    else
+                //    {
+                //        logger.Log($"Save contains missing Expansion '{saveExpansionName}'",LogLevel.Warn);
+                //    }
+                //}
                 //
                 //  fix grid layout in case any expansion mods had
                 //  been removed.

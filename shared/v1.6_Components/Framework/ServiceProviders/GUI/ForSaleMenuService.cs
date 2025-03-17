@@ -5,23 +5,24 @@ using System;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+using SDV_Realty_Core.Framework.ServiceProviders.Utilities;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.GUI
 {
     internal class ForSaleMenuService : IForSaleMenuService
     {
-        private ILandManager landManager;
         private IModDataService modDataService;
+        private IUtilitiesService utilitiesService;
         public override Type[] InitArgs => new Type[]
         {
-            typeof(ILandManager),typeof(IGameEventsService),
-            typeof(IModDataService)
+            typeof(IGameEventsService),
+            typeof(IModDataService),typeof(IUtilitiesService)
         };
 
         public override FEForSaleMenu GetMenu()
         {
             //forSaleMenu.InitializeGUI();
-            FEForSaleMenu newMenu = new FEForSaleMenu(logger,landManager,modDataService);
+            FEForSaleMenu newMenu = new FEForSaleMenu(logger,modDataService, utilitiesService);
             newMenu.InitializeGUI();
             return newMenu;
         }
@@ -38,11 +39,11 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GUI
         {
             this.logger = logger;
 
-            landManager = (ILandManager)args[0];
-            IGameEventsService eventsService = (IGameEventsService)args[1];
-            modDataService = (IModDataService)args[2];
+            IGameEventsService eventsService = (IGameEventsService)args[0];
+            modDataService = (IModDataService)args[1];
+            utilitiesService = (IUtilitiesService)args[2];
 
-            forSaleMenu = new FEForSaleMenu(logger, landManager, modDataService);
+            forSaleMenu = new FEForSaleMenu(logger,  modDataService, utilitiesService);
 
             //eventsService.AddSubscription(IGameEventsService.EventTypes.GUILoaded, GUILoaded);
         }

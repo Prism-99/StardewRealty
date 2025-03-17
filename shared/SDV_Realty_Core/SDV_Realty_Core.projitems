@@ -32,9 +32,17 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\MailDataProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\NPCGiftTastesDataProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\StringsFromMapsDataProviders.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Menus\CustomWarpMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\StardewMeadowsTrain.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\StationDetails.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\GMCM_Integration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\ICentralStationApi.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\ILocationTunerAPI.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\IQuickSaveAPI.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Menus\SDRWorldMapMenu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ModFixes\IModFix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ModFixes\SmallerFishPonds.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\ModStateValues.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\SDRChatboxCommands.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IStardewRealty.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IStaticClassService.cs" />
@@ -49,7 +57,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\OneTimeRandom.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\PerfMonData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Utilities\SeasonalUtils.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Integrations\CGCM_Integration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Integrations\ITrainStationAPI.cs" />
+    <Compile Include="..\shared\SDV_Realty_Core\Integrations\GMCM_Integration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Integrations\IGenericModConfigMenuApi.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\ICustomBuilding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Menus\FEListbox.cs" />
@@ -88,16 +97,133 @@
     <Compile Include="$(MSBuildThisFileDirectory)Integrations\SDRCustomization.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)data\additionalfarms\configs\WaFFLE.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\additionalfarms\images\crystalinerose.AzureSprings.AzureSprings.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\additionalfarms\images\crystalinerose.BlossomCrest.BlossomCrest.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\additionalfarms\images\crystalinerose.WildflowerAcres.WildflowerAcres.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\additionalfarms\images\Juanpa98ar.CustomBigDesertFarmMap.BigDesertFarmMap.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\additionalfarms\images\Juanpa98ar.CustomFarmUnited.FarmUnited.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\additionalfarms\images\StarMoon7.StrawberryFarm.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\additional_farm_blacklist.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="$(MSBuildThisFileDirectory)data\assets\images\land_frame.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\meadows_valley_area.png">
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\meadows_valley_area_fall.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\meadows_valley_area_spring.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\meadows_valley_area_summer.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\meadows_valley_area_winter.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="$(MSBuildThisFileDirectory)data\assets\images\meadow_menu_background.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\animals.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\carpenter.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\custom-a.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\custom-b.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\custom-c.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\custom-d.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\custom-e.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\home.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\meadows.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\no_world_map.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="$(MSBuildThisFileDirectory)data\assets\images\world map image.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\town.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\worldmap_bg.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\worldmap_bg_fall.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\worldmap_bg_spring.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\worldmap_bg_summer.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\worldmap_bg_winter.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ComingSoon_fall.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ComingSoon_spring.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ComingSoon_summer.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ComingSoon_winter.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ForFuture_fall.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ForFuture_spring.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ForFuture_summer.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ForFuture_winter.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ForSale_fall.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ForSale_spring.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ForSale_summer.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap\WorldMap_ForSale_winter.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="$(MSBuildThisFileDirectory)data\assets\images\WorldMap_ComingSoon.png">
@@ -139,6 +265,39 @@
     <Content Include="$(MSBuildThisFileDirectory)data\assets\weather\fog.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\art gallery exterior.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\fall_outdoorsTileSheet_custom.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\farm_services_exterior.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\raisedbar.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\real estate office exterior.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\outdoorsTileSheet_custom.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\spring_outdoorsTileSheet_custom.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\summer_outdoorsTileSheet_custom.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\train bar.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\warpring.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\winter_outdoorsTileSheet_custom.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="$(MSBuildThisFileDirectory)data\release_notes - 1.6.txt">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
@@ -152,6 +311,21 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="$(MSBuildThisFileDirectory)data\mappatchs\warproom.tmx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.farmservices\farmservicesinterior.tmx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\ring_patch.tmx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.gallery\sdr.gallery.tmx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.realtyoffice\realestateinterior.tmx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)data\Maps\prism99.sdr.stardewmeadows\stardewmeadows.tmx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="$(MSBuildThisFileDirectory)data\Maps\sdr_warproom\warproom.tmx">
@@ -177,24 +351,22 @@
     <Content Include="$(MSBuildThisFileDirectory)data\others.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="$(MSBuildThisFileDirectory)data\release_notes.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="$(MSBuildThisFileDirectory)data\compatability.txt" />
+    <Content Include="$(MSBuildThisFileDirectory)data\compatibility.txt" />
     <Content Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\how-to-make-a-abuilding.txt" />
     <Content Include="$(MSBuildThisFileDirectory)i18n\default.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="$(MSBuildThisFileDirectory)i18n\fr.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="$(MSBuildThisFileDirectory)ContentPackFramework\ContentPacks\ExpansionPacks\" />
+    <Folder Include="$(MSBuildThisFileDirectory)data\additionalfarms\images\" />
     <Folder Include="$(MSBuildThisFileDirectory)data\assets\machines\bigkeg\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Buildings\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\MenuOptions\" />
+    <Folder Include="$(MSBuildThisFileDirectory)Framework\Menus\Controls\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\Integrations\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\Locations\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\Characters\" />

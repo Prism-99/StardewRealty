@@ -9,10 +9,10 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.DataProviders;
 using SDV_Realty_Core.Framework.ServiceInterfaces.FileManagement;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
-using StardewModdingAPI.Events;
-using System;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Patches;
+using StardewModdingAPI.Events;
+using System;
 
 
 namespace SDV_Realty_Core.Framework.ServiceProviders
@@ -26,32 +26,44 @@ namespace SDV_Realty_Core.Framework.ServiceProviders
         };
         public override Type[] Dependants => new Type[]
         {
-            typeof(IModDataKeysService),typeof(IWarproomService),
-            typeof(ISaveManagerService),typeof(IExpansionManager),
-            typeof(IGridManager),typeof(ICustomEntitiesServices),
+            typeof(IModDataKeysService),typeof(ISaveManagerService),
+            typeof(IExpansionManager),typeof(ICustomEntitiesServices),
             typeof(ICustomLigthingService),typeof(IMultiplayerService),
             typeof(IStringService),typeof(IUtilitiesService),
             typeof(IMapLoaderService),typeof(IConsoleCommandsService),
             typeof(ITranslationService),typeof(IDataProviderService),
             typeof(IContentPackService),typeof(IExpansionCustomizationService),
-            typeof(IContentManagerService),typeof(IExitsService),
-            typeof(IFishStockService),typeof(IForSaleSignService),
+            typeof(IContentManagerService),typeof(IForSaleSignService),
             typeof(ISeasonUtilsService),typeof(IFileManagerService),
             typeof(IInputService),typeof(IForSaleMenuService),
-            typeof(IWeatherManagerService),typeof(IModAPIService),
-            typeof(ICGCMIntergrationService),typeof(IAutoGrabberService),
-            typeof(ICustomObjectService),typeof(ICustomCropService),
+            typeof(IModAPIService),
+            typeof(ICustomObjectService),
             typeof(ICustomMachineDataService),typeof(ICustomLocationContextService),
             typeof(IExpansionCustomizationService),typeof(IMineCartMenuService),
             typeof(ICustomCropService),typeof(ICustomMovieService),
-            typeof(IJunimoHutService),typeof(IJunimoHarvesterService),
             typeof(IThreadSafeLoaderService),typeof(IAutoMapperService),
             typeof(IConfigService),typeof(ICustomEventsService),
-            typeof(IValleyStatsService),typeof(IMapRendererService),
-            typeof(IGameFixesService),typeof(IChatBoxCommandsService),
+            typeof(IMapRendererService),typeof(IChatBoxCommandsService),
             typeof(ILocationDisplayService),typeof(ILocationDataProvider),
-            typeof(ITreasureManager),typeof(IWordMapMenuService),
-            typeof(IWorldMapPatch)
+            typeof(IWordMapMenuService),typeof(IWorldMapPatch),
+            // integration services
+            typeof(ICentralStationIntegrationService),
+            typeof(ILocationTunerIntegrationService),
+            //typeof(IQuickSaveIntegration),
+            typeof(IGMCMIntergrationService),
+            // game mechanics
+            typeof(IMiniMapService),
+            typeof(ICustomTrainService),typeof(IAutoGrabberService),
+            typeof(ICustomCropService),typeof(IGameFixesService),
+            typeof(IJunimoHarvesterService),typeof(IJunimoHutService),
+            typeof(IValleyStatsService),typeof(ICropGracePeriodService),
+            //mod mechanics
+            typeof(IFarmServicesService),typeof(IExitsService),
+            typeof(ICustomProductionService),//typeof(IExpansionBridgingService),
+            typeof(IFishStockService),typeof(IGridManager),typeof(ILandManager),
+            typeof(ITreasureManager),typeof(IWarproomService),
+            typeof(IWeatherManagerService)
+
 #if DEBUG
             ,typeof(IDebugPatchService)
 #endif

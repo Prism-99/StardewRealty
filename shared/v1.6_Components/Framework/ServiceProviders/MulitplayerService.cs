@@ -15,8 +15,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders
         public override Type[] InitArgs => new Type[]
         {
             typeof(IExitsService),typeof(ILandManager),
-            typeof(IUtilitiesService),typeof(IExpansionManager)
-            
+            typeof(IUtilitiesService),typeof(IExpansionManager),
+            typeof(IModDataService)
         };
         public override List<string> CustomServiceEventSubscripitions => new List<string>
         {
@@ -32,16 +32,17 @@ namespace SDV_Realty_Core.Framework.ServiceProviders
 
         internal override void Initialize(ILoggerService logger, object[] args)
         {
-            this.logger=logger;
+            this.logger = logger;
             IExitsService exitsService = (IExitsService)args[0];
             ILandManager landManager = (ILandManager)args[1];
-            IUtilitiesService utilitiesService= (IUtilitiesService)args[2];
+            IUtilitiesService utilitiesService = (IUtilitiesService)args[2];
             IExpansionManager expansionManager = (IExpansionManager)args[3];
- 
-            Multiplayer = new SDRMultiplayer();
-            Multiplayer.Initialize(logger, utilitiesService.ModHelperService.modHelper,   expansionManager, landManager, exitsService, utilitiesService);
+            IModDataService modDataService = (IModDataService)args[4];
 
-            utilitiesService.GameEventsService.AddSubscription(new LoadStageChangedEventArgs(0,0), Multiplayer.AddHooks);
+            Multiplayer = new SDRMultiplayer();
+            Multiplayer.Initialize(logger, utilitiesService.ModHelperService.modHelper, modDataService, expansionManager, landManager, exitsService, utilitiesService);
+
+            utilitiesService.GameEventsService.AddSubscription(new LoadStageChangedEventArgs(0, 0), Multiplayer.AddHooks);
             RegisterEventHandler("SendFarmHandPurchase", SendFarmHandPurchase);
         }
         private void SendFarmHandPurchase(object[] args)

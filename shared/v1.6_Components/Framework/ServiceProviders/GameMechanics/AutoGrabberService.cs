@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
 using StardewValley.GameData.Objects;
+using SDV_Realty_Core.Framework.Locations;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 {
@@ -29,7 +30,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
         {
             typeof(IUtilitiesService),typeof(IModDataService)
         };
-        private FEConfig config;
+        //private FEConfig config;
         private IModDataService modDataService;
         private List<string> quality = new List<string> { "basic", "silver", "gold", "3", "iridium" };
         private readonly int FARMING = 0;
@@ -50,8 +51,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
             _utilitiesService = (IUtilitiesService)args[0];
             modDataService = (IModDataService)args[1];
 
-            config = _utilitiesService.ConfigService.config;
-            // add subscription to load hooks once contetn is loaded
+            //config = _utilitiesService.ConfigService.config;
+            // add subscription to load hooks once content is loaded
             _utilitiesService.GameEventsService.AddSubscription(IGameEventsService.EventTypes.ContentLoaded, HandleContentLoaded);
             // add subscription to load hooks on configuration change
             _utilitiesService.CustomEventsService.AddModEventSubscription(ICustomEventsService.ModEvents.ConfigChanged, HandleConfigChanged);
@@ -72,7 +73,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
             //
             //  only run if Main player
             //
-            if (Context.IsMainPlayer && (config.EnableDeluxeAutoGrabberOnExpansions || config.EnableDeluxeAutoGrabberOnHomeFarm))
+            if (Context.IsMainPlayer && (modDataService.Config.EnableDeluxeAutoGrabberOnExpansions || modDataService.Config.EnableDeluxeAutoGrabberOnHomeFarm))
             {
                 logger.Log($"SDR.Autograbber DayStarted", LogLevel.Debug);
 
@@ -88,20 +89,20 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
         private void HandleObjectsChanged(EventArgs ep)
         {
             ObjectListChangedEventArgs e = (ObjectListChangedEventArgs)ep;
-            if (!Game1.IsMasterGame || !config.DoHarvestTruffles || string.IsNullOrEmpty(config.GlobalForageMap))
+            if (!Game1.IsMasterGame || !modDataService.Config.DoHarvestTruffles || string.IsNullOrEmpty(modDataService.Config.GlobalForageMap))
             {
                 return;
             }
-            GameLocation foragerMap = Game1.getLocationFromName(config.GlobalForageMap);
+            GameLocation foragerMap = Game1.getLocationFromName(modDataService.Config.GlobalForageMap);
             if (foragerMap == null)
             {
-                logger.LogOnce($"Invalid GlobalForageMap name: {config.GlobalForageMap}", LogLevel.Error);
+                logger.LogOnce($"Invalid GlobalForageMap name: {modDataService.Config.GlobalForageMap}", LogLevel.Error);
                 return;
             }
-            foragerMap.Objects.TryGetValue(new Vector2(config.GlobalForageTileX, config.GlobalForageTileY), out var grabber);
+            foragerMap.Objects.TryGetValue(new Vector2(modDataService.Config.GlobalForageTileX, modDataService.Config.GlobalForageTileY), out var grabber);
             if (grabber == null || !grabber.Name.Contains("Grabber"))
             {
-                logger.LogOnce($"Object is not a valid grabber ({config.GlobalForageTileX},{config.GlobalForageTileY})", LogLevel.Error);
+                logger.LogOnce($"Object is not a valid grabber ({modDataService.Config.GlobalForageTileX},{modDataService.Config.GlobalForageTileY})", LogLevel.Error);
                 return;
             }
             if (grabber.heldObject.Value == null)
@@ -131,7 +132,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
         #region "Private Methods"
         private void AddHooks()
         {
-            if (Context.IsMainPlayer && (config.EnableDeluxeAutoGrabberOnExpansions || config.EnableDeluxeAutoGrabberOnHomeFarm))
+            if (Context.IsMainPlayer && (modDataService.Config.EnableDeluxeAutoGrabberOnExpansions || modDataService.Config.EnableDeluxeAutoGrabberOnHomeFarm))
             {
                 // check for Dluxe Auto Grabber
                 //if (_utilitiesService.ModHelperService.ModRegistry.IsLoaded("Nykal145.DeluxeGrabberRedux16"))
@@ -182,14 +183,14 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 
             foreach (GameLocation buildableLocation in buildableLocations)
             {
-                if ((modDataService.farmExpansions.ContainsKey(buildableLocation.NameOrUniqueName) && config.EnableDeluxeAutoGrabberOnExpansions) || (config.EnableDeluxeAutoGrabberOnHomeFarm && buildableLocation is Farm))
+                if (((buildableLocation.NameOrUniqueName==WarproomManager.StardewMeadowsLoacationName || modDataService.farmExpansions.ContainsKey(buildableLocation.NameOrUniqueName)) && modDataService.Config.EnableDeluxeAutoGrabberOnExpansions) || (modDataService.Config.EnableDeluxeAutoGrabberOnHomeFarm && buildableLocation is Farm))
                 {
                     foreach (Building building in buildableLocation.buildings)
                     {
                         grabber = null;
                         grabbables.Clear();
                         itemsAdded.Clear();
-                        if (building.buildingType.Contains("Coop") || building.buildingType.Contains("Slime"))
+                        if ( building.buildingType.Contains("Coop") || building.buildingType.Contains("Slime"))
                         {
 #if DEBUG
                             logger.Log($"Searching {building.buildingType} at <{building.tileX},{building.tileY}> for auto-grabber", LogLevel.Debug);
@@ -268,7 +269,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                                         itemsAdded[name]++;
                                     }
                                     location.Objects.Remove(tile);
-                                    if (config.DoGainExperience)
+                                    if (modDataService.Config.DoGainExperience)
                                     {
                                         gainExperience(FARMING, 5);
                                     }
@@ -317,7 +318,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 #if DEBUG
             logger.Log($"Found fruit in {location.Name} ({tile})", LogLevel.Debug);
 #endif
-            if (!config.DoHarvestFruitTrees)
+            if (!modDataService.Config.DoHarvestFruitTrees)
             {
                 return null;
             }
@@ -337,11 +338,11 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
         /// </summary>
         private void AutoGrabOutdoorCrops()
         {
-            if (!config.DoHarvestCrops && !config.DoHarvestTruffles)
+            if (!modDataService.Config.DoHarvestCrops && !modDataService.Config.DoHarvestTruffles)
             {
                 return;
             }
-            int range = config.GrabberRange;
+            int range = modDataService.Config.GrabberRange;
             logger.Log($"Auto grabbing crops within {range} tiles", LogLevel.Debug);
 
             HoeDirt dirt = default(HoeDirt);
@@ -351,10 +352,10 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 
             List<GameLocation> buildings = Game1.locations.Where(p => p.IsBuildableLocation()).ToList();
 
-            //foreach (GameLocation bgl in buildings)
-            //{
-            //    searchLocs.AddRange(bgl.buildings.Where(p => p.indoors.Value != null).Select(p => p.indoors.Value).ToList());
-            //}
+            foreach (GameLocation bgl in buildings)
+            {
+                searchLocs.AddRange(bgl.buildings.Where(p => p.indoors.Value != null).Select(p => p.indoors.Value).ToList());
+            }
 
             foreach (GameLocation location in searchLocs)
             {
@@ -421,7 +422,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                                     if (harvest2 != null)
                                     {
                                         grabberChest.addItem(harvest2);
-                                        if (config.DoGainExperience)
+                                        if (modDataService.Config.DoGainExperience)
                                         {
                                             gainExperience(FORAGING, 3);
                                         }
@@ -445,7 +446,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                                         if (harvest != null)
                                         {
                                             grabberChest.addItem(harvest);
-                                            if (config.DoGainExperience)
+                                            if (modDataService.Config.DoGainExperience)
                                             {
                                                 gainExperience(FORAGING, 3);
                                             }
@@ -470,13 +471,13 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                                             foreach (var treeFruit in fruits)
                                             {
                                                 grabberChest.addItem(treeFruit);
-                                                if (config.DoGainExperience)
+                                                if (modDataService.Config.DoGainExperience)
                                                 {
                                                     gainExperience(FORAGING, 3);
                                                 }
                                             }
                                         }
-                                        else if (config.DoHarvestTruffles && location.Objects.ContainsKey(tile))
+                                        else if (modDataService.Config.DoHarvestTruffles && location.Objects.ContainsKey(tile))
                                         {
                                             //
                                             //  look for truffles
@@ -528,7 +529,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
             prism_Crop crop = new prism_Crop(dirt.crop);
             prism_HoeDirt fedirt = new prism_HoeDirt(dirt);
 
-            if (!config.DoHarvestFlowers)
+            if (!modDataService.Config.DoHarvestFlowers)
             {
                 if (Game1.objectData.TryGetValue(dirt.crop.indexOfHarvest.Value, out ObjectData cropData))
                 {
@@ -554,6 +555,10 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
             //if (crop.currentPhase.Value >= crop.phaseDays.Count - 1 && (!crop.fullyGrown.Value || crop.dayOfCurrentPhase.Value <= 0))
             if (dirt.readyForHarvest())
             {
+                //if (dirt.crop.harvest((int)dirt.Tile.X, (int)dirt.Tile.Y, dirt))
+                //{
+                //    dirt.destroyCrop(false);
+                //}
                 int num1 = 1;
                 int num2 = 0;
                 int num3 = 0;
@@ -597,8 +602,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                     stack += num1;
                     if (dirt.crop.RegrowsAfterHarvest())
                     {
-                        dirt.crop.currentPhase.Value = crop.RegrowAfterHarvest;
-                        dirt.crop.dayOfCurrentPhase.Value = 0;
+                        //dirt.crop.currentPhase.Value = crop.RegrowAfterHarvest;
+                        dirt.crop.dayOfCurrentPhase.Value = crop.instance.GetData().RegrowDays;
                         dirt.crop.fullyGrown.Value = true;
                     }
                     else
@@ -620,8 +625,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                 }
                 if (crop.RegrowAfterHarvest != -1)
                 {
-                    dirt.crop.currentPhase.Value = crop.RegrowAfterHarvest;
-                    dirt.crop.dayOfCurrentPhase.Value = 0;
+                    //dirt.crop.currentPhase.Value = crop.RegrowAfterHarvest;
+                    dirt.crop.dayOfCurrentPhase.Value =  crop.instance.GetData().RegrowDays;
                     dirt.crop.fullyGrown.Value = true;
                 }
                 else
@@ -695,25 +700,25 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
         }
         private void GlobalAutoGrab()
         {
-            if (!config.DoGlobalForage)
+            if (!modDataService.Config.DoGlobalForage)
             {
                 return;
             }
             List<Vector2> grabbables = new List<Vector2>();
             Dictionary<string, int> itemsAdded = new Dictionary<string, int>();
             Random random = new Random();
-            if (string.IsNullOrEmpty(config.GlobalForageMap))
+            if (string.IsNullOrEmpty(modDataService.Config.GlobalForageMap))
                 return;
-            GameLocation foragerMap = Game1.getLocationFromName(config.GlobalForageMap);
+            GameLocation foragerMap = Game1.getLocationFromName(modDataService.Config.GlobalForageMap);
             if (foragerMap == null)
             {
-                logger.LogOnce($"Invalid GlobalForageMap: {config.GlobalForageMap}", LogLevel.Error);
+                logger.LogOnce($"Invalid GlobalForageMap: {modDataService.Config.GlobalForageMap}", LogLevel.Error);
                 return;
             }
-            foragerMap.Objects.TryGetValue(new Vector2(config.GlobalForageTileX, config.GlobalForageTileY), out var grabber);
+            foragerMap.Objects.TryGetValue(new Vector2(modDataService.Config.GlobalForageTileX, modDataService.Config.GlobalForageTileY), out var grabber);
             if (grabber == null || !grabber.Name.Contains("Grabber"))
             {
-                logger.Log($"No auto-grabber at {config.GlobalForageMap}: <{config.GlobalForageTileX}, {config.GlobalForageTileY}>", LogLevel.Error);
+                logger.Log($"No auto-grabber at {modDataService.Config.GlobalForageMap}: <{modDataService.Config.GlobalForageTileX}, {modDataService.Config.GlobalForageTileY}>", LogLevel.Error);
                 return;
             }
             prism_Chest pChest = new prism_Chest(grabber.heldObject.Value as Chest);
@@ -794,7 +799,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                             itemsAdded["Spring Onion"]++;
                         }
                         dirt.crop = null;
-                        if (config.DoGainExperience)
+                        if (modDataService.Config.DoGainExperience)
                         {
                             gainExperience(FORAGING, 3);
                         }
@@ -885,12 +890,12 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                         itemsAdded[name2]++;
                     }
                     location.Objects.Remove(tile);
-                    if (config.DoGainExperience)
+                    if (modDataService.Config.DoGainExperience)
                     {
                         gainExperience(FORAGING, 7);
                     }
                 }
-                if (config.DoHarvestFarmCave && location is FarmCave)
+                if (modDataService.Config.DoHarvestFarmCave && location is FarmCave)
                 {
                     var values = location.Objects.Values;
                     var enumerator6 = values.GetEnumerator();
@@ -979,7 +984,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
             logger.Log($"Grabbing truffle: {obj.Stack}x{quality[obj.Quality]}", LogLevel.Debug);
 #endif
             grabber.addItem(obj);
-            if (config.DoGainExperience)
+            if (modDataService.Config.DoGainExperience)
             {
                 gainExperience(FORAGING, 7);
             }

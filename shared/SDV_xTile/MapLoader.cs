@@ -22,17 +22,17 @@ namespace SDV_xTile
      *  The code has been watered down from generic to single 
      *  purpose
      */
-    public  class MapLoader
+    public class MapLoader
     {
-        public  string FullRootDirectory;
-        private  readonly string[] LocalTilesheetExtensions = { ".png", ".xnb" };
-        private  IModHelperService helper;
-        private  ILoggerService logger;
-        internal  Map LoadMap(string sGameRootPath, string sMapRelativePath, string sLocationName, bool bLoadTileSheets)
+        public string FullRootDirectory;
+        private readonly string[] LocalTilesheetExtensions = { ".png", ".xnb" };
+        private IModHelperService helper;
+        private ILoggerService logger;
+        internal Map LoadMap(string sGameRootPath, string sMapRelativePath, string sLocationName, bool bLoadTileSheets)
         {
             return LoadMap(sGameRootPath, sMapRelativePath, sLocationName, bLoadTileSheets, true);
         }
-        internal  Map LoadMap(string sGameRootPath, string sMapRelativePath, string sLocationName, bool bLoadTileSheets, bool removeExt, bool fixTileSheets = true)
+        internal Map LoadMap(string sGameRootPath, string sMapRelativePath, string sLocationName, bool bLoadTileSheets, bool removeExt, bool fixTileSheets = true)
         {
             FullRootDirectory = sGameRootPath;
             FormatManager formatManager = FormatManager.Instance;
@@ -43,12 +43,17 @@ namespace SDV_xTile
             logger.Log($"sMapRelativePath: {sMapRelativePath}", LogLevel.Debug);
             logger.Log($"sGameRootPath: {sGameRootPath}", LogLevel.Debug);
             logger.Log($"Load map path: {Path.Combine(sGameRootPath, sMapRelativePath)}", LogLevel.Debug);
+            // will load the map, but requires tilesheets to be pathed to the root folder
+            //Map mNewMap = helper.modHelper.ModContent.Load<Map>(Path.Combine(sGameRootPath, sMapRelativePath));
+            //Map mNewMap = oPack.Owner.LoadAsset<Map>(Path.Combine( "assets", oPack.MapName));
             Map mNewMap = formatManager.LoadMap(Path.Combine(sGameRootPath, sMapRelativePath));
+            // cannot use as it appends .xnb to the end of the asset name
+            //Map mNewMap = Game1.game1.xTileContent.Load<Map>(Path.Combine(sGameRootPath, sMapRelativePath));
+
             mNewMap.Id = sLocationName;
             mNewMap.assetPath = Path.Combine(sGameRootPath, sMapRelativePath);
             if (fixTileSheets)
                 FixTilesheetPaths(mNewMap, logger, relativeMapPath: sMapRelativePath, fixEagerPathPrefixes: false, sLocationName, removeExt);
-            //Map mNewMap = oPack.Owner.LoadAsset<Map>(Path.Combine( "assets", oPack.MapName));
             if (bLoadTileSheets)
             {
 
@@ -58,7 +63,7 @@ namespace SDV_xTile
             return mNewMap;
         }
 
-        internal  void Initialize(IModHelperService oHelper, ILoggerService olog)
+        internal void Initialize(IModHelperService oHelper, ILoggerService olog)
         {
             helper = oHelper;
             logger = olog;
@@ -72,7 +77,7 @@ namespace SDV_xTile
             //else
             //}
         }
-        internal  void FixTilesheetPaths(Map map, ILoggerService monitor, string relativeMapPath, bool fixEagerPathPrefixes, string sModName, bool removeExt)
+        internal void FixTilesheetPaths(Map map, ILoggerService monitor, string relativeMapPath, bool fixEagerPathPrefixes, string sModName, bool removeExt)
         {
             // get map info
             relativeMapPath = SDVPathUtilities.AssertAndNormalizeAssetName(relativeMapPath); // Mono's Path.GetDirectoryName doesn't handle Windows dir separators
@@ -112,7 +117,7 @@ namespace SDV_xTile
                             assetName = assetName + "." + arExt[arExt.Length - 1];
                         }
                     }
- 
+
                     if (assetName.Contains(relativeMapFolder))
                     {
                         assetName = Path.Combine("Maps", "femaps", sModName, assetName.Replace(relativeMapFolder, "").Replace("\\", ""));
@@ -127,7 +132,7 @@ namespace SDV_xTile
                     //    monitor.Log($"   Mapped tilesheet '{tilesheet.ImageSource}' to '{assetName}'.  Remove ext {removeExt}");
 
 
-                 }
+                }
                 catch (Exception ex)
                 {
                     monitor.Log($"{errorPrefix} The tilesheet couldn't be loaded." + ex.Message, LogLevel.Error);
@@ -141,7 +146,7 @@ namespace SDV_xTile
 
         //    return sClean;
         //}
-        public  bool TryGetTilesheetAssetName(string modRelativeMapFolder, string relativePath, out string assetName, out string error)
+        public bool TryGetTilesheetAssetName(string modRelativeMapFolder, string relativePath, out string assetName, out string error)
         {
             assetName = null;
             error = null;
@@ -195,7 +200,7 @@ namespace SDV_xTile
             error = "The tilesheet couldn't be found relative to either map file or the game's content folder.";
             return false;
         }
-        private  bool GetContentFolderFileExists(string key)
+        private bool GetContentFolderFileExists(string key)
         {
             // get file path
             string path = Path.Combine(FullRootDirectory, "Content", key);
@@ -205,7 +210,7 @@ namespace SDV_xTile
             // get file
             return new FileInfo(path).Exists;
         }
-        private  string GetContentKeyForTilesheetImageSource(string relativePath)
+        private string GetContentKeyForTilesheetImageSource(string relativePath)
         {
             string key = relativePath;
             string topFolder = IOHelpers.GetSegments(key, limit: 2)[0];
@@ -220,13 +225,13 @@ namespace SDV_xTile
 
             return key;
         }
-        public  string GetInternalAssetKey(string key, string sModName)
+        public string GetInternalAssetKey(string key, string sModName)
         {
             FileInfo file = GetModFile(key);
             string relativePath = SDVPathUtilities.GetRelativePath(FullRootDirectory, file.FullName);
             return Path.Combine(sModName ?? "", relativePath);
         }
-        private  FileInfo GetModFile(string path)
+        private FileInfo GetModFile(string path)
         {
             // try exact match
             FileInfo file = new FileInfo(Path.Combine(FullRootDirectory, path));

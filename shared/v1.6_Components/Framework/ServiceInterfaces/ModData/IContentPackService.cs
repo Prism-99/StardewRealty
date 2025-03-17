@@ -8,6 +8,6 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.ModData
         internal ContentPackLoader contentPackLoader;
         internal abstract void LoadPacks();
         internal abstract void LoadMaps();
-
+        internal abstract void LoadExpansionMap(string expansionName);
     }
 }

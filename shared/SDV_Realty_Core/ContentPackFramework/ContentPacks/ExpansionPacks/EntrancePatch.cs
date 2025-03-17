@@ -8,7 +8,8 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks
         North,
         East,
         South,
-        West
+        West,
+        None
     }
     public enum WarpOrientations
     {

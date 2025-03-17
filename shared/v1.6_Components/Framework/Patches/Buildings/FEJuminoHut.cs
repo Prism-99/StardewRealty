@@ -7,50 +7,127 @@ using SDV_Realty_Core.Framework.Utilities;
 using SDV_Realty_Core.Framework.Objects;
 using HarmonyLib;
 using StardewValley.TerrainFeatures;
-using LumberJack.Code;
 using SDV_Realty_Core.Framework.ServiceInterfaces;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using StardewModdingAPI.Events;
+using System.Linq;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+using SkiaSharp;
 
 namespace SDV_Realty_Core.Framework.Patches.Buildings
 {
-    internal  class FEJuminoHut
+    /// <summary>
+    /// Provides additional abilities to Junimos
+    /// </summary>
+    internal class FEJuminoHut
     {
         //
         //  version 1.6
         //
-        //private static FEFramework framework;
         private static ILoggerService logger;
-        private static FEConfig config;
+        //private static FEConfig config;
         private static ISeasonUtilsService _seasonUtils;
-        public FEJuminoHut (ILoggerService olog, FEConfig cf, ISeasonUtilsService seasonUtils)
+        private static IUtilitiesService _Utilities;
+        private static IModDataService _modDataService;
+        public static string unionLetterId = "junimoUnion";
+        public FEJuminoHut(ILoggerService olog, IModDataService modDataService, IUtilitiesService utilitiesService, ISeasonUtilsService seasonUtils)
         {
             logger = olog;
-            config = cf;
+            //config = utilitiesService.ConfigService.config;
             _seasonUtils = seasonUtils;
+            _Utilities = utilitiesService;
+            _modDataService = modDataService;
+
+            utilitiesService.GameEventsService.AddSubscription("BuildingListChangedEventArgs", HandleBuildingListChanged);
         }
-        public static void dayUpdate(int dayOfMonth, JunimoHut __instance)
+        public static string GenerateJunimoFeeLetter()
         {
-            logger.Log($"JuminoHut.dayUpdate called for {__instance.buildingType}", LogLevel.Debug);
-            if ((int)Traverse.Create(__instance).Field("junimoSendOutTimer").GetValue() == 0)
+            string mailContent = I18n.JunimoLetterIntro() + I18n.JunimoLetterHeader();
+
+            if (_modDataService.Config.JunimosWorkInRain)
             {
-                Traverse.Create(__instance).Field("junimoSendOutTimer").SetValue(1000);
+                mailContent += I18n.JunimoLetterRainService();
             }
-            //FEFramework.monitor.Log("FEJunimoHut.dayUpdate called", StardewModdingAPI.LogLevel.Info);
-            //base.dayUpdate(dayOfMonth);
-            //_ = (int)daysOfConstructionLeft;
-            //_ = 0;
-            //sourceRect = getSourceRectForMenu();
-            //myJunimos.Clear();
-            //wasLit.Value = false;
-            //shouldSendOutJunimos.Value = true;
-            //foreach (Farmer allFarmer in Game1.getAllFarmers())
-            //{
-            //    if (allFarmer.isActive() && allFarmer.currentLocation != null && (allFarmer.currentLocation is FarmHouse || allFarmer.currentLocation.isStructure.Value))
-            //    {
-            //        shouldSendOutJunimos.Value = false;
-            //    }
-            //}
+            if (_modDataService.Config.JunimoRainFee > 0)
+            {
+                mailContent += I18n.JunimoLetterRainServiceCost(_modDataService.Config.JunimoRainFee);
+            }
+            if (!_modDataService.Config.JunimosWorkInWinter)
+            {
+                mailContent += I18n.JunimoLetterWinterService();
+
+                if (_modDataService.Config.JunimoWinterFee > 0)
+                {
+                    mailContent += I18n.JunimoLetterWinterServiceCost(_modDataService.Config.JunimoWinterFee);
+                }
+            }
+
+            if (_modDataService.Config.JunimoReseedCrop)
+            {
+                mailContent += I18n.JunimoLetterReseedService();
+
+                if (_modDataService.Config.JunimosFeeForSeeding > 0)
+                {
+                    mailContent += I18n.JunimoReseedServiceCost(_modDataService.Config.JunimosFeeForSeeding);
+                }
+                if (_modDataService.Config.JunimoSeedDiscount > 0)
+                {
+                    mailContent += I18n.JunimoLetterSeedDiscount((int)(_modDataService.Config.JunimoSeedDiscount * 100));
+                }
+            }
+            mailContent += $"{I18n.JunimoLetterFooter()}[#]{I18n.JunimoLetterSubject()}";
+
+            return mailContent;
         }
+        private void HandleBuildingListChanged(EventArgs e)
+        {
+            if (!_modDataService.ModState.JunimoLetterSent)
+            {
+                BuildingListChangedEventArgs changedArgs = (BuildingListChangedEventArgs)e;
+                var hutBuild = changedArgs.Added.Where(p => p.buildingType.Value == "Junimo Hut");
+                if (hutBuild.Any())
+                {
+                    //
+                    //  add mail to data/mail
+                    //
+                    if (_modDataService.Config.EnablePremiumJunimos)
+                    {      
+                        string mailContent= GenerateJunimoFeeLetter();
+                        _modDataService.CustomMail.Add(unionLetterId, mailContent);
+                        _modDataService.ModState.JunimoLetter = mailContent;
+
+                        _Utilities.InvalidateCache("Data/Mail");
+                        _Utilities.PlayerComms.SendPlayerMail(unionLetterId, false, true);
+                        logger.Log("Junimo Union mail sent", LogLevel.Debug);
+                        _modDataService.ModState.JunimoLetterSent = true;
+                        _modDataService.SaveModState();
+                    }
+                }
+            }
+        }
+        //public static void dayUpdate(int dayOfMonth, JunimoHut __instance)
+        //{
+        //    logger.Log($"JuminoHut.dayUpdate called for {__instance.buildingType}", LogLevel.Debug);
+        //    if ((int)Traverse.Create(__instance).Field("junimoSendOutTimer").GetValue() == 0)
+        //    {
+        //        Traverse.Create(__instance).Field("junimoSendOutTimer").SetValue(1000);
+        //    }
+        //    //FEFramework.monitor.Log("FEJunimoHut.dayUpdate called", StardewModdingAPI.LogLevel.Info);
+        //    //base.dayUpdate(dayOfMonth);
+        //    //_ = (int)daysOfConstructionLeft;
+        //    //_ = 0;
+        //    //sourceRect = getSourceRectForMenu();
+        //    //myJunimos.Clear();
+        //    //wasLit.Value = false;
+        //    //shouldSendOutJunimos.Value = true;
+        //    //foreach (Farmer allFarmer in Game1.getAllFarmers())
+        //    //{
+        //    //    if (allFarmer.isActive() && allFarmer.currentLocation != null && (allFarmer.currentLocation is FarmHouse || allFarmer.currentLocation.isStructure.Value))
+        //    //    {
+        //    //        shouldSendOutJunimos.Value = false;
+        //    //    }
+        //    //}
+        //}
         private static void SendOutJunimo(JunimoHut __instance)
         {
             GameLocation glFarm = __instance.GetParentLocation();
@@ -79,43 +156,40 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
             }
 
         }
-        private static void SendOutLimberJack(JunimoHut __instance)
-        {
-            GameLocation glFarm = __instance.GetParentLocation();
-            int unusedJunimoNumber = __instance.getUnusedJunimoNumber();
-            bool isPrismatic = false;
+        //private static void SendOutLumberJack(JunimoHut __instance)
+        //{
+        //    GameLocation glFarm = __instance.GetParentLocation();
+        //    int unusedJunimoNumber = __instance.getUnusedJunimoNumber();
+        //    bool isPrismatic = false;
 
-            Color? gemColor = getGemColor(ref isPrismatic, __instance);
-            LumberJackWorker lumberJack = new LumberJackWorker(glFarm, new Vector2((int)__instance.tileX.Value + 1, (int)__instance.tileY.Value + 1) * 64f + new Vector2(0f, 32f), __instance, unusedJunimoNumber, gemColor);
-            //CustomJunimoHarvester junimoHarvester = new CustomJunimoHarvester(logger, new Vector2(__instance.tileX.Value + 1, __instance.tileY.Value + 1) * 64f + new Vector2(0f, 32f), __instance, glFarm, unusedJunimoNumber, gemColor);
-            //junimoHarvester.modData.Add(IModDataKeysService.FELocationName, glFarm.Name);
-            //junimoHarvester.modData.Add(IModDataKeysService.FEExpansionType, "FarmExpansion");
+        //    Color? gemColor = getGemColor(ref isPrismatic, __instance);
+        //    LumberJackWorker lumberJack = new LumberJackWorker(glFarm, new Vector2((int)__instance.tileX.Value + 1, (int)__instance.tileY.Value + 1) * 64f + new Vector2(0f, 32f), __instance, unusedJunimoNumber, gemColor);
+        //    //CustomJunimoHarvester junimoHarvester = new CustomJunimoHarvester(logger, new Vector2(__instance.tileX.Value + 1, __instance.tileY.Value + 1) * 64f + new Vector2(0f, 32f), __instance, glFarm, unusedJunimoNumber, gemColor);
+        //    //junimoHarvester.modData.Add(IModDataKeysService.FELocationName, glFarm.Name);
+        //    //junimoHarvester.modData.Add(IModDataKeysService.FEExpansionType, "FarmExpansion");
 
-            //lumberJack.isPrismatic.Value = isPrismatic;
-            glFarm.characters.Add(lumberJack);
-            //__instance.myJunimos.Add(lumberJack);
-            Traverse.Create(__instance).Field("junimoSendOutTimer").SetValue(1000);
-            if (Utility.isOnScreen(Utility.Vector2ToPoint(new Vector2(__instance.tileX.Value + 1, __instance.tileY.Value + 1)), 64, glFarm))
-            {
-                try
-                {
-                    glFarm.playSound("junimoMeep1");
-                }
-                catch (Exception)
-                {
-                }
-            }
+        //    //lumberJack.isPrismatic.Value = isPrismatic;
+        //    glFarm.characters.Add(lumberJack);
+        //    //__instance.myJunimos.Add(lumberJack);
+        //    Traverse.Create(__instance).Field("junimoSendOutTimer").SetValue(1000);
+        //    if (Utility.isOnScreen(Utility.Vector2ToPoint(new Vector2(__instance.tileX.Value + 1, __instance.tileY.Value + 1)), 64, glFarm))
+        //    {
+        //        try
+        //        {
+        //            glFarm.playSound("junimoMeep1");
+        //        }
+        //        catch (Exception)
+        //        {
+        //        }
+        //    }
 
-        }
+        //}
         public static bool updateWhenFarmNotCurrentLocation(GameTime time, JunimoHut __instance)
         {
-            if (!Game1.IsMasterGame)
+            if (!_modDataService.Config.EnablePremiumJunimos || !Game1.IsMasterGame)
                 return true;
 
             GameLocation glFarm = __instance.GetParentLocation();
-#if DEBUG_LOG
-            //logger.Log($"Checking Junimos for {glFarm.NameOrUniqueName}",LogLevel.Debug);
-#endif
             __instance.GetOutputChest().mutex.Update(glFarm);
             if (__instance.GetOutputChest().mutex.IsLockHeld() && Game1.activeClickableMenu == null)
             {
@@ -123,21 +197,21 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
             }
 
             int junimoSendOutTimer = (int)Traverse.Create(__instance).Field("junimoSendOutTimer").GetValue();
-            if ( junimoSendOutTimer <= 0 || !__instance.shouldSendOutJunimos.Value)
+            if (junimoSendOutTimer <= 0 || !__instance.shouldSendOutJunimos.Value)
             {
                 return false;
             }
 
             junimoSendOutTimer -= time.ElapsedGameTime.Milliseconds;
             Traverse.Create(__instance).Field("junimoSendOutTimer").SetValue(junimoSendOutTimer);
-            if (junimoSendOutTimer > 0 || Game1.farmEvent != null  )
+            if (junimoSendOutTimer > 0 || Game1.farmEvent != null)
             {
                 return false;
             }
 #if DEBUG_LOG
             //logger.Log($"     sending out Junimos", LogLevel.Debug);
 #endif
-            if (__instance.myJunimos.Count < config.MaxNumberJunimos && (!_seasonUtils.isWinter(__instance.modData) || config.JunimosWorkInWinter) && (!Game1.isRaining || config.JunimosWorkInRain) && areThereMatureCropsWithinRadius_int(glFarm, __instance))
+            if (__instance.myJunimos.Count < _modDataService.Config.MaxNumberJunimos && (!_seasonUtils.isWinter(__instance.modData) || _modDataService.Config.JunimosWorkInWinter) && (!Game1.isRaining || _modDataService.Config.JunimosWorkInRain) && areThereMatureCropsWithinRadius_int(glFarm, __instance))
             {
                 SendOutJunimo(__instance);
             }
@@ -215,60 +289,59 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
 
         //    return false;
         //}
-        public static bool areThereMatureCropsWithinRadius(JunimoHut __instance, ref bool __result)
+        //public static bool areThereMatureCropsWithinRadius(JunimoHut __instance, ref bool __result)
+        //{
+        //    GameLocation currentFarm = null;
+
+        //    currentFarm = __instance.GetParentLocation();// Game1.getLocationFromName(__instance.modData[IModDataKeysService.FELocationName]);
+        //    __result = areThereMatureCropsWithinRadius_int(currentFarm, __instance);
+
+        //    return false;
+        //}
+        //private static bool areThereTreesWithinRadius(GameLocation farm, JunimoHut oHut)
+        //{
+        //    for (int i = oHut.tileX.Value + 1 - config.JunimoMaxRadius; i < oHut.tileX.Value + 2 + config.JunimoMaxRadius; i++)
+        //    {
+        //        for (int j = oHut.tileY.Value - config.JunimoMaxRadius + 1; j < oHut.tileY.Value + 2 + config.JunimoMaxRadius; j++)
+        //        {
+        //            if (farm.isCropAtTile(i, j) && (farm.terrainFeatures[new Vector2(i, j)] as HoeDirt).readyForHarvest())
+        //            {
+        //                oHut.lastKnownCropLocation = new Point(i, j);
+        //                return true;
+        //            }
+
+        //            if (farm.terrainFeatures.ContainsKey(new Vector2(i, j)) && farm.terrainFeatures[new Vector2(i, j)] is Bush && (farm.terrainFeatures[new Vector2(i, j)] as Bush).tileSheetOffset.Value == 1)
+        //            {
+        //                oHut.lastKnownCropLocation = new Point(i, j);
+        //                return true;
+        //            }
+        //        }
+        //    }
+
+        //    oHut.lastKnownCropLocation = Point.Zero;
+        //    return false;
+        //}
+        private static bool areThereMatureCropsWithinRadius_int(GameLocation farm, JunimoHut junimoHut)
         {
-
-            GameLocation currentFarm = null;
-
-            currentFarm = __instance.GetParentLocation();// Game1.getLocationFromName(__instance.modData[IModDataKeysService.FELocationName]);
-            __result = areThereMatureCropsWithinRadius_int(currentFarm, __instance);
-
-            return false;
-        }
-        private static bool areThereTreesWithinRadius(GameLocation farm, JunimoHut oHut)
-        {
-            for (int i = oHut.tileX.Value + 1 - config.JunimoMaxRadius; i < oHut.tileX.Value + 2 + config.JunimoMaxRadius; i++)
+            for (int i = junimoHut.tileX.Value + 1 - _modDataService.Config.JunimoMaxRadius; i < junimoHut.tileX.Value + 2 + _modDataService.Config.JunimoMaxRadius; i++)
             {
-                for (int j = oHut.tileY.Value - config.JunimoMaxRadius + 1; j < oHut.tileY.Value + 2 + config.JunimoMaxRadius; j++)
+                for (int j = junimoHut.tileY.Value - _modDataService.Config.JunimoMaxRadius + 1; j < junimoHut.tileY.Value + 2 + _modDataService.Config.JunimoMaxRadius; j++)
                 {
                     if (farm.isCropAtTile(i, j) && (farm.terrainFeatures[new Vector2(i, j)] as HoeDirt).readyForHarvest())
                     {
-                        oHut.lastKnownCropLocation = new Point(i, j);
+                        junimoHut.lastKnownCropLocation = new Point(i, j);
                         return true;
                     }
 
                     if (farm.terrainFeatures.ContainsKey(new Vector2(i, j)) && farm.terrainFeatures[new Vector2(i, j)] is Bush && (farm.terrainFeatures[new Vector2(i, j)] as Bush).tileSheetOffset.Value == 1)
                     {
-                        oHut.lastKnownCropLocation = new Point(i, j);
+                        junimoHut.lastKnownCropLocation = new Point(i, j);
                         return true;
                     }
                 }
             }
 
-            oHut.lastKnownCropLocation = Point.Zero;
-            return false;
-        }
-        private static bool areThereMatureCropsWithinRadius_int(GameLocation farm, JunimoHut oHut)
-        {
-            for (int i = oHut.tileX.Value + 1 - config.JunimoMaxRadius; i < oHut.tileX.Value + 2 + config.JunimoMaxRadius; i++)
-            {
-                for (int j = oHut.tileY.Value - config.JunimoMaxRadius + 1; j < oHut.tileY.Value + 2 + config.JunimoMaxRadius; j++)
-                {
-                    if (farm.isCropAtTile(i, j) && (farm.terrainFeatures[new Vector2(i, j)] as HoeDirt).readyForHarvest())
-                    {
-                        oHut.lastKnownCropLocation = new Point(i, j);
-                        return true;
-                    }
-
-                    if (farm.terrainFeatures.ContainsKey(new Vector2(i, j)) && farm.terrainFeatures[new Vector2(i, j)] is Bush && (farm.terrainFeatures[new Vector2(i, j)] as Bush).tileSheetOffset.Value == 1)
-                    {
-                        oHut.lastKnownCropLocation = new Point(i, j);
-                        return true;
-                    }
-                }
-            }
-
-            oHut.lastKnownCropLocation = Point.Zero;
+            junimoHut.lastKnownCropLocation = Point.Zero;
             return false;
         }
         //public static bool getSourceRectForMenu(JunimoHut __instance, ref Rectangle __result)
@@ -314,46 +387,46 @@ namespace SDV_Realty_Core.Framework.Patches.Buildings
             }
             return null;
         }
-        public static bool performTenMinuteAction(int timeElapsed, JunimoHut __instance)
-        {
-            Farm currentFarm;
-            if (__instance.modData.ContainsKey(IModDataKeysService.FELocationName))
-            {
-                currentFarm = Game1.getLocationFromName(__instance.modData[IModDataKeysService.FELocationName]) as Farm;
-            }
-            else
-            {
-                return true;
-            }
+        //public static bool performTenMinuteAction(int timeElapsed, JunimoHut __instance)
+        //{
+        //    Farm currentFarm;
+        //    if (__instance.modData.ContainsKey(IModDataKeysService.FELocationName))
+        //    {
+        //        currentFarm = Game1.getLocationFromName(__instance.modData[IModDataKeysService.FELocationName]) as Farm;
+        //    }
+        //    else
+        //    {
+        //        return true;
+        //    }
 
-            //base.performTenMinuteAction(timeElapsed);
-            for (int i = __instance.myJunimos.Count - 1; i >= 0; i--)
-            {
-                if (!currentFarm.characters.Contains(__instance.myJunimos[i]))
-                {
-                    __instance.myJunimos.RemoveAt(i);
-                }
-                else
-                {
-                    __instance.myJunimos[i].pokeToHarvest();
-                }
-            }
-            if (__instance.myJunimos.Count < 3 && Game1.timeOfDay < 1900)
-            {
-                Traverse.Create(__instance).Field("junimoSendOutTimer").SetValue(1);
-            }
-            if (Game1.timeOfDay >= 2000 && Game1.timeOfDay < 2400 && !_seasonUtils.isWinter(__instance.modData) && Game1.random.NextDouble() < 0.2)
-            {
-                __instance.wasLit.Value = true;
-            }
-            else if (Game1.timeOfDay == 2400 && !_seasonUtils.isWinter(__instance.modData))
-            {
-                __instance.wasLit.Value = false;
-            }
+        //    //base.performTenMinuteAction(timeElapsed);
+        //    for (int i = __instance.myJunimos.Count - 1; i >= 0; i--)
+        //    {
+        //        if (!currentFarm.characters.Contains(__instance.myJunimos[i]))
+        //        {
+        //            __instance.myJunimos.RemoveAt(i);
+        //        }
+        //        else
+        //        {
+        //            __instance.myJunimos[i].pokeToHarvest();
+        //        }
+        //    }
+        //    if (__instance.myJunimos.Count < 3 && Game1.timeOfDay < 1900)
+        //    {
+        //        Traverse.Create(__instance).Field("junimoSendOutTimer").SetValue(1);
+        //    }
+        //    if (Game1.timeOfDay >= 2000 && Game1.timeOfDay < 2400 && !_seasonUtils.isWinter(__instance.modData) && Game1.random.NextDouble() < 0.2)
+        //    {
+        //        __instance.wasLit.Value = true;
+        //    }
+        //    else if (Game1.timeOfDay == 2400 && !_seasonUtils.isWinter(__instance.modData))
+        //    {
+        //        __instance.wasLit.Value = false;
+        //    }
 
-            return false;
-        }
-        /// <summary>
+        //    return false;
+        //}
+        ///// <summary>
         /// Override draw to allow Junimo Huts to follow seasonoverride
         /// </summary>
         /// <param name="b"></param>

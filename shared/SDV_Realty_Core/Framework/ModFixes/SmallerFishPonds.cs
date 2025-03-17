@@ -94,6 +94,7 @@ namespace SDV_Realty_Core.Framework.ModFixes
                 toPond.nettingStyle.Value = fromPond.nettingStyle.Value;
                 toPond.seedOffset.Value = fromPond.seedOffset.Value;
                 toPond.hasSpawnedFish.Value = fromPond.hasSpawnedFish.Value;
+                toPond.parentLocationName.Value = fromPond.parentLocationName.Value;
                 //  bug fix: codpy modData over
                 toPond.modData.Clear();
                 foreach(var mData in fromPond.modData.Keys)

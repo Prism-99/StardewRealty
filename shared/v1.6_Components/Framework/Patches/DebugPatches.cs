@@ -12,6 +12,8 @@ using StardewValley.Tools;
 using HarmonyLib;
 using xTile.Layers;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
+using SDV_Realty_Core.Framework.ServiceProviders.Patches;
+using Microsoft.Xna.Framework.Graphics;
 
 
 namespace SDV_Realty_Core.Framework.Patches
@@ -46,8 +48,35 @@ namespace SDV_Realty_Core.Framework.Patches
                 new Type[] { typeof(int) }, typeof(GameLocationPatches),
                 nameof(GameLocationPatches.DayUpdate_Post), "Capture DayUpdate calls.",
                 "Debug");
-        }
+            patchingService.patches.AddPatch(false, typeof(GameLocation), "GetData",
+                new Type[] { typeof(string) }, typeof(DebugPatches),
+                nameof(DebugPatches.GetDataPostFix), "Capture GetData calls.",
+                "Debug");
 
+
+
+            //
+            //  movies
+            //
+            //patchingService.patches.AddPatch(true, typeof(MovieTheater), "GetSourceRectForScreen",
+            //   new Type[] { typeof(int),typeof(int) }, typeof(DebugPatches),
+            //   nameof(GetSourcePrefix), "Capture GetSource calls.",
+            //   "Debug");
+        }
+        public static bool GetSourcePrefix(int movieIndex, int frame,out Rectangle __result)
+        {
+            //int yOffset = movieIndex * 128 + frame / 5 * 64;
+            int yOffset = movieIndex * 128 + frame / 5 * 128;
+            int xOffset = frame % 5 * 96*2;
+            __result= new Rectangle(16 + xOffset, yOffset, 90*2, 61*2);
+            return false;
+        }
+        public static void GetDataPostFix(GameLocation __instance, string name, LocationData __result)
+        {
+            string farmId = Game1.GetFarmTypeID();
+            string farmTypeKey = Game1.GetFarmTypeKey();
+            int x = 1;
+        }
         public static bool performToolAction(Tool t, int explosion, Vector2 tileLocation, Grass __instance, ref bool __result)
         {
             GameLocation location = __instance.Location ?? Game1.currentLocation;
@@ -159,7 +188,7 @@ namespace SDV_Realty_Core.Framework.Patches
 
                             mPlayer.broadcastSprites(__instance.Location, temporaryAnimatedSprite);
                         }
-
+                        
                         Game1.addHUDMessage(HUDMessage.ForItemGained(ItemRegistry.Create("(O)178"), 1));
                     }
                 }

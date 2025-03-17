@@ -23,8 +23,8 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Buildings
         internal readonly ICollection<BuildingData> FarmBlueprints = new List<BuildingData>();
         internal readonly ICollection<BuildingData> ExpansionBlueprints = new List<BuildingData>();
         internal MapsDataProvider mapDataProvider = null;
-        internal Dictionary<string, object> ExternalReferences = new ();
-        internal Dictionary<string, Map> Maps = new ();
+        internal Dictionary<string, object> ExternalReferences = new();
+        internal Dictionary<string, Map> Maps = new();
         private IModHelper helper;
         private ILoggerService logger;
         private IMonitor monitor;
@@ -32,7 +32,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Buildings
         private string modRootDirectory;
         private List<ICustomBuilding> buildingDefinitions;
         public readonly Dictionary<string, ICustomBuilding> CustomBuildings = new Dictionary<string, ICustomBuilding>();
-        public CustomBuildingManager(ILoggerService logger, IUtilitiesService utilitiesService,IModDataService modDataService)
+        public CustomBuildingManager(ILoggerService logger, IUtilitiesService utilitiesService, IModDataService modDataService)
         {
             this.utilitiesService = utilitiesService;
             monitor = utilitiesService.MonitorService.monitor;
@@ -58,31 +58,31 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Buildings
                 string buildingRoot = Path.Combine(modRootDir, "data", "assets", "buildings");
                 if (Directory.Exists(buildingRoot))
                 {
-                    string[] arDefinitions = Directory.GetFiles(buildingRoot, "building.json", SearchOption.AllDirectories);
-                    logger.Log($"Found {arDefinitions.Length} custom building definitions.", LogLevel.Debug);
+                    string[] buildingJSONs = Directory.GetFiles(buildingRoot, "building.json", SearchOption.AllDirectories);
+                    logger.Log($"Found {buildingJSONs.Length} custom building definitions.", LogLevel.Debug);
                     buildingDefinitions = new List<ICustomBuilding> { };
 
                     // parse found definitions
                     //
-                    foreach (string defin in arDefinitions)
+                    foreach (string definitionPath in buildingJSONs)
                     {
                         try
                         {
                             //
                             //  check for disabled directories starting with a'.'
                             //
-                            if (defin.Split(Path.DirectorySeparatorChar).Where(p => p.StartsWith('.')).Any())
+                            if (definitionPath.Replace(modRootDir, "").Split(Path.DirectorySeparatorChar).Where(p => p.StartsWith('.')).Any())
                             {
-                                logger.Log($"Directory contains '.', skipping building {Path.GetDirectoryName(defin)}", LogLevel.Info);
+                                logger.Log($"Directory contains '.', skipping building {Path.GetDirectoryName(definitionPath)}", LogLevel.Info);
                                 continue;
                             }
-                            string fileContent = File.ReadAllText(defin);
-                            GenericBuilding nBuilding = JsonConvert.DeserializeObject<GenericBuilding>(fileContent);
-                            nBuilding.SetLogger(logger);
-                            nBuilding.translations = translations;
-                            nBuilding.ModPath = Path.GetDirectoryName(defin);
-                            nBuilding.LoadExternalReferences(utilitiesService.MapLoaderService.Loader, utilitiesService.GameEnvironment.GamePath);
-                            AddBuilding(nBuilding);
+                            string fileContent = File.ReadAllText(definitionPath);
+                            GenericBuilding customBuilding = JsonConvert.DeserializeObject<GenericBuilding>(fileContent);
+                            customBuilding.SetLogger(logger);
+                            customBuilding.translations = translations;
+                            customBuilding.ModPath = Path.GetDirectoryName(definitionPath);
+                            customBuilding.LoadExternalReferences(utilitiesService.MapLoaderService.Loader, utilitiesService.GameEnvironment.GamePath);
+                            AddBuilding(customBuilding);
                         }
                         catch (Exception ex)
                         {
@@ -95,7 +95,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Buildings
                     logger.Log($"Missing custom Building directory '{buildingRoot}'", LogLevel.Debug);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 logger.Log($"Error loading building defintion: {ex}", LogLevel.Error);
             }
@@ -147,7 +147,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Buildings
                 //  add building map to the content manager
                 assetPath = $"Maps{FEConstants.AssetDelimiter}{buildng.Key}{FEConstants.AssetDelimiter}{buildng.Value.InteriorMapName}";
                 Maps.Add(assetPath, buildng.Value.InteriorMap);
-                logger.Log($"Loaded Building Interior map {assetPath} for building { buildng.Value.Name}", LogLevel.Debug);
+                logger.Log($"Loaded Building Interior map {assetPath} for building {buildng.Value.Name}", LogLevel.Debug);
                 // FEFramework.ContentManager.ExternalReferences.Add($"SDR{FEConstants.AssetDelimiter}Buildings{FEConstants.AssetDelimiter}{buildng.Key}{FEConstants.AssetDelimiter}{buildng.Value.InteriorMapName}", buildingMap);
             }
             //
@@ -188,7 +188,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Buildings
                 //
                 assetPath = $"Maps{FEConstants.AssetDelimiter}{nBuild.Name}{FEConstants.AssetDelimiter}{nBuild.InteriorMapName}";
                 Maps.Add(assetPath, nBuild.InteriorMap);
-                logger.Log($"Loaded Building Interior map {assetPath} for building {nBuild.DisplayName}", LogLevel.Debug);               
+                logger.Log($"Loaded Building Interior map {assetPath} for building {nBuild.DisplayName}", LogLevel.Debug);
             }
             utilitiesService.InvalidateCache("Data/Buildings");
         }

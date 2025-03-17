@@ -1,5 +1,5 @@
-﻿using SDV_Realty_Core.ContentPackFramework.ContentPacks;
-using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
+﻿using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using StardewModdingAPI.Events;
 
 
@@ -7,18 +7,19 @@ namespace SDV_Realty_Core.Framework.DataProviders
 {
     internal class MailDataProvider : IGameDataProvider
     {
-        private ContentPackLoader ContentPacks;
+        private IModDataService ModDataService;
         public override string Name => "Data/mail";
 
-        public MailDataProvider(ContentPackLoader contentPacks)
+        public MailDataProvider( IModDataService modDataService)
         {
-            ContentPacks = contentPacks;
+            ModDataService = modDataService;
         }
         public override void HandleEdit(AssetRequestedEventArgs e)
         {
+            logger.Log("Editing Data/Mail",LogLevel.Debug);
             e.Edit(asset =>
             {
-                foreach (ExpansionPack contentPack in ContentPacks.ValidContents.Values)
+                foreach (ExpansionPack contentPack in ModDataService.validContents.Values)
                 {
                     if (!string.IsNullOrEmpty(contentPack.MailId) && !string.IsNullOrEmpty(contentPack.MailContent))
                     {
@@ -32,18 +33,22 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         asset.AsDictionary<string, string>().Data.Add(contentPack.VendorMailId, contentPack.VendorMailContent);
                     }
                 }
+                foreach (var customMail in ModDataService.CustomMail)
+                {
+                    asset.AsDictionary<string, string>().Data.Add(customMail.Key, customMail.Value);
+                }
             }
-                   );
+            );                              
         }
 
         public override void CheckForActivations()
         {
-            
+
         }
 
         public override void OnGameLaunched()
         {
-            
+
         }
     }
 }

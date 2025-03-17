@@ -6,6 +6,7 @@ using StardewValley.BellsAndWhistles;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
 
 namespace SDV_Realty_Core.Framework.Menus
@@ -38,13 +39,13 @@ namespace SDV_Realty_Core.Framework.Menus
         public string leftLandName;
         public LandForSaleDetails rightLand;
         public string rightLandName;
-        private ILandManager landManager;
         private IModDataService modDataService;
-        public FEForSaleMenu(ILoggerService olog,ILandManager landManager, IModDataService modDataService)
+        private IUtilitiesService utilitiesService;
+        public FEForSaleMenu(ILoggerService olog,  IModDataService modDataService, IUtilitiesService utilitiesService)
         {
-            this.landManager = landManager;
             this.modDataService = modDataService;
-            logger=olog;          
+            this.utilitiesService = utilitiesService;
+            logger = olog;
         }
         public void InitializeGUI()
         {
@@ -75,38 +76,44 @@ namespace SDV_Realty_Core.Framework.Menus
             //
             //  select land to post
             //
-            if (landManager.LandForSale.Count == 1)
+            if (modDataService.LandForSale.Count == 1)
             {
-                leftLandName = landManager.LandForSale[0];
+                leftLandName = modDataService.LandForSale[0];
             }
-            else if (landManager.LandForSale.Count == 2)
+            else if (modDataService.LandForSale.Count == 2)
             {
-                leftLandName = landManager.LandForSale[0];
-                rightLandName = landManager.LandForSale[1];
+                leftLandName = modDataService.LandForSale[0];
+                rightLandName = modDataService.LandForSale[1];
             }
-            else if (landManager.LandForSale.Count > 0)
+            else if (modDataService.LandForSale.Count > 0)
             {
                 Random rnd = new Random(DateTime.Now.Millisecond + DateTime.Now.Second + DateTime.Now.Hour * 420);
-                int iFirst = rnd.Next(0, landManager.LandForSale.Count);
+                int iFirst = rnd.Next(0, modDataService.LandForSale.Count);
                 int iSecond = iFirst;
                 while (iSecond == iFirst)
                 {
-                    iSecond = rnd.Next(0, landManager.LandForSale.Count);
+                    iSecond = rnd.Next(0, modDataService.LandForSale.Count);
                 }
-                leftLandName = landManager.LandForSale[iFirst];
-                rightLandName = landManager.LandForSale[iSecond];
+                leftLandName = modDataService.LandForSale[iFirst];
+                rightLandName = modDataService.LandForSale[iSecond];
             }
 
 
             if (!string.IsNullOrEmpty(leftLandName) && modDataService.validContents.ContainsKey(leftLandName))
             {
                 ExpansionPack oContent = modDataService.validContents[leftLandName];
-                leftLand = new LandForSaleDetails { Thumbnail = oContent.ForSaleImage, DisplayName = oContent.DisplayName, Description = oContent.GetDescription(), Cost = oContent.Cost, ExpansionName = leftLandName, Vendor = oContent.Vendor };
+                if (modDataService.Config.useGlobalPrice)
+                    leftLand = new LandForSaleDetails { Thumbnail = oContent.ForSaleImage, DisplayName = oContent.DisplayName, Description = oContent.GetDescription(), Cost = modDataService.Config.globalPrice, ExpansionName = leftLandName, Vendor = oContent.Vendor };
+                else
+                    leftLand = new LandForSaleDetails { Thumbnail = oContent.ForSaleImage, DisplayName = oContent.DisplayName, Description = oContent.GetDescription(), Cost = oContent.Cost, ExpansionName = leftLandName, Vendor = oContent.Vendor };
             }
             if (!string.IsNullOrEmpty(rightLandName) && modDataService.validContents.ContainsKey(rightLandName))
             {
                 ExpansionPack oContent = modDataService.validContents[rightLandName];
-                rightLand = new LandForSaleDetails { Thumbnail = oContent.ForSaleImage, DisplayName = oContent.DisplayName, Description = oContent.GetDescription(), Cost = oContent.Cost, ExpansionName = rightLandName, Vendor = oContent.Vendor };
+                if (modDataService.Config.useGlobalPrice)
+                    rightLand = new LandForSaleDetails { Thumbnail = oContent.ForSaleImage, DisplayName = oContent.DisplayName, Description = oContent.GetDescription(), Cost = modDataService.Config.globalPrice, ExpansionName = rightLandName, Vendor = oContent.Vendor };
+                else
+                    rightLand = new LandForSaleDetails { Thumbnail = oContent.ForSaleImage, DisplayName = oContent.DisplayName, Description = oContent.GetDescription(), Cost = oContent.Cost, ExpansionName = rightLandName, Vendor = oContent.Vendor };
             }
             upperRightCloseButton = new ClickableTextureComponent(new Rectangle(xPositionOnScreen + width - 20, yPositionOnScreen, 48, 48), Game1.mouseCursors, new Rectangle(337, 494, 12, 12), 4f);
             Game1.playSound("bigSelect");
@@ -145,7 +152,7 @@ namespace SDV_Realty_Core.Framework.Menus
         public override void gameWindowSizeChanged(Rectangle oldBounds, Rectangle newBounds)
         {
             base.gameWindowSizeChanged(oldBounds, newBounds);
-            Game1.activeClickableMenu = new FEForSaleMenu(logger, landManager,modDataService);
+            Game1.activeClickableMenu = new FEForSaleMenu(logger,  modDataService, utilitiesService);
         }
 
         public override void receiveRightClick(int x, int y, bool playSound = true)
@@ -166,7 +173,11 @@ namespace SDV_Realty_Core.Framework.Menus
 #if DEBUG
                     logger.Log("Purchased land: " + leftLandName, LogLevel.Info);
 #endif
-                    landManager.PurchaseLand(leftLandName,true,Game1.player.UniqueMultiplayerID);
+                    utilitiesService.CustomEventsService.TriggerModEvent(ICustomEventsService.ModEvents.LandPurchased, new object[]
+                    {
+                        leftLandName,true,Game1.player.UniqueMultiplayerID
+                    });
+                    //landManager.PurchaseLand(leftLandName, true, Game1.player.UniqueMultiplayerID);
                     UpdateButtons();
                     //try
                     //{
@@ -203,7 +214,11 @@ namespace SDV_Realty_Core.Framework.Menus
 #endif
                     try
                     {
-                        landManager.PurchaseLand(rightLandName,true, Game1.player.UniqueMultiplayerID);
+                        utilitiesService.CustomEventsService.TriggerModEvent(ICustomEventsService.ModEvents.LandPurchased, new object[]
+                        {
+                        rightLandName,true,Game1.player.UniqueMultiplayerID
+                        });
+                        //landManager.PurchaseLand(rightLandName, true, Game1.player.UniqueMultiplayerID);
                         UpdateButtons();
 
                         //    if (Game1.IsMultiplayer)
@@ -255,7 +270,7 @@ namespace SDV_Realty_Core.Framework.Menus
         {
             b.Draw(Game1.fadeToBlackRect, Game1.graphics.GraphicsDevice.Viewport.Bounds, Color.Black * 0.75f);
             b.Draw(billboardTexture, new Vector2(xPositionOnScreen, yPositionOnScreen), new Rectangle(0, 198, 338, 198), Color.White, 0f, Vector2.Zero, 4f, SpriteEffects.None, 1f);
-            string sLandForSale =I18n.LandForSale();
+            string sLandForSale = I18n.LandForSale();
 
             SpriteText.drawStringWithScrollCenteredAt(b, sLandForSale, xPositionOnScreen + width / 2, Math.Max(10, yPositionOnScreen - 70), SpriteText.getWidthOfString(sLandForSale) + 1);
 
@@ -325,7 +340,7 @@ namespace SDV_Realty_Core.Framework.Menus
             KeyValuePair<Texture2D, Rectangle>? drawn_portrait = GetPortraitForRequester(oDetails.Vendor);
             if (drawn_portrait.HasValue)
             {
-                b.Draw(drawn_portrait.Value.Key, new Rectangle(x , header_y,60, 60), drawn_portrait.Value.Value, Color.White * graphic_alpha);
+                b.Draw(drawn_portrait.Value.Key, new Rectangle(x, header_y, 60, 60), drawn_portrait.Value.Value, Color.White * graphic_alpha);
                 //Utility.drawWithShadow(b, drawn_portrait.Value.Key, new Vector2(x, header_y), drawn_portrait.Value.Value, Color.White * graphic_alpha, 0f, Vector2.Zero, 4f, flipped: false, -1f, -1, -1, shadow_intensity * 0.6f);
             }
             if (oDetails.Thumbnail != null)

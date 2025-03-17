@@ -9,6 +9,8 @@
     <Import_RootNamespace>v1.6_Components</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Content Framework\ContentPacks\OwnerManifest.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Content Framework\ContentPacks\OwnerPack.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\Audio\AudioCueManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\BigCraftables\CustomBigCraftableData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\CustomEntities\BigCraftables\CustomBigCraftableManager.cs" />
@@ -44,7 +46,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\ObjectsDataProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\SDRDataProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\DataProviders\WorldMapDataProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Fixes\GameFixes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Locations\WarproomManager.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ModMechanics\FarmServiceProviders\ApplyFertilizer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ModMechanics\FarmServiceProviders\ClearFarm.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ModMechanics\FarmServiceProviders\HoeFarm.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ModMechanics\FarmServiceProviders\IFarmServiceProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ModMechanics\FarmServiceProviders\PlantCrops.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ModMechanics\FarmServiceProviders\WeedFarm.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\ModKeyStrings.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Saves\SaveManagerV2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Configuration\IConfigService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\CustomEntities\ICustomCropService.cs" />
@@ -57,6 +67,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Events\ICustomEventsService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Events\IGameEventsService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\FileManagement\ISaveManagerService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\GameMechanics\ICustomTrainService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\GameMechanics\IGameFixesService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\GameMechanics\IValleyStatsService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Game\IManifestService.cs" />
@@ -64,12 +75,21 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Game\IMonitorService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\GUI\ILocationDisplayService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\GUI\IMapRendererService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\GUI\IMiniMapService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\GUI\IWordMapMenuService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Integrations\ICentralStationIntegrationService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Integrations\IGMCMIntergrationService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Integrations\ILocationTunerIntegrationService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModData\IContentManagerService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModData\IContentPackService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModData\IExpansionManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModData\ILocationDataProvider.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModData\ITranslationService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModMechanics\IExpansionBridgingService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModMechanics\IFarmServicesService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\GameMechanics\CustomTrainService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Integrations\CentralStationIntegration.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\ModMechanics\FarmServicesService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModMechanics\IGridManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModMechanics\ITreasureManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModMechanics\IWarproomService.cs" />
@@ -88,7 +108,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\GameMechanics\IJunimoHutService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\GUI\IMineCartMenuService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\GameMechanics\IAutoGrabberService.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Integrations\ICGCMIntergrationService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\GUI\MiniMapManagerService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Integrations\GMCMIntergrationService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Integrations\LocationTunerIntegrationService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IChatBoxCommandsService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\CustomEntities\ICustomBigCraftableService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\CustomEntities\ICustomBuildingService.cs" />
@@ -118,7 +140,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\GUI\LocationDisplayService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\GUI\MapRendererService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\GUI\WorldMapMenuService.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Integrations\CGCMIntergrationService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\ChatBoxCommandsService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\CustomEntities\CustomCropService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\CustomEntities\CustomLocationContextService.cs" />
@@ -128,6 +149,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\ModData\ExpansionCustomizationService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\FileManagement\FileManagerService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\ModData\LocationDataProviderService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\ModMechanics\ExpansionBridgingService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\ModMechanics\FishStockService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\GUI\ForSaleMenuService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\GUI\ForSaleSignService.cs" />
@@ -165,7 +187,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\ModMechanics\LandManagerService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Utilities\ModAPIService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\MulitplayerService.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\PLayerComms.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Utilities\PLayerComms.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\FileManagement\SaveManagerService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\StardewRealtyService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\ModData\StringService.cs" />
@@ -196,7 +218,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Game\MonitorService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Patches\PatchingService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\ModData\TranslationService.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Framework\Fixes\Fixes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\GameMechanics\CropGracePeriod.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Objects\FEInputHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\Patches\DebugPatches.cs" />
@@ -219,9 +240,7 @@
     <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\Locations\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\Network\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\Patches\TerrainFeature\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Integrations\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\DataProviders\" />
-    <Folder Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Integrations\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Configuration\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Game\" />
     <Folder Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\FileManagement\" />

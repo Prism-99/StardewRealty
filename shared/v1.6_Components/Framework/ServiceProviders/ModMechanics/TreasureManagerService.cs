@@ -16,6 +16,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         private List<string> expansionsWithTreasures = new List<string>();
         private List<string> activeTreasureExpansions = new List<string>();
         private IModDataService modDataService;
+        private IUtilitiesService utilitiesService;
         private Random rnd = new Random(DateTime.Now.Millisecond);
         public override Type[] InitArgs => new Type[]
         {
@@ -34,7 +35,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         {
             this.logger = logger;
 
-            IUtilitiesService utilitiesService = (IUtilitiesService)args[0];
+            utilitiesService = (IUtilitiesService)args[0];
             modDataService = (IModDataService)args[1];
 
             //  add save loaded hook to cache expansions
@@ -135,13 +136,14 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                 if (potentailItems.Count > 0)
                 {
                     ExpansionDetails.TreasureAreaItem selectedItem;
-                    int currentCount = GetTreasureSpotCount(modDataService.ExpansionMaps[expansionName], treasurespot.Value.Area);
+                    string mapName=utilitiesService.GetMapUniqueName( modDataService.validContents[expansionName]);
+                    int currentCount = GetTreasureSpotCount(modDataService.ExpansionMaps[mapName], treasurespot.Value.Area);
 
                     if (currentCount > -1 && currentCount < treasurespot.Value.MaxItems)
                     {
                         int maxTries = treasurespot.Value.MaxItems * 2;
                         int tries = 0;
-                        Layer backLayer = modDataService.ExpansionMaps[expansionName].GetLayer("Back");
+                        Layer backLayer = modDataService.ExpansionMaps[mapName].GetLayer("Back");
                         if (backLayer != null)
                         {
                             while (currentCount < treasurespot.Value.MaxItems && tries < maxTries)

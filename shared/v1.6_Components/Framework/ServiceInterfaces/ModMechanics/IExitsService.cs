@@ -12,9 +12,7 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics
         public override Type ServiceType => typeof(IExitsService);
 
         public abstract void AddFarmExits();
-        public abstract void AddMapExitBlockers(int iGridId);
-        internal abstract string GetNeighbourExpansionTTId(int iGridId, EntranceDirection side);
-
+ 
 
     }
 }

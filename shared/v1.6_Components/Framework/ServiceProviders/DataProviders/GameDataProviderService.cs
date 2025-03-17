@@ -1,7 +1,6 @@
 ﻿using SDV_Realty_Core.ContentPackFramework.ContentPacks;
 using SDV_Realty_Core.Framework.AssetUtils;
 using SDV_Realty_Core.Framework.DataProviders;
-using SDV_Realty_Core.Framework.Objects;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Configuration;
 using SDV_Realty_Core.Framework.ServiceInterfaces.DataProviders;
@@ -64,7 +63,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.DataProviders
             ICustomMovieService customMovieService = (ICustomMovieService)args[11];
 
             ContentPackLoader contentPacks = contentPackService.contentPackLoader;
-            chairTiles = new ChairTilesDataProviders(_utilitiesService, contentManager);
+            chairTiles = new ChairTilesDataProviders(_utilitiesService, modDataService, contentManager);
             NPCTastes = new NPCGiftTastesDataProvider(contentManager);
 
             //_utilitiesService.ModHelperService.modHelper.Events.Specialized.LoadStageChanged += Specialized_LoadStageChanged; 
@@ -74,23 +73,24 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.DataProviders
             {
                 chairTiles,
                 NPCTastes,
-                new MailDataProvider(contentPackService.contentPackLoader),
+                new MailDataProvider(modDataService),
                 new StringsFromMapsDataProviders( contentManager.stringFromMaps),
                 new EventsDataProvider(modDataService),
                 new BigCraftablesDataProvider(customEntitiesServices.customBigCraftableService),
-                new BuildingsDataProvider(customEntitiesServices.customBuildingService.CustomBuildings, _utilitiesService),
-                new CraftingRecipesDataProvider(customEntitiesServices, _utilitiesService),
+                new BuildingsDataProvider(modDataService, customEntitiesServices.customBuildingService.CustomBuildings, _utilitiesService),
+                new CraftingRecipesDataProvider(modDataService,customEntitiesServices, _utilitiesService),
                 new LocationContextsDataProvider(customEntitiesServices.customLocationContextService),
-                new LocationsDataProvider(customEntitiesServices.customBuildingService,modDataService),
+                new LocationsDataProvider(customEntitiesServices.customBuildingService,modDataService,_expansionManager),
                 new MachinesDataProvider(customEntitiesServices.customMachineDataService,_utilitiesService),
                 new MineCartsDataProvider(modDataService,_utilitiesService),
-                new WorldMapDataProvider(contentPacks,_expansionManager,_landManager,_gridManager,_exitsService,contentManagerService,modHelperService),
+                new WorldMapDataProvider(modDataService, _utilitiesService, _expansionManager,_landManager,_gridManager,_exitsService,contentManagerService,modHelperService),
                 new ObjectsDataProvider(customEntitiesServices.customObjectService),
                 new AudioChangesDataProviders(),
                 new CropsDataProvider(customEntitiesServices.customCropService,customEntitiesServices.customObjectService,_utilitiesService),
                 new MoviesDataProvider(customMovieService),
-                new SDRDataProvider(contentPacks, helper, contentManager.ExternalReferences, modDataService.TranslationDict),
+                new SDRDataProvider(modDataService, helper),
                 new MapsDataProvider(contentManager,_utilitiesService,_expansionManager,modDataService)
+                //new TrainBoatStations(_utilitiesService,modDataService)
             };
         }
 

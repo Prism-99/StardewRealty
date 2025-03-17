@@ -21,6 +21,7 @@ namespace StardewRealty.SDV_Realty_Interface
             DisplayName = oPack.DisplayName;
             Requirements = oPack.Requirements;
             Description = oPack.Description;
+            ShippingBin = oPack.ShippingBinLocation;
             CaveOut = oPack.CaveEntrance != null ? new Point(oPack.CaveEntrance.WarpIn.X, oPack.CaveEntrance.WarpIn.Y) : null;
             Cost = oPack.Cost;
             CrowsEnabled = oPack.CrowsEnabled;

@@ -31,7 +31,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModData
             this.logger = logger;
             utilitiesService = (IUtilitiesService)args[0];
 
-            utilitiesService.GameEventsService.AddSubscription(new GameLaunchedEventArgs(), HandleGameLaunched);
+            utilitiesService.GameEventsService.AddSubscription(new GameLaunchedEventArgs(), HandleGameLaunched,1);
         }
 
         private void HandleGameLaunched(EventArgs e)

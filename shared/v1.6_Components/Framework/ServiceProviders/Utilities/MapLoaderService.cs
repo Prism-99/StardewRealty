@@ -40,6 +40,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
 
         internal override Map LoadMap(string sMapRelativePath, string sLocationName, bool bLoadTileSheets, bool removeExt, bool fixTileSheets = true)
         {
+
             return Loader.LoadMap(_gameEnvironmentService.GamePath, sMapRelativePath.Replace(_gameEnvironmentService.GamePath, ""), sLocationName, bLoadTileSheets, removeExt, fixTileSheets);
         }
 

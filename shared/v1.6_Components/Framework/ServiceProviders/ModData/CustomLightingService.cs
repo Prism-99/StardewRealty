@@ -7,6 +7,7 @@ using StardewValley.Buildings;
 using System;
 using SDV_Realty_Core.Framework.ServiceProviders.Game;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
 {
@@ -14,7 +15,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
     {
         public override Type[] InitArgs => new Type[]
         {
-            typeof(IUtilitiesService),typeof(ICustomBuildingService)
+            typeof(IUtilitiesService),typeof(ICustomBuildingService),
+            typeof(IModDataService)
         };
 
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -30,9 +32,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             this.logger= logger;
             IUtilitiesService utilitiesService = (IUtilitiesService)args[0];
             ICustomBuildingService customBuildingService = (ICustomBuildingService)args[1];
+            IModDataService modDataService = (IModDataService)args[2];
 
-
-            customLightingManager = new CustomLightingManager(logger, utilitiesService, customBuildingService);
+            customLightingManager = new CustomLightingManager(logger, modDataService, customBuildingService);
 
             //
             //  add/remove lightSource when a building is removed

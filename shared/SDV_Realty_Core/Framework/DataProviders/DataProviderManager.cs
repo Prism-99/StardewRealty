@@ -1,6 +1,5 @@
 ﻿using SDV_Realty_Core.ContentPackFramework.ContentPacks;
 using SDV_Realty_Core.Framework.AssetUtils;
-using SDV_Realty_Core.Framework.Objects;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using StardewModdingAPI.Events;
 using System;

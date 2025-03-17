@@ -1,0 +1,43 @@
+﻿PFM - Expanded Casks - *****
+Shop Tile Framework - *****
+Shop Overhaul Compilation - *****
+Farm Tractor Mod - *****
+Automate - *****
+[JA] Strange Machines - *****
+DeluxeGrabber (Original) - *****
+DeluxeGrabber (Redux) - not compatable (only works on base Farm)
+DeluxeGrabber & Automate - does not work, add a chest in the chain
+NPC Map Locations - breaks world map displaying SDR locations
+Pond Paint - *****
+Modest Farm Map - *****
+Better Junimo - not compatible
+
+Additional Farms
+================
+
+Working:
+-------
+Bigger Desert Farm - have wm image
+Bigger Standard Farm
+Kisaa's Azure Spring Farm - have wm image
+Kisaa's Blossom Crest Farm - have wm image  
+Kisaa's Wildflower Acres Farm - have wm image
+Kisaa's Cliffside Cove Farm
+Stardew Valley United - have wm image
+Strawberry Farm - have wm image
+Sunflower Acres
+Wild Flower Acres - have wm image
+Wildflour's Romantic Garden Farm - wm from mod works
+
+
+Not Compatible:
+--------------
+Tropical Rain Forest Farm
+Sexynes.CP.ImmersiveFarm3_IF3RedShed
+ -does not cp in warps unless farm is active
+Hazelwoods
+ -uses Custom Farm Loader
+ --might work
+Frontier Farm
+-has additional maps that need back warps edited
+

@@ -5,18 +5,30 @@ using System;
 using System.Collections.Generic;
 using StardewModdingAPI.Events;
 using System.Linq;
+using SDV_Realty_Core.Framework.ServiceInterfaces;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.Events
 {
+    /// <summary>
+    /// Handles game event triggers
+    /// </summary>
     internal class GameEventsService : IGameEventsService
     {
+        //private IModDataService modDataService;
         public override Type ServiceType => typeof(IGameEventsService);
 
-        public override Type[] InitArgs => new Type[] { typeof(IModHelperService) };
+        public override Type[] InitArgs => new Type[]
+        {
+            typeof(IModHelperService)
+        };
+
         private IModHelper helper;
-        private Dictionary<EventTypes, List<Action>> eventSubscriptions;
+        private Dictionary<EventTypes, List<Tuple<int, Action>>> eventSubscriptions;
         private Dictionary<string, Func<object[], object>> proxyServers = new();
         private Dictionary<string, List<Tuple<int, Action<EventArgs>>>> actionSubscriptions;
+        private bool modsLoadedTriggered = false;
         public override object ToType(Type conversionType, IFormatProvider provider)
         {
             if (conversionType == ServiceType)
@@ -29,8 +41,20 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
         {
             this.logger = logger;
             helper = ((IModHelperService)args[0]).modHelper;
-            eventSubscriptions = new Dictionary<EventTypes, List<Action>>();
+            eventSubscriptions = new();
             actionSubscriptions = new Dictionary<string, List<Tuple<int, Action<EventArgs>>>>();
+
+            helper.Events.Display.RenderingActiveMenu += Display_RenderingActiveMenu;
+
+        }
+
+        private void Display_RenderingActiveMenu(object sender, RenderingActiveMenuEventArgs e)
+        {
+            if (!modsLoadedTriggered && Game1.activeClickableMenu.GetType()?.Name == "TitleMenu")
+            {
+                modsLoadedTriggered = true;
+                TriggerEvent(EventTypes.AllModsLoaded);
+            }
         }
         internal override void AddSubscription(string eventType, Action<EventArgs> fnc, int priority = 0)
         {
@@ -62,10 +86,13 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
         {
             switch (eventType)
             {
+                case "AssetReadyEventArgs":
+                    helper.Events.Content.AssetReady += GameEvent;
+                    break;
                 case "WindowResizedEventArgs":
                     helper.Events.Display.WindowResized += GameEvent;
                     break;
-                 case "AssetRequestedEventArgs":
+                case "AssetRequestedEventArgs":
                     helper.Events.Content.AssetRequested += GameEvent;
                     break;
                 case "ButtonPressedEventArgs":
@@ -188,8 +215,47 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
                     break;
             }
         }
-        private void GameEvent(object sender, EventArgs e)
+        private void GameEvent(object? sender, EventArgs e)
         {
+            switch (e.GetType().Name)
+            {
+                case "UpdateTickedEventArgs":
+                case "UpdateTickingEventArgs":
+                case "OneSecondUpdateTickedEventArgs":
+                case "RenderedHudEventArgs":
+                    break;
+                case "AssetReadyEventArgs":
+                    AssetReadyEventArgs ev = (AssetReadyEventArgs)e;
+                    if (assetRequests.ContainsKey(ev.NameWithoutLocale.Name))
+                    {
+                        var val = assetRequests[ev.NameWithoutLocale.Name];
+                        var incVal = Tuple.Create(val.Item1, val.Item2 + 1);
+                        assetRequests[ev.NameWithoutLocale.Name] = incVal;
+                    }
+                    else
+                    {
+                        assetRequests.Add(ev.NameWithoutLocale.Name, Tuple.Create(0, 1));
+                    }
+                    //logger.Log($"GameEvent {e.GetType().Name} fired. Asset='{ev.NameWithoutLocale}'", LogLevel.Debug);
+                    break;
+                case "AssetRequestedEventArgs":
+                    AssetRequestedEventArgs ev1 = (AssetRequestedEventArgs)e;
+                    if (assetRequests.ContainsKey(ev1.NameWithoutLocale.Name))
+                    {
+                        var val = assetRequests[ev1.NameWithoutLocale.Name];
+                        var incVal = Tuple.Create(val.Item1 + 1, val.Item2);
+                        assetRequests[ev1.NameWithoutLocale.Name] = incVal;
+                    }
+                    else
+                    {
+                        assetRequests.Add(ev1.NameWithoutLocale.Name, Tuple.Create(1, 0));
+                    }
+                    //logger.Log($"GameEvent {e.GetType().Name} fired. Asset='{ev1.NameWithoutLocale}'", LogLevel.Debug);
+                    break;
+                default:
+                    logger.Log($"GameEvent {e.GetType().Name} fired", LogLevel.Debug);
+                    break;
+            }
             if (actionSubscriptions.TryGetValue(e.GetType().Name, out List<Tuple<int, Action<EventArgs>>> actions))
             {
                 foreach (Tuple<int, Action<EventArgs>> action in actions.OrderByDescending(p => p.Item1))
@@ -198,23 +264,26 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
                 }
             }
         }
-
-        internal override void AddSubscription(EventTypes eventType, Action fnc)
+        //internal override void AddSubscription(EventTypes eventType, Action fnc)
+        //{
+        //    throw new NotImplementedException();
+        //}
+        internal override void AddSubscription(EventTypes eventType, Action fnc, int priority = 0)
         {
-            if (eventSubscriptions.TryGetValue(eventType, out List<Action> actions))
+            if (eventSubscriptions.TryGetValue(eventType, out List<Tuple<int, Action>> actions))
             {
-                actions.Add(fnc);
+                actions.Add(Tuple.Create(priority, fnc));
             }
             else
             {
-                eventSubscriptions.Add(eventType, new List<Action> { fnc });
+                eventSubscriptions.Add(eventType, new List<Tuple<int, Action>> { Tuple.Create(priority, fnc) });
             }
         }
         internal override void TriggerEvent(EventTypes eventType)
         {
-            if (eventSubscriptions.TryGetValue(eventType, out List<Action> actions))
+            if (eventSubscriptions.TryGetValue(eventType, out List<Tuple<int, Action>> actions))
             {
-                foreach (Action action in actions)
+                foreach (Action action in actions.OrderBy(p => p.Item1).Select(p => p.Item2))
                 {
                     action();
                 }
@@ -240,9 +309,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
             foreach (EventTypes key in eventSubscriptions.Keys.OrderBy(p => p))
             {
                 logger.Log($"{key}", LogLevel.Info);
-                foreach (Action action in eventSubscriptions[key])
+                foreach (var action in eventSubscriptions[key])
                 {
-                    logger.Log($"   =>{action.Target.GetType().Name}.{action.Method.Name}", LogLevel.Info);
+                    logger.Log($"   =>{action.Item2.Target.GetType().Name}.{action.Item2.Method.Name}, priority: {action.Item1}", LogLevel.Info);
                 }
             }
             logger.Log("", LogLevel.Info);
@@ -274,5 +343,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Events
                 proxyServers.Add(eventType, action);
             }
         }
+
+
     }
 }

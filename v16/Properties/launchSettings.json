@@ -3,10 +3,22 @@
     "StardewRealty-v16": {
       "commandName": "Project"
     },
-    "SDV 1.6": {
+    "SDV - Mods Min": {
       "commandName": "Executable",
       "executablePath": "t:\\StardewModdingAPI.exe",
-      "commandLineArgs": "--mods-path \"Mods-min\"",
+      "commandLineArgs": "--mods-path \"Mods-Min\"",
+      "workingDirectory": "t:\\"
+    },
+    "SDV - Realty Only": {
+      "commandName": "Executable",
+      "executablePath": "t:\\StardewModdingAPI.exe",
+      "commandLineArgs": "--mods-path \"Mods-Testing-Realty\"",
+      "workingDirectory": "t:\\"
+    },
+    "SDV  SDE": {
+      "commandName": "Executable",
+      "executablePath": "t:\\StardewModdingAPI.exe",
+      "commandLineArgs": "--mods-path \"Mods-SDE\"",
       "workingDirectory": "t:\\"
     }
   }

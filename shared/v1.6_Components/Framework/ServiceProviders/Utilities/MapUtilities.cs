@@ -8,17 +8,40 @@ using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using System.Linq;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
-using System.Xml;
+using System.IO;
+using StardewValley.TerrainFeatures;
+using xTile.Dimensions;
+
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
 {
     internal class MapUtilities : IMapUtilities
     {
-        //private SDRContentManager contentManager;
+        //
+        //  path blocking objects
+        //
+        // size = 2
+        private const int boulder_TopLeft = 898;
+        private const int boulder_TopRight = 899;
+        private const int boulder_BottomLeft = 923;
+        private const int boulder_BottomRight = 924;
+        // size 3 and above
+        // horizontal
+        private const int fence_Horizontal_LeftEndTop = 358;
+        private const int fence_Horizontal_MiddleTop = 359;
+        private const int fence_Horizontal_RightEndTop = 360;
+        private const int fence_Horizontal_LeftEndBottom = 383;
+        private const int fence_Horizontal_MiddleBottom = 384;
+        private const int fence_Horizontal_RightEndBottom = 385;
+        //vertical
+        private const int fence_Vertical_Bottom = 436;
+        private const int fence_Vertical_BottomTop = 411;
+        private const int fence_Vertical_Middle = 386;
+        private const int fence_Vertical_Top = 361;
 
         private ICustomEventsService customEventsService;
         public override List<string> CustomServiceEventTriggers
-        { get => new List<string> {  }; }
+        { get => new List<string> { }; }
         public override Type ServiceType => typeof(IMapUtilities);
 
         public override Type[] InitArgs => new Type[]
@@ -93,7 +116,6 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 RemoveTile(oExp, oExpPatch.Sign.Position.X, oExpPatch.Sign.Position.Y - 1, "Front");
             }
         }
-
         internal override string GetSignPostMessagePrefix(string side)
         {
             return side switch
@@ -157,7 +179,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             }
             catch (Exception ex)
             {
-                logger.LogError($"FEFramework.RemovePathBlock", ex); ;
+                logger.LogError($"MapUtilities.RemovePathBlock", ex); ;
             }
         }
         internal override void RemoveTile(GameLocation gl, int x, int y, string sLayer, int tileIndex)
@@ -176,8 +198,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
         {
             RemoveTile(gl, x, y, sLayer, -1);
         }
-
-        internal void setMapTileIndex(Map map, int tileX, int tileY, int index, string layer, int whichTileSheet = 0)
+        internal void SetMapTileIndex(Map map, int tileX, int tileY, int index, string layer, int whichTileSheet = 0)
         {
             if (map.GetLayer(layer).Tiles[tileX, tileY] != null)
             {
@@ -195,11 +216,10 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 map.GetLayer(layer).Tiles[tileX, tileY] = new StaticTile(map.GetLayer(layer), map.TileSheets[whichTileSheet], BlendMode.Alpha, index);
             }
         }
-        internal override void PatchInMap(GameLocation gl, Map oMap, Vector2 vOffset)
+        internal override void PatchInMap(GameLocation gl, Map oMap, Point vOffset, bool overlay = false)
         {
-            PatchInMap(gl.Map, oMap, vOffset);
+            PatchInMap(gl.Map, oMap, vOffset, overlay);
         }
-
         internal override void AddPathBlock(Vector2 oBlockPos, Map map, WarpOrientations eBlockOrientation, int iBlockWidth)
         {
             //
@@ -241,10 +261,10 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 {
                     case 2:
                         //  patch in a boulder
-                        SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, 898, "Buildings");
-                        SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y, tilesheetId, 899, "Buildings");
-                        SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y + 1, tilesheetId, 923, "Buildings");
-                        SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y + 1, tilesheetId, 924, "Buildings");
+                        SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, boulder_TopLeft, "Buildings");
+                        SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y, tilesheetId, boulder_TopRight, "Buildings");
+                        SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y + 1, tilesheetId, boulder_BottomLeft, "Buildings");
+                        SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y + 1, tilesheetId, boulder_BottomRight, "Buildings");
                         break;
                     case 3:
                         if (eBlockOrientation == WarpOrientations.Horizontal)
@@ -252,24 +272,24 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                             //
                             //  patch in a horizontal fence
                             //
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 1, tilesheetId, 358, "Buildings");
-                            SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y - 1, tilesheetId, 359, "Buildings");
-                            SetTile(map, (int)oBlockPos.X + 2, (int)oBlockPos.Y - 1, tilesheetId, 360, "Buildings");
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, 383, "Buildings");
-                            SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y, tilesheetId, 384, "Buildings");
-                            SetTile(map, (int)oBlockPos.X + 2, (int)oBlockPos.Y, tilesheetId, 385, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 1, tilesheetId, fence_Horizontal_LeftEndTop, "Buildings");
+                            SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y - 1, tilesheetId, fence_Horizontal_MiddleTop, "Buildings");
+                            SetTile(map, (int)oBlockPos.X + 2, (int)oBlockPos.Y - 1, tilesheetId, fence_Horizontal_RightEndTop, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, fence_Horizontal_LeftEndBottom, "Buildings");
+                            SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y, tilesheetId, fence_Horizontal_MiddleBottom, "Buildings");
+                            SetTile(map, (int)oBlockPos.X + 2, (int)oBlockPos.Y, tilesheetId, fence_Horizontal_RightEndBottom, "Buildings");
                         }
                         else
                         {
                             //
                             //  patch in a vertical fence
                             //
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y + 2, tilesheetId, 436, "Buildings");
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y + 1, tilesheetId, 411, "Buildings");
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, 411, "Buildings");
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, 386, "Buildings");
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 1, tilesheetId, 361, "Buildings", false);
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 1, tilesheetId, 361, "AlwaysFront");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y + 2, tilesheetId, fence_Vertical_Bottom, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y + 1, tilesheetId, fence_Vertical_BottomTop, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, fence_Vertical_BottomTop, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, fence_Vertical_Middle, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 1, tilesheetId, fence_Vertical_Top, "Buildings", false);
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 1, tilesheetId, fence_Vertical_Top, "AlwaysFront");
                         }
                         break;
                     case 4:
@@ -278,32 +298,75 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                             //
                             //  patch in a horizontal fence
                             //
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 1, tilesheetId, 358, "Buildings");
-                            SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y - 1, tilesheetId, 359, "Buildings");
-                            SetTile(map, (int)oBlockPos.X + 2, (int)oBlockPos.Y - 1, tilesheetId, 359, "Buildings");
-                            SetTile(map, (int)oBlockPos.X + 3, (int)oBlockPos.Y - 1, tilesheetId, 360, "Buildings");
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, 383, "Buildings");
-                            SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y, tilesheetId, 384, "Buildings");
-                            SetTile(map, (int)oBlockPos.X + 2, (int)oBlockPos.Y, tilesheetId, 384, "Buildings");
-                            SetTile(map, (int)oBlockPos.X + 3, (int)oBlockPos.Y, tilesheetId, 385, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 1, tilesheetId, fence_Horizontal_LeftEndTop, "Buildings");
+                            SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y - 1, tilesheetId, fence_Horizontal_MiddleTop, "Buildings");
+                            SetTile(map, (int)oBlockPos.X + 2, (int)oBlockPos.Y - 1, tilesheetId, fence_Horizontal_MiddleTop, "Buildings");
+                            SetTile(map, (int)oBlockPos.X + 3, (int)oBlockPos.Y - 1, tilesheetId, fence_Horizontal_RightEndTop, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, fence_Horizontal_LeftEndBottom, "Buildings");
+                            SetTile(map, (int)oBlockPos.X + 1, (int)oBlockPos.Y, tilesheetId, fence_Horizontal_MiddleBottom, "Buildings");
+                            SetTile(map, (int)oBlockPos.X + 2, (int)oBlockPos.Y, tilesheetId, fence_Horizontal_MiddleBottom, "Buildings");
+                            SetTile(map, (int)oBlockPos.X + 3, (int)oBlockPos.Y, tilesheetId, fence_Horizontal_RightEndBottom, "Buildings");
                         }
                         else
                         {
                             //
                             //  patch in a vertical fence
                             //
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, 436, "Buildings");
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 1, tilesheetId, 411, "Buildings");
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 2, tilesheetId, 411, "Buildings");
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 3, tilesheetId, 386, "Buildings");
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 4, tilesheetId, 361, "Buildings", false);
-                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 4, tilesheetId, 361, "AlwaysFront");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y + 3, tilesheetId, fence_Vertical_Bottom, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y + 2, tilesheetId, fence_Vertical_BottomTop, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y + 1, tilesheetId, fence_Vertical_BottomTop, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, fence_Vertical_Middle, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 1, tilesheetId, fence_Vertical_Middle, "Buildings");
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 2, tilesheetId, fence_Vertical_Top, "Buildings", false);
+                            SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 2, tilesheetId, fence_Vertical_Top, "AlwaysFront");
+
+
+                            //SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y, tilesheetId, fence_Vertical_Bottom, "Buildings");
+                            //SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 1, tilesheetId, fence_Vertical_BottomTop, "Buildings");
+                            //SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 2, tilesheetId, fence_Vertical_BottomTop, "Buildings");
+                            //SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 3, tilesheetId, fence_Vertical_Middle, "Buildings");
+                            //SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 4, tilesheetId, fence_Vertical_Top, "Buildings", false);
+                            //SetTile(map, (int)oBlockPos.X, (int)oBlockPos.Y - 4, tilesheetId, fence_Vertical_Top, "AlwaysFront");
                         }
                         break;
                 }
             }
         }
+        /// <summary>
+        /// Resets the game location to default
+        /// called after selling a location
+        /// </summary>
+        /// <param name="location">Location to be reset</param>
+        internal override void ResetGameLocation(GameLocation location)
+        {
+            location.terrainFeatures.Clear();
+            location.buildings.Clear();
+            location.animals.Clear();
+            location.furniture.Clear();
+            location.critters.Clear();
+            location.characters.Clear();
 
+            // remove fences
+            List<Vector2> toDelete = new();
+            var fences = DataLoader.Fences(Game1.content);
+            foreach (KeyValuePair<Vector2, SDObject> pair in location.objects.Pairs)
+            {
+                if (fences.ContainsKey(pair.Value.ItemId))
+                    toDelete.Add(pair.Key);
+                else if (Game1.objectData.TryGetValue(pair.Value.ItemId, out var data))
+                {
+                    if (data.Type != "Litter")
+                        toDelete.Add(pair.Key);
+                }                
+            }
+            foreach(Vector2 del in toDelete)
+                location.objects.Remove(del);
+
+            //
+            //  reset weeds and debris
+            //
+            location.loadWeeds();
+        }
         /// <summary>
         /// Formats sign post text with appropriate direction icon (if available)
         /// </summary>
@@ -332,39 +395,99 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 _ => ""
             };
         }
-        internal override void PatchInMap(Map targetMap, Map sourceMap, Vector2 vOffset)
+        internal override void OverlayMap(GameLocation gl, Map sourceMap, Point offset)
         {
-            logger.Log($"PatchInMap Dest map: {targetMap.Description}, Src map: {sourceMap.Description}", LogLevel.Debug);
+            PatchInMap(gl.map, sourceMap, offset, true);
+        }
+        internal override void OverlayMap(Map targetMap, Map sourceMap, Point offset)
+        {
+            PatchInMap(targetMap, sourceMap, offset, true);
+        }
+        internal override void PatchInMap(Map targetMap, Map sourceMap, Vector2 vOffset, bool overlay = false)
+        {
+            PatchInMap(targetMap,sourceMap,new Point((int)vOffset.X,(int)vOffset.Y));
+        }
+        private void DumpProperties(Layer sourceLayer)
+        {
+            for (int x = 0; x < sourceLayer.LayerWidth; x++)
+            {
+                for (int y = 0; y < sourceLayer.LayerHeight; y++)
+                {
+                    if (sourceLayer.Tiles[x, y]?.Properties.Count > 0)
+                    {
+                        Console.WriteLine($"({x},{y})");
+                        foreach(var prop in sourceLayer.Tiles[x, y].Properties)
+                        {
+                            Console.WriteLine($"{prop.Key}: {prop.Value}");
+                        }
+                    }
+                }
+            }
+        }
+        internal override void PatchInMap(Map targetMap, Map sourceMap, Point vOffset, bool overlay = false)
+        {
+            logger.Log($"PatchInMap Dest map: {targetMap.Id}, Src map: {sourceMap.Id}", LogLevel.Debug);
+
             foreach (Layer sourceLayer in sourceMap.Layers)
             {
                 Layer targetLayer = targetMap.GetLayer(sourceLayer.Id);
-                if (sourceLayer != null)
+                if (sourceLayer != null && targetLayer != null)
                 {
-                    for (int iCol = 0; iCol < sourceLayer.LayerHeight; iCol++)
+                    for (int x = 0; x < sourceLayer.LayerWidth; x++)
                     {
-                        for (int iRow = 0; iRow < sourceLayer.LayerWidth; iRow++)
+                        for (int y = 0; y < sourceLayer.LayerHeight; y++)
                         {
-                            int iIndex = (sourceLayer.Tiles[iRow, iCol] == null ? -1 : sourceLayer.Tiles[iRow, iCol].TileIndex);
-                            if (sourceLayer.Tiles[iRow, iCol] != null && sourceLayer.Tiles[iRow, iCol].TileIndex > 0)
+                            int iIndex = (sourceLayer.Tiles[x, y] == null ? -1 : sourceLayer.Tiles[x, y].TileIndex);
+                            if (sourceLayer.Tiles[x, y] != null && sourceLayer.Tiles[x, y].TileIndex > 0)
                             {
-                                if (targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] == null || targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y].TileSheet.ImageSource != sourceLayer.Tiles[iRow, iCol].TileSheet.ImageSource)
+
+                                Tile tile = sourceLayer.Tiles[x, y];
+                                Tile tile2 = null;
+                                if (!(tile is StaticTile))
                                 {
-                                    targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] = new StaticTile(targetLayer, targetMap.TileSheets[GetTileSheetId(targetMap, sourceLayer.Tiles[iRow, iCol].TileSheet.ImageSource)], BlendMode.Alpha, sourceLayer.Tiles[iRow, iCol].TileIndex);
+                                    if (tile is AnimatedTile animatedTile)
+                                    {
+                                        StaticTile[] array = new StaticTile[animatedTile.TileFrames.Length];
+                                        for (int num5 = 0; num5 < animatedTile.TileFrames.Length; num5++)
+                                        {
+                                            StaticTile staticTile = animatedTile.TileFrames[num5];
+                                            
+                                            array[num5] = new StaticTile(targetLayer, targetMap.TileSheets[GetTileSheetId(targetMap, staticTile.TileSheet.ImageSource)], staticTile.BlendMode, staticTile.TileIndex);
+                                        }
+
+                                        tile2 = new AnimatedTile(targetLayer, array, animatedTile.FrameInterval);
+                                    }
                                 }
                                 else
-                                    setMapTileIndex(targetMap, iRow + (int)vOffset.X, iCol + (int)vOffset.Y, sourceLayer.Tiles[iRow, iCol].TileIndex, sourceLayer.Id, GetTileSheetId(targetMap, sourceLayer.Tiles[iRow, iCol].TileSheet.ImageSource));
-
-                                //  add tile properties
-                                targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y].Properties.Clear();
-                                foreach (var prop in sourceLayer.Tiles[iRow, iCol].Properties) {
-                                    targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y].Properties.Add(prop.Key,prop.Value);
+                                {
+                                    //targetMap.TileSheets[GetTileSheetId(targetMap, tile.TileSheet.ImageSource)]
+                                    tile2 = new StaticTile(targetLayer, targetMap.TileSheets[GetTileSheetId(targetMap, tile.TileSheet.ImageSource)], tile.BlendMode, tile.TileIndex);
                                 }
+
+                                tile2?.Properties.CopyFrom(tile.Properties);
+                                targetLayer.Tiles[x+vOffset.X, y+vOffset.Y] = tile2;
+
+
+
+                                //if (targetLayer.Tiles[x + (int)vOffset.X, y + (int)vOffset.Y] == null || targetLayer.Tiles[x + (int)vOffset.X, y + (int)vOffset.Y].TileSheet.ImageSource != sourceLayer.Tiles[x, y].TileSheet.ImageSource)
+                                //{
+                                //    targetLayer.Tiles[x + (int)vOffset.X, y + (int)vOffset.Y] = new StaticTile(targetLayer, targetMap.TileSheets[GetTileSheetId(targetMap, sourceLayer.Tiles[x, y].TileSheet.ImageSource)], BlendMode.Alpha, sourceLayer.Tiles[x, y].TileIndex);
+                                //}
+                                //else
+                                //    SetMapTileIndex(targetMap, x + (int)vOffset.X, y + (int)vOffset.Y, sourceLayer.Tiles[x, y].TileIndex, sourceLayer.Id, GetTileSheetId(targetMap, sourceLayer.Tiles[x, y].TileSheet.ImageSource));
+
+                                ////  add tile properties
+                                //targetLayer.Tiles[x + (int)vOffset.X, y + (int)vOffset.Y].Properties.Clear();
+                                //foreach (var prop in sourceLayer.Tiles[x, y].Properties)
+                                //{
+                                //    targetLayer.Tiles[x + (int)vOffset.X, y + (int)vOffset.Y].Properties.Add(prop.Key, prop.Value);
+                                //}
                             }
                             else
                             {
-                                if (targetLayer.Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] != null)
+                                if (!overlay && targetLayer.Tiles[x + (int)vOffset.X, y + (int)vOffset.Y] != null)
                                 {
-                                    targetMap.GetLayer(sourceLayer.Id).Tiles[iRow + (int)vOffset.X, iCol + (int)vOffset.Y] = null;
+                                    targetMap.GetLayer(sourceLayer.Id).Tiles[x + (int)vOffset.X, y + (int)vOffset.Y] = null;
                                 }
                             }
                         }
@@ -377,15 +500,24 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 }
             }
         }
-
         internal override int GetTileSheetId(Map map, string tileSheetSourceName)
         {
-            tileSheetSourceName = SDVPathUtilities.NormalizePath(tileSheetSourceName);
+            //tileSheetSourceName = SDVPathUtilities.NormalizePath(tileSheetSourceName);
 
+            var tileSheet = map.TileSheets.Where(p => p.ImageSource!=null&& Path.GetFileNameWithoutExtension(p.ImageSource) == Path.GetFileNameWithoutExtension(tileSheetSourceName));
+
+            //if(tileSheet.Any())
+            //{
+            //    string id = tileSheet.First().Id;
+            //}
             string[] arParts = tileSheetSourceName.Split('*');
 
             for (int iTileSheet = 0; iTileSheet < map.TileSheets.Count; iTileSheet++)
             {
+                if(Path.GetFileNameWithoutExtension(map.TileSheets[iTileSheet].ImageSource) == Path.GetFileNameWithoutExtension(tileSheetSourceName))
+                {
+                    return iTileSheet;
+                }
                 if (tileSheetSourceName.Contains("*"))
                 {
                     if (arParts.Length == 2)
@@ -422,11 +554,10 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 return GetTileSheetId(map, WildCardSeason(tileSheetSourceName));
             }
 
-            logger.Log($"GetTileSheetId. Could not find tilesheet: {map.Id} '{tileSheetSourceName}'", LogLevel.Error);
+            logger.Log($"GetTileSheetId. Could not find tilesheet: {map.assetPath} '{tileSheetSourceName}'", LogLevel.Error);
 
             return -1;
         }
-
         internal override bool IsSeasonalTileSheet(string tileSheetSourceName)
         {
             string lowerName = tileSheetSourceName.ToLower();
@@ -451,14 +582,21 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             {
                 Layer oLayer = map.GetLayer(sLayerId);
 
-                if (oLayer.Tiles[x, y] == null)
+                if (oLayer.IsValidTileLocation(x, y))
                 {
-                    oLayer.Tiles[x, y] = new StaticTile(oLayer, map.TileSheets[iTileSheetId], BlendMode.Alpha, iTileId);
+                    if (oLayer.Tiles[x, y] == null)
+                    {
+                        oLayer.Tiles[x, y] = new StaticTile(oLayer, map.TileSheets[iTileSheetId], BlendMode.Alpha, iTileId);
+                    }
+                    else if (overwriteTile)
+                    {
+                        oLayer.Tiles[x, y] = null;
+                        oLayer.Tiles[x, y] = new StaticTile(oLayer, map.TileSheets[iTileSheetId], BlendMode.Alpha, iTileId);
+                    }
                 }
-                else if (overwriteTile)
+                else
                 {
-                    oLayer.Tiles[x, y] = null;
-                    oLayer.Tiles[x, y] = new StaticTile(oLayer, map.TileSheets[iTileSheetId], BlendMode.Alpha, iTileId);
+                    logger.Log($"SetTile error: Invalid tile {x},{y}", LogLevel.Error);
                 }
             }
             catch (Exception ex)
@@ -481,28 +619,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
         }
         internal override void SetTileProperty(GameLocation gl, int x, int y, string sLayerId, string propName, string propValue)
         {
-            try
-            {
-                Layer oLayer = gl.map.GetLayer(sLayerId);
-                if (oLayer.Tiles[x, y] != null)
-                {
-                    if (oLayer.Tiles[x, y].Properties.ContainsKey(propName))
-                    {
-                        oLayer.Tiles[x, y].Properties[propName] = propValue;
-                    }
-                    else
-                    {
-                        oLayer.Tiles[x, y].Properties.Add(propName, propValue);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.Log($"SetTileProperty error: {ex}", LogLevel.Error);
-                logger.Log($"Tile params: Location: {gl.Name}, ({x}, {y}), LayerId='{sLayerId}', PropName='{propName}', PropValue='{propValue}'", LogLevel.Error);
-            }
+            SetTileProperty(gl.Map,x,y,sLayerId,propName,propValue);            
         }
-
         public override object ToType(Type conversionType, IFormatProvider provider)
         {
             if (conversionType == ServiceType)

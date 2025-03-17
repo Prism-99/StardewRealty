@@ -324,12 +324,20 @@ namespace SDV_Realty_Core.Framework.CustomEntities
                             //log.Warn(defaultInterpolatedStringHandler.ToStringAndClear());
                             //return null;
                         }
-                        newHeldItem = method(machine, primaryItem, false, selectedOutput, out overrideMinutesUntilReady);
+#if v169
+                        newHeldItem = method(machine, primaryItem, false, selectedOutput,Game1.player, out overrideMinutesUntilReady);
+#else
+                        newHeldItem = method( machine, primaryItem, false, selectedOutput,  out overrideMinutesUntilReady);
+#endif
                     }
                 }
                 if (newHeldItem != null)
                 {
+#if v169
+                    ItemQueryContext context = new ItemQueryContext(machine.Location, who, Game1.random,"");
+#else
                     ItemQueryContext context = new ItemQueryContext(machine.Location, who, Game1.random);
+#endif
                     newHeldItem = (Item)ItemQueryResolver.ApplyItemFields(newHeldItem, selectedOutput, context, inputItem);
 
                     if (selectedOutput.CopyColor)

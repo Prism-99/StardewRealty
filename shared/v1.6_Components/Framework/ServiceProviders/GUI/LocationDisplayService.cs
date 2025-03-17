@@ -1,6 +1,5 @@
 ﻿using locationDataDisplay;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
-using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using SDV_Realty_Core.Framework.ServiceInterfaces.GUI;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using System;
@@ -13,7 +12,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GUI
         private LocationDataDisplay _locationDataDisplay;
         public override Type[] InitArgs => new Type[]
         {
-            typeof(IModHelperService),typeof(IGameEventsService)
+            typeof(IGameEventsService)
         };
 
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -27,10 +26,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GUI
         internal override void Initialize(ILoggerService logger, object[] args)
         {
             this.logger = logger;
-            IModHelperService modHelperService= (IModHelperService)args[0];
-            IGameEventsService gameEventsService= (IGameEventsService)args[1];
+            IGameEventsService gameEventsService= (IGameEventsService)args[0];
 
-           _locationDataDisplay = new LocationDataDisplay(modHelperService, logger, gameEventsService);
+           _locationDataDisplay = new LocationDataDisplay( gameEventsService);
         }
     }
 }

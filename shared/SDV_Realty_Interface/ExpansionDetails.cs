@@ -22,6 +22,7 @@ namespace StardewRealty.SDV_Realty_Interface
         public ExpansionDetails() { }
 
         public Point?CaveOut { get; set; } = null;
+        public Vector2?ShippingBin { get; set; } = null;
         public bool? AllowGiantCrops { get; set; }
         public string BaseDefinition {  get; set; }
         public bool? AlwaysSnowing { get; set; }
@@ -50,6 +51,7 @@ namespace StardewRealty.SDV_Realty_Interface
         public bool Active { get; set; }
         public bool ForSale { get; set; }
         public long PurchasedBy {  get; set; }
+        public int PurchaseDate { get; set; }
         public List<ArtifactData> Artifacts { get; set; }
         public List<ForageData> ForageData { get; set; }
         public string SpringForage { get; set; }

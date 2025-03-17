@@ -7,6 +7,7 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using static StardewValley.Menus.CharacterCustomization;
 
 namespace SDV_Realty_Core.Framework.Objects
 {
@@ -85,6 +86,7 @@ namespace SDV_Realty_Core.Framework.Objects
 
             _modDataService.CustomDefinitions[sExpName].SeasonOverride = seasonOverride;
             _modDataService.farmExpansions[sExpName].seasonUpdate();
+            _modDataService.farmExpansions[sExpName].updateSeasonalTileSheets();
             _eventsService.TriggerCustomEvent("SaveExpansionCustomizations", new object[] { });
         }
         //public List<SpawnFishData> GetFishData(string expansionName, string fishAreaId)
@@ -110,20 +112,6 @@ namespace SDV_Realty_Core.Framework.Objects
 
         //    return null;
         //}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -14,6 +14,7 @@ using Prism99_Core.MultiplayerUtils;
 using Prism99_Core.Utilities;
 using SDV_Realty_Core.Framework.Locations;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using SDV_Realty_Core.Framework.ServiceProviders.ModData;
 
 namespace SDV_Realty_Core.Framework.Objects
 {
@@ -21,13 +22,13 @@ namespace SDV_Realty_Core.Framework.Objects
     {
         private const string action_activations = "activatations";
         private const string action_openexits = "openexits";
-        private const string data_indoorlocaiton = "indoorname";
+        private const string data_indoorlocation = "indoorname";
         private const string action_forsale = "forsale";
         private const string action_sold = "sold";
         private const string action_purchase = "purchase";
         private const string data_location = "locationdata";
         private const string client_conn = "clientconn";
-        private const string warproom_status = "warp_status";
+        //private const string warproom_status = "warp_status";
         private const string logPrefix = "SDRMP: ";
         private int clientCount = 0;
         private IModHelper helper;
@@ -39,20 +40,19 @@ namespace SDV_Realty_Core.Framework.Objects
         private ILandManager landManager;
         private IExitsService exitsService;
         private IUtilitiesService utilitiesService;
-        private enum WarpRoomStatus
-        {
-            Free,
-            Busy
-        }
+        private IModDataService modDataService;
+        private List<Func<bool,ModMessageReceivedEventArgs, bool>> messageReceivedSubscribers=new();
+      
         public class FEMessage
         {
             public List<Tuple<int, string>> Locations { get; set; }
             public int Code { get; set; }
             public byte[] Data { get; set; }
+            public string TextData  { get; set; }
             public long Player { get; set; }
             public BinaryReader Reader;
         }
-        public void Initialize(ILoggerService olog, IModHelper oHelper, IExpansionManager expansionManager, ILandManager landManager, IExitsService exitsService, IUtilitiesService utilitiesService)
+        public void Initialize(ILoggerService olog, IModHelper oHelper, IModDataService modDataService, IExpansionManager expansionManager, ILandManager landManager, IExitsService exitsService, IUtilitiesService utilitiesService)
         {
             helper = oHelper;
             logger = olog;
@@ -60,6 +60,7 @@ namespace SDV_Realty_Core.Framework.Objects
             this.landManager = landManager;
             this.exitsService = exitsService;
             this.utilitiesService = utilitiesService;
+            this.modDataService = modDataService;
 
             P99Core_MultiPlayer.Initialize(helper, (SDVLogger)logger.CustomLogger);
             utilitiesService.CustomEventsService.AddCustomSubscription("SendLandBought", HandleLandBought);
@@ -83,6 +84,10 @@ namespace SDV_Realty_Core.Framework.Objects
             string log_message = $"[{level}] {message}";
             P99Core_MultiPlayer.AddNetLogMessage(log_message);
             logger.Log(message, level);
+        }
+        public void AddMessageReceivedSubscription(Func<bool,ModMessageReceivedEventArgs, bool> handler)
+        {
+            messageReceivedSubscribers.Add(handler);
         }
         public void AddHooks(EventArgs ep)
         {
@@ -269,25 +274,27 @@ namespace SDV_Realty_Core.Framework.Objects
 
                 switch (e.Type)
                 {
-                    case warproom_status:
-                        //
-                        //  update current usage of the warproom
-                        //
-                        FEMessage warp = e.ReadAs<FEMessage>();
-                        switch ((WarpRoomStatus)warp.Code)
-                        {
-                            case WarpRoomStatus.Busy:
-                                // warp room in use
-                                WarproomManager.WarpRoomInUse = true;
-                                WarproomManager.PlayerInWarpRoom = warp.Player;
-                                break;
-                            case WarpRoomStatus.Free:
-                                //  warp room free
-                                WarproomManager.WarpRoomInUse = false;
-                                WarproomManager.PlayerInWarpRoom = -1;
-                                break;
-                        }
-                        break;
+//                    case warproom_status:
+//                        //
+//                        //  update current usage of the warproom
+//                        //
+//                        FEMessage warp = e.ReadAs<FEMessage>();
+//#if !warpV2
+//                        switch ((WarpRoomStatus)warp.Code)
+//                        {
+//                            case WarpRoomStatus.Busy:
+//                                // warp room in use
+//                                WarproomManager.WarpRoomInUse = true;
+//                                WarproomManager.PlayerInWarpRoom = warp.Player;
+//                                break;
+//                            case WarpRoomStatus.Free:
+//                                //  warp room free
+//                                WarproomManager.WarpRoomInUse = false;
+//                                WarproomManager.PlayerInWarpRoom = -1;
+//                                break;
+//                        }
+//#endif
+//                        break;
                     case client_conn:
                         //
                         //  send activated expansions
@@ -307,7 +314,7 @@ namespace SDV_Realty_Core.Framework.Objects
                         //    //    // Traverse.Create(Game1.server).Method("sendLocation", new object[] {e.FromPlayerID,Game1.getLocationFromName("Backwoods") });
                         //    //}
                         //}
-                        foreach (string forsale in landManager.LandForSale)
+                        foreach (string forsale in modDataService.LandForSale)
                         {
                             SendNewLandForSale(e.FromPlayerID, forsale);
                         }
@@ -319,22 +326,22 @@ namespace SDV_Realty_Core.Framework.Objects
                         }
                         break;
                     default:
-                        Log($"Unknown Master messssage type {e.Type}", LogLevel.Debug);
+                        bool handled = false;
+                        foreach(var handler in messageReceivedSubscribers)
+                        {
+                            handled= handler(true,e);
+                            if (handled) break;
+                        }
+                        if (!handled)
+                        {
+                            Log($"Unknown Master messssage type {e.Type}", LogLevel.Debug);
+                        }
                         break;
 
                 }
             }
         }
-        public void SendWarpRooomStatus(bool inUse, long userId)
-        {
-            FEMessage fEMessage = new FEMessage()
-            {
-                Player = userId,
-                Code = (int)(inUse ? WarpRoomStatus.Busy : WarpRoomStatus.Free)
-            };
-            SendMessageToClient(fEMessage, warproom_status, -1);
-
-        }
+       
         public void Multiplayer_ClientReceivedMessage(ModMessageReceivedEventArgs e)
         {
             Log($"{logPrefix}[Client] Received {e.Type}, from clientId={e.FromPlayerID}", LogLevel.Debug);
@@ -343,25 +350,6 @@ namespace SDV_Realty_Core.Framework.Objects
 
             switch (e.Type)
             {
-                case warproom_status:
-                    //
-                    //  update current usage of the warproom
-                    //
-                    FEMessage warp = e.ReadAs<FEMessage>();
-                    switch ((WarpRoomStatus)warp.Code)
-                    {
-                        case WarpRoomStatus.Busy:
-                            // warp room in use
-                            WarproomManager.WarpRoomInUse = true;
-                            WarproomManager.PlayerInWarpRoom = warp.Player;
-                            break;
-                        case WarpRoomStatus.Free:
-                            //  warp room free
-                            WarproomManager.WarpRoomInUse = false;
-                            WarproomManager.PlayerInWarpRoom = -1;
-                            break;
-                    }
-                    break;
                 case action_openexits:
                     exitsService.AddFarmExits();
                     break;
@@ -378,15 +366,15 @@ namespace SDV_Realty_Core.Framework.Objects
                 case action_forsale:
                     foreach (var forsale in inboud.Locations)
                     {
-                        landManager.LandForSale.Add(forsale.Item2);
+                        modDataService.LandForSale.Add(forsale.Item2);
                     }
                     break;
                 case action_sold:
                     foreach (var forsale in inboud.Locations)
                     {
-                        if (landManager.LandForSale.Contains(forsale.Item2))
+                        if (modDataService.LandForSale.Contains(forsale.Item2))
                         {
-                            landManager.LandForSale.Remove(forsale.Item2);
+                            modDataService.LandForSale.Remove(forsale.Item2);
                         }
                         Log($"Received 'action_sold' msg for {forsale.Item2}[{forsale.Item1}]", LogLevel.Debug);
                         expansionManager.ActivateExpansion(forsale.Item2, forsale.Item1);
@@ -419,7 +407,16 @@ namespace SDV_Realty_Core.Framework.Objects
                     }
                     break;
                 default:
-                    Log($"Unknown Client messssage type {e.Type}", LogLevel.Debug);
+                    bool handled = false;
+                    foreach (var handler in messageReceivedSubscribers)
+                    {
+                        handled = handler(false, e);
+                        if (handled) break;
+                    }
+                    if (!handled)
+                    {
+                        Log($"Unknown client messssage type {e.Type}", LogLevel.Debug);
+                    }
                     break;
             }
 

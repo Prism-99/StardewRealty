@@ -6,13 +6,13 @@ using StardewRealty.SDV_Realty_Interface;
 using Prism99_Core.Utilities;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
 using StardewValley.GameData.Locations;
-
+using StardewValley.GameData.Minecarts;
 
 
 namespace ContentPackFramework.Helpers
 {
     internal class AutoMapTokens
-    {       
+    {
         //
         //  internal token utilities
         //
@@ -50,7 +50,42 @@ namespace ContentPackFramework.Helpers
         //
         //  map tokens
         //
+        public static Tuple<bool, string> busin(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
+        {
+            cPac.BusIn = token.Position;
 
+            return Tuple.Create(false, "busin");
+        }
+        public static Tuple<bool, string> boatdockin(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
+        {
+            cPac.BoatDockIn = token.Position;
+
+            return Tuple.Create(false, "boatdockin");
+        }
+        public static Tuple<bool,string> trainstationin(MapToken token, ExpansionPack cPac, List<MapToken> tokens) 
+        {
+            cPac.TrainStationIn = token.Position;
+
+            return Tuple.Create(false, "trainstationin");
+        }
+        public static Tuple<bool, string> minecart_internal(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
+        {
+            if (cPac.InternalMineCarts == null) 
+                cPac.InternalMineCarts = new MinecartNetworkData();
+            if (cPac.InternalMineCarts.Destinations == null)
+                cPac.InternalMineCarts.Destinations = new();
+
+            string[] args = token.TokenValue.Split(',');
+            cPac.InternalMineCarts.Destinations.Add(new MinecartDestinationData()
+            {
+                DisplayName = args[0],
+                //TargetLocation = cPac.LocationName,
+                TargetTile = token.Position,
+                Id = args[0].Replace(" ","")
+            }
+            );
+            return Tuple.Create(false, "minecart_internal");
+        }
         private static Tuple<bool, string> setup_minecart(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
         {
             MapToken landingToken = null;
@@ -167,7 +202,7 @@ namespace ContentPackFramework.Helpers
                                                 ItemId = arDetails[1],
                                                 Quantity = int.Parse(arDetails[0])
                                             });
-                                            break;                                      
+                                            break;
                                         case >= 3:
                                             if (arDetails[1] == "Arch" || arDetails[1] == "Object")
                                             {
@@ -358,6 +393,13 @@ namespace ContentPackFramework.Helpers
 
             return Tuple.Create(true, "no bush size");
         }
+
+        public static Tuple<bool, string> shippingbin(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
+        {
+            cPac.ShippingBinLocation = new Vector2(token.Position.X, token.Position.Y);
+            return Tuple.Create(false, "shippingbin");
+        }
+
         public static Tuple<bool, string> northsign(MapToken token, ExpansionPack cPac, List<MapToken> tokens)
         {
             bool error = false;

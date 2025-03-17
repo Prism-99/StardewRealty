@@ -9,20 +9,20 @@ using Newtonsoft.Json;
 using StardewModdingAPI.Events;
 using StardewModdingAPI.Enums;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
-using SDV_Realty_Core.Framework.ServiceInterfaces.Configuration;
 using SDV_Realty_Core.Framework.ServiceProviders.ModMechanics;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using Prism99_Core.MultiplayerUtils;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
 {
     internal class GameEnviromentService : IGameEnvironmentService
     {
         private IModHelperService helper;
-        private IConfigService config;
+        private IModDataService modDataService;
         public override Type[] InitArgs => new Type[]
         {
-            typeof(IGameEventsService),typeof(IConfigService),
+            typeof(IGameEventsService),typeof(IModDataService),
             typeof(IModHelperService)
         };
 
@@ -43,7 +43,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             this.logger = logger;
 
             IGameEventsService eventsService = (IGameEventsService)args[0];
-            config= (IConfigService)args[1];
+            modDataService= (IModDataService)args[1];
             helper = (IModHelperService)args[2];
 
             P99Core_MultiPlayer.Initialize(helper.modHelper, (SDVLogger)logger.CustomLogger);
@@ -119,8 +119,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 {
                     PatchBackwoodExits = true,
                     PatchFarmExits = Game1.whichFarm == 0,
-                    UseFarmExit1 = Game1.whichFarm == 0 && (config.config?.useNorthWestEntrance ?? true),
-                    UseFarmExit2 = Game1.whichFarm == 0 && (config.config?.useSouthWestEntrance ?? true)
+                    UseFarmExit1 = Game1.whichFarm == 0 && (modDataService.Config?.useNorthWestEntrance ?? true),
+                    UseFarmExit2 = Game1.whichFarm == 0 && (modDataService.Config?.useSouthWestEntrance ?? true)
                 };
             }
             ActiveFarmProfile.SDEInstalled = helper.ModRegistry.IsLoaded("FlashShifter.SVECode");
@@ -174,6 +174,19 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             {
                 logger.Log("error: " + ex.ToString(), LogLevel.Error);
                 BlackListedFarmMods = new List<string> { };
+            }
+            //
+            //  load black listed additional farms
+            sFileDef = Path.Combine(helper?.DirectoryPath ?? "", "data", "additional_farm_blacklist.json");
+            try
+            {
+                string sContent = File.ReadAllText(sFileDef);
+                BlackListedAdditionalFarms = JsonConvert.DeserializeObject<List<string>>(sContent);
+            }
+            catch (Exception ex)
+            {
+                logger.Log("error: " + ex.ToString(), LogLevel.Error);
+                BlackListedAdditionalFarms = new List<string> { };
             }
         }
     }

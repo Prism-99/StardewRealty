@@ -9,7 +9,9 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.Events
         public enum ModEvents
         {
             ConfigChanged,
-            ExpansionActivated
+            ExpansionActivated,
+            LandPurchased,
+            LandSold
         }
         public override Type ServiceType => typeof(ICustomEventsService);
         internal abstract void AddCustomSubscription(string subscriptionName, Action<object[]> action);

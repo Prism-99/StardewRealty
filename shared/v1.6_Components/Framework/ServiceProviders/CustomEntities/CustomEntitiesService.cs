@@ -10,7 +10,6 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
 {
     internal class CustomEntitiesService : ICustomEntitiesServices
     {
-
         public override Type ServiceType => typeof(ICustomEntitiesServices);
  
         public override Type[] InitArgs => new Type[] {
@@ -32,7 +31,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
         internal override void Initialize(ILoggerService logger, object[] args)
         {
             this.logger = logger;
-            IContentManagerService contentManagerService = (IContentManagerService)args[0];
+            contentManagerService = (IContentManagerService)args[0];
             customBigCraftableService = (ICustomBigCraftableService)args[1];
             customMachineService= (ICustomMachineService)args[2];
             IUtilitiesService utilitiesService = (IUtilitiesService)args[3];
@@ -44,7 +43,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
             customMovieService = (ICustomMovieService)args[9];
   
             IModHelper helper = utilitiesService.ModHelperService.modHelper;
-            contentManager = contentManagerService.contentManager;
+            //contentManager = contentManagerService.contentManager;
             IMonitor monitor = utilitiesService.MonitorService.monitor;
             //GamePatches patches=utilitiesService.PatchingService.patches;
             //
@@ -91,35 +90,35 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
             //            
             foreach (KeyValuePair<string, object> extRef in customBigCraftableService.ExternalReferences)
             {
-                contentManager.ExternalReferences.Add(extRef.Key, extRef.Value);
+                contentManagerService.AddExternalReference(extRef.Key, extRef.Value);
             }
             //
             //  buildings
             //
             foreach (KeyValuePair<string, object> buildingRef in customBuildingService.ExternalReferences)
             {
-                contentManager.ExternalReferences.Add(buildingRef.Key, buildingRef.Value);
+                contentManagerService.AddExternalReference(buildingRef.Key, buildingRef.Value);
             }
             //
             //  crops
             //
             foreach (KeyValuePair<string, object> cropRef in customCropService.ExternalReferences)
             {
-                contentManager.ExternalReferences.Add(cropRef.Key, cropRef.Value);
+                contentManagerService.AddExternalReference(cropRef.Key, cropRef.Value);
             }
             //
             //  movies
             //
             foreach(KeyValuePair<string, object> movieRef in customMovieService.ExternalReferences)
             {
-                contentManager.ExternalReferences.Add(movieRef.Key, movieRef.Value);
+                contentManagerService.AddExternalReference(movieRef.Key, movieRef.Value);
             }
             //
             //  objects
             //
             foreach(KeyValuePair<string, object> objExtRef in customObjectService.ExternalReferences)
             {
-                contentManager.ExternalReferences.Add(objExtRef.Key, objExtRef.Value);
+                contentManagerService.AddExternalReference(objExtRef.Key, objExtRef.Value);
             }
         }
     }

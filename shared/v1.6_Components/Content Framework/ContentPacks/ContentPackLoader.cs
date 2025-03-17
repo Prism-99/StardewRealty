@@ -200,15 +200,15 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
 
 
             List<string> lFailedPacks = new List<string> { };
-            foreach (string sPackName in ValidContents.Keys.ToList())
+            foreach (string expansionPackName in ValidContents.Keys.ToList())
             {
-                ExpansionPack oPack = ValidContents[sPackName];
+                ExpansionPack expansionPack = ValidContents[expansionPackName];
                 try
                 {
-                    if (oPack.LoadMap)
+                    if (expansionPack.LoadMap)
                     {
                         bool mapIsValid = true;
-                        Map mNewMap = _utilitiesService.MapLoaderService.Loader.LoadMap(gameEnvironmentService.GamePath, Path.Combine(oPack.ModPath, "assets", oPack.MapName), sPackName, false);
+                        Map mNewMap = _utilitiesService.MapLoaderService.Loader.LoadMap(gameEnvironmentService.GamePath, Path.Combine(expansionPack.ModPath, "assets", expansionPack.MapName), expansionPackName, false);
                         //
                         //  parse map for tags
                         //
@@ -216,13 +216,13 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
 #if DEBUG_LOG
                         logger.Log($"Auto-mapping: {sPackName}", LogLevel.Info);
 #endif
-                        oPack.Bushes.AddRange(autoParse.Bushes);
-                        oPack.TreasureSpots=autoParse.TreasureSpots;
+                        expansionPack.Bushes.AddRange(autoParse.Bushes);
+                        expansionPack.TreasureSpots=autoParse.TreasureSpots;
                         if (autoParse.CaveEntrance.WarpIn.X != -1 && autoParse.CaveEntrance.WarpIn.Y != -1)
                         {
                             logger.Log($"   auto-mapping CaveEntrance.WarpIn", LogLevel.Debug);
-                            if (oPack.CaveEntrance == null) { oPack.CaveEntrance = new EntranceDetails(); }
-                            oPack.CaveEntrance.WarpIn = autoParse.CaveEntrance.WarpIn;
+                            if (expansionPack.CaveEntrance == null) { expansionPack.CaveEntrance = new EntranceDetails(); }
+                            expansionPack.CaveEntrance.WarpIn = autoParse.CaveEntrance.WarpIn;
                         }
                         else
                         {
@@ -231,25 +231,25 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                         if (autoParse.CaveEntrance.WarpOut.X != -1 && autoParse.CaveEntrance.WarpOut.Y != -1)
                         {
                             logger.Log($"   auto-mapping CaveEntrance.WarpOut", LogLevel.Debug);
-                            if (oPack.CaveEntrance == null) { oPack.CaveEntrance = new EntranceDetails(); }
-                            oPack.CaveEntrance.WarpOut = autoParse.CaveEntrance.WarpOut;
+                            if (expansionPack.CaveEntrance == null) { expansionPack.CaveEntrance = new EntranceDetails(); }
+                            expansionPack.CaveEntrance.WarpOut = autoParse.CaveEntrance.WarpOut;
                         }
                         else
                         {
                             logger.Log($"    missing CaveEntrance WarpOut tag", LogLevel.Warn);
                         }
-                        if (oPack.EntrancePatches == null)
+                        if (expansionPack.EntrancePatches == null)
                         {
-                            oPack.EntrancePatches = new Dictionary<string, EntrancePatch> { };
+                            expansionPack.EntrancePatches = new Dictionary<string, EntrancePatch> { };
 
                         }
                         if (autoParse.EntrancePatches.ContainsKey("0"))
                         {
                             logger.Log($"   auto-mapping North Entrance Patch", LogLevel.Debug);
-                            if (oPack.EntrancePatches.ContainsKey("0"))
-                                oPack.EntrancePatches.Remove("0");
+                            if (expansionPack.EntrancePatches.ContainsKey("0"))
+                                expansionPack.EntrancePatches.Remove("0");
 
-                            oPack.EntrancePatches.Add("0", autoParse.EntrancePatches["0"]);
+                            expansionPack.EntrancePatches.Add("0", autoParse.EntrancePatches["0"]);
                         }
                         else
                         {
@@ -259,10 +259,10 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                         if (autoParse.EntrancePatches.ContainsKey("1"))
                         {
                             logger.Log($"   auto-mapping East Entrance Patch", LogLevel.Debug);
-                            if (oPack.EntrancePatches.ContainsKey("1"))
-                                oPack.EntrancePatches.Remove("1");
+                            if (expansionPack.EntrancePatches.ContainsKey("1"))
+                                expansionPack.EntrancePatches.Remove("1");
 
-                            oPack.EntrancePatches.Add("1", autoParse.EntrancePatches["1"]);
+                            expansionPack.EntrancePatches.Add("1", autoParse.EntrancePatches["1"]);
                         }
                         else
                         {
@@ -272,10 +272,10 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                         if (autoParse.EntrancePatches.ContainsKey("2"))
                         {
                             logger.Log($"   auto-mapping South Entrance Patch", LogLevel.Debug);
-                            if (oPack.EntrancePatches.ContainsKey("2"))
-                                oPack.EntrancePatches.Remove("2");
+                            if (expansionPack.EntrancePatches.ContainsKey("2"))
+                                expansionPack.EntrancePatches.Remove("2");
 
-                            oPack.EntrancePatches.Add("2", autoParse.EntrancePatches["2"]);
+                            expansionPack.EntrancePatches.Add("2", autoParse.EntrancePatches["2"]);
                         }
                         else
                         {
@@ -285,10 +285,10 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                         if (autoParse.EntrancePatches.ContainsKey("3"))
                         {
                             logger.Log($"   auto-mapping West Entrance Patch", LogLevel.Debug);
-                            if (oPack.EntrancePatches.ContainsKey("3"))
-                                oPack.EntrancePatches.Remove("3");
+                            if (expansionPack.EntrancePatches.ContainsKey("3"))
+                                expansionPack.EntrancePatches.Remove("3");
 
-                            oPack.EntrancePatches.Add("3", autoParse.EntrancePatches["3"]);
+                            expansionPack.EntrancePatches.Add("3", autoParse.EntrancePatches["3"]);
                         }
                         else
                         {
@@ -299,18 +299,18 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                         {
                             foreach (var area in autoParse.FishAreas)
                             {
-                                if (oPack.FishAreas.ContainsKey(area.Key))
+                                if (expansionPack.FishAreas.ContainsKey(area.Key))
                                 {
-                                    oPack.FishAreas.Remove(area.Key);
+                                    expansionPack.FishAreas.Remove(area.Key);
                                 }
 
-                                oPack.FishAreas.Add(area.Key, area.Value);
+                                expansionPack.FishAreas.Add(area.Key, area.Value);
                             }
                         }
 
-                        oPack.FishData = autoParse.FishData;
+                        expansionPack.FishData = autoParse.FishData;
 
-                        oPack.MineCarts = autoParse.MineCarts;
+                        expansionPack.MineCarts = autoParse.MineCarts;
 
                         if (autoParse.MineCarts.Any())
                         {
@@ -326,38 +326,38 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                                 {
                                     foreach (Point aTile in mineCartStation.MineCartActionPoints)
                                     {
-                                        backLayer.Tiles[aTile.X, aTile.Y].Properties.Add("Action", $"MinecartTransport Default {oPack.LocationName}.{mineCartStation.MineCartDisplayName}");
+                                        backLayer.Tiles[aTile.X, aTile.Y].Properties.Add("Action", $"MinecartTransport Default {expansionPack.LocationName}.{mineCartStation.MineCartDisplayName.Replace(" ","_")}");
                                     }
                                     logger.Log($"    Added minecart Action square(s)", LogLevel.Debug);
                                 }
                             }
                         }
-                        logger.Log($"    FishData: {(oPack.FishData == null ? 0 : oPack.FishData.Count())}", LogLevel.Debug);
-                        logger.Log($"   FishAreas: {(oPack.FishAreas == null ? 0 : oPack.FishAreas.Count())}", LogLevel.Debug);
+                        logger.Log($"    FishData: {(expansionPack.FishData == null ? 0 : expansionPack.FishData.Count())}", LogLevel.Debug);
+                        logger.Log($"   FishAreas: {(expansionPack.FishAreas == null ? 0 : expansionPack.FishAreas.Count())}", LogLevel.Debug);
 
-                        oPack.suspensionBridges = autoParse.suspensionBridges;
-                        logger.Log($"       Added {oPack.suspensionBridges.Count()} Suspension Bridges", LogLevel.Debug);
+                        expansionPack.suspensionBridges = autoParse.suspensionBridges;
+                        logger.Log($"       Added {expansionPack.suspensionBridges.Count()} Suspension Bridges", LogLevel.Debug);
 
                         if (mapIsValid)
                         {
 #if DEBUG_LOG
                             logger.Log($"Loaded map 'Maps/{sPackName}' for {sPackName}", LogLevel.Trace);
 #endif
-                            ExpansionMaps.Add(sPackName, mNewMap);
+                            ExpansionMaps.Add(expansionPackName, mNewMap);
                             bHaveActive = true;
                         }
                         else
                         {
-                            ValidContents.Remove(sPackName);
-                            logger.Log($"{sPackName} cannot be loaded.  It is missing required map Tokens", LogLevel.Error);
+                            ValidContents.Remove(expansionPackName);
+                            logger.Log($"{expansionPackName} cannot be loaded.  It is missing required map Tokens", LogLevel.Error);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
                     logger.LogError(ex);
-                    logger.Log($"Unable to load map file '{sPackName}', unloading mod. Please try re-installing the mod.", LogLevel.Alert);
-                    lFailedPacks.Add(sPackName);
+                    logger.Log($"Unable to load map file '{expansionPackName}', unloading mod. Please try re-installing the mod.", LogLevel.Alert);
+                    lFailedPacks.Add(expansionPackName);
                 }
             }
             foreach (string sFail in lFailedPacks)

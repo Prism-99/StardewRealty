@@ -1,0 +1,13 @@
+﻿Compatibile:
+*Azure Springs
+*Kisaa's Wildflower Acres Farm
+*JP's Farms - Bigger Desert Farm (Juanpa98ar.CustomBigDesertFarmMap/BigDesertFarmMap)
+*LostInTheMountains
+*Farm Project - Waterfall Forest (with customizing expansion pack)
+
+
+Not Compatible:
+* Tropical Forest Farm
+** need to re-check
+
+

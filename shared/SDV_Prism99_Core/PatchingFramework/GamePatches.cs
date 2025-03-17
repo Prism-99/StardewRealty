@@ -166,6 +166,7 @@ namespace Prism99_Core.PatchingFramework
                                     oPatch.Failed = true;
                                     oPatch.FailureDetails = $"Original method does not exist.";
                                     logger.Log($"Patch skipped.  The original method does not exist", LogLevel.Error);
+                                    logger.Log($"Target Method name: {oPatch.Target.method.Name}", LogLevel.Error);
                                     logger.Log($"Patch details: {oPatch.Description}", LogLevel.Error);
                                     continue;
                                 }

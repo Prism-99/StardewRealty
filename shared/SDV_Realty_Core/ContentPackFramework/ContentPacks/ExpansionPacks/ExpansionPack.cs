@@ -2,11 +2,16 @@
 using System.Collections.Generic;
 using xTile;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework;
 using StardewRealty.SDV_Realty_Interface;
 using Newtonsoft.Json;
 using System.IO;
 using StardewValley.GameData.Locations;
 using static StardewRealty.SDV_Realty_Interface.ExpansionDetails;
+using StardewValley.GameData;
+using Prism99_Core.Utilities;
+using SDV_Realty_Core.ContentPackFramework.Utilities;
+using StardewValley.GameData.Minecarts;
 
 
 namespace SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks
@@ -16,6 +21,13 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks
     //
     internal class ExpansionPack : ISDRContentPack
     {
+        public ExpansionPack() { }
+        public ExpansionPack(string locationName, ModFarmType modFarmType)
+        {
+            ModPath = modFarmType.MapName;
+            LocationName = locationName;
+            isAdditionalFarm = true;
+        }
         public override string PackFileName => "expansion.json";
         public override ISDRContentPack ReadContentPack(string fileName)
         {
@@ -41,6 +53,19 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks
             public List<string> AnimalsToAdd { get; set; }
         }
         //
+        //  base properties
+        //
+        public Vector2? ShippingBinLocation { get; set; } = null;
+        public List<string> FormerLocationNames { get; set; } = new List<string>();
+        public int? MinDailyWeeds { get; set; } = null;
+        public int? MaxDailyWeeds { get; set; } = null;
+        public int? FirstDayWeedMultiplier { get; set; } = null;
+        public int? MinDailyForageSpawn { get; set; } = null;
+        public int? MaxDailyForageSpawn { get; set; } = null;
+        public double DirtDecayChance { get; set; } = 0.1;
+        public double? ChanceForClay { get; set; } = null;
+        public bool CanHaveGreenRainSpawns { get; set; } = true;
+        //
         //  data to patch base farms
         //
         public bool IsBaseFarm { get; set; }
@@ -49,7 +74,18 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks
         public List<MapEdit> BaseMapEdits { get; set; }
         public List<StarterBuilding> StaterBuildings { get; set; }
         public List<string> BasePropertiesToKeep { get; set; } = new List<string>();
-    
+        public bool isAdditionalFarm { get; set; }
+        public string OriginalFarmKey { get; set; }
+        //
+        //  internal mine cart network
+        //
+        public MinecartNetworkData? InternalMineCarts = null;
+        //
+        //  stations
+        //
+        public Point? TrainStationIn { get; set; } = null;
+        public Point? BoatDockIn { get; set; } = null;
+        public Point? BusIn { get; set; } = null;
         //
         //  status flags
         //
@@ -61,6 +97,7 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks
         //
         //  purchase details
         //
+        public bool AllowMultipleInstances { get; set; }
         public int Cost { get; set; }
         public string Requirements { get; set; }
         public string Vendor { get; set; }
@@ -77,6 +114,7 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks
         public string LocationDefinition { get; set; }
         public string DisplayName { get; set; }
         public string Description { get; set; }
+        public string ForSaleDescription = string.Empty;
         public Dictionary<string, string> DescriptionLocalization { get; set; }
 
         //
@@ -91,17 +129,27 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks
         //  map properties
         //
         public string MapName { get; set; }
+        public Vector2 MapSize { get; set; } = Vector2.Zero;
         public Dictionary<string, string> SeatTiles { get; set; }
-        public Dictionary<string, string> MapProperties { get; set; } = new ();
+        public Dictionary<string, string> MapProperties { get; set; } = new();
         public List<Point> suspensionBridges { get; set; } = new List<Point>();
         public List<ArtifactData> Artifacts { get; set; }
         public List<Tuple<Point, int>> Bushes { get; set; } = new List<Tuple<Point, int>>();
-        public EntranceDetails CaveEntrance { get; set; }
+        public EntranceDetails CaveEntrance { get; set; } = new();
         public Dictionary<string, EntrancePatch> EntrancePatches { get; set; }
+        public EntrancePatch? GetEntrancePatch(EntranceDirection direction)
+        {
+            if (EntrancePatches.TryGetValue(((int)direction).ToString(), out EntrancePatch patch))
+            {
+                return patch;
+            }
+            return null;
+        }
         public Point DefaultWarp { get; set; }
         public Dictionary<string, string> MapStrings { get; set; }
         public Map ExpansionMap { get; set; }
-        public Dictionary<string, string> SubMaps { get; set; }
+        public Dictionary<string, string> SubMaps { get; set; } = new();
+        public List<string> SubLocations { get; set; } = new();
         public Dictionary<string, FishAreaDetails> FishAreas { get; set; }
         public List<MineCartSpot> MineCarts { get; set; } = new();
         /// <summary>
@@ -112,21 +160,20 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks
         //  fish data keyed to the FishAreas
         //
         public Dictionary<string, List<SpawnFishData>> FishData { get; set; }
-        public double DirtDecayChance { get; set; } = 0.1;
         /// <summary>
         /// Allows the planting and harvesting of grass in the winter
         /// </summary>
-        public bool AllowGrassGrowInWinter { get; set; }
+        public bool AllowGrassGrowInWinter { get; set; } = true;
         /// <summary>
         /// Allows fall grass to survive into winter
         /// </summary>
-        public bool AllowGrassSurviveInWinter { get; set; }
+        public bool AllowGrassSurviveInWinter { get; set; } = true;
         public bool skipWeedGrowth { get; set; }
-        public bool SpawnGrassFromPathsOnNewYear { get; set; }
-        public bool SpawnRandomGrassOnNewYear { get; set; }
+        public bool SpawnGrassFromPathsOnNewYear { get; set; } = true;
+        public bool SpawnRandomGrassOnNewYear { get; set; } = true;
         public string Treasure { get; set; }
-        public bool EnableGrassSpread { get; set; }
-
+        public bool EnableGrassSpread { get; set; } = true;
+        public bool EnableBlueGrass { get; set; } = true;
         //
         //  location mechanics
         //
@@ -144,6 +191,31 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks
         // expansion graphics
         //
         public string WorldMapTexture { get; set; } = "WorldMap.png";
+        public bool InternalWorldMapTexture { get; set; } = true;
+        public Dictionary<string, string> SeasonalWorldMapTextures { get; set; } = new();
+        public string GetSeasonalWorldMapTexture(string season = null)
+        {
+            string testSeason = string.IsNullOrEmpty(season) ? Game1.season.ToString().ToLower() : season.ToLower();
+
+            if (SeasonalWorldMapTextures.TryGetValue(testSeason, out string textureName))
+            {
+                return SDVPathUtilities.NormalizePath($"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{LocationName}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{textureName}");
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(WorldMapTexture) || ForSaleImage == null)
+                {
+                    return SDVPathUtilities.NormalizePath($"SDR{FEConstants.AssetDelimiter}images{FEConstants.AssetDelimiter}no_world_map");
+                }
+                else
+                {
+                    if (InternalWorldMapTexture)
+                        return SDVPathUtilities.NormalizePath($"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{LocationName}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{WorldMapTexture}");
+                    else
+                        return WorldMapTexture;
+                }
+            }
+        }
         public string ForSaleImageName { get; set; }
         public Texture2D ForSaleImage { get; set; }
         public string ThumbnailName { get; set; }

@@ -13,6 +13,7 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.Utilities
         public SDVEnvironment environment;
         public Dictionary<string, FarmDetails> OtherLocations = null;
         public List<string> BlackListedFarmMods = new List<string> { };
+        public List<string> BlackListedAdditionalFarms = new List<string> { };
         public GridManager.FarmProfile ActiveFarmProfile;
         public bool ExitsLoaded = false;
 

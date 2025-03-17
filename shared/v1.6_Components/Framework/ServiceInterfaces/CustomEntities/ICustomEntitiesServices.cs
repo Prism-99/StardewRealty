@@ -1,4 +1,5 @@
 ﻿using SDV_Realty_Core.Framework.AssetUtils;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Services;
 
 namespace SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities
@@ -12,10 +13,11 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities
         public ICustomBigCraftableService customBigCraftableService;
         public ICustomMachineService customMachineService;
         public ICustomCropService customCropService;
-        public SDRContentManager contentManager;
+        //public SDRContentManager contentManager;
         public ICustomObjectService customObjectService;
         public ICustomMachineDataService customMachineDataService;
         public ICustomLocationContextService customLocationContextService;
         public ICustomMovieService customMovieService;
+        public IContentManagerService contentManagerService;
     }
 }

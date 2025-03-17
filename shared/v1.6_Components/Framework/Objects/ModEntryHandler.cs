@@ -16,15 +16,14 @@ using SDV_Realty_Core.Framework.ServiceProviders.FileManagement;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceProviders.ModMechanics;
 using SDV_Realty_Core.Framework.ServiceProviders.ModData;
-using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
 using SDV_Realty_Core.Framework.ServiceInterfaces.GUI;
 using SDV_Realty_Core.Framework.ServiceProviders.Services;
 using System;
-using System.IO;
-using System.Collections.Generic;
-using StardewModdingAPI.Events;
-using static SDV_MapRenderer.SDVMapRenderer;
 using SDV_MapRenderer;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Configuration;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
 
 namespace SDV_Realty_Core.Framework.Objects
 {
@@ -33,10 +32,19 @@ namespace SDV_Realty_Core.Framework.Objects
     /// </summary>
     internal class ModEntryHandler : Mod
     {
+        
         internal IServicesManager servicesManager;
         public override void Entry(IModHelper helper)
         {
             InitializeApplication(helper);
+
+
+#if DEBUG
+            Program.releaseBuild = false;
+            Program.enableCheats = true;
+            Program.GameTesterMode = true;
+            Game1.debugMode = true;
+#endif
         }
 
         public override object GetApi()
@@ -63,11 +71,18 @@ namespace SDV_Realty_Core.Framework.Objects
             servicesManager.AddService(new TranslationService());
             servicesManager.AddService(new ConfigService());
             //
+            //  add integration services
+            //
+            servicesManager.AddService(new GMCMIntergrationService());
+            servicesManager.AddService(new LocationTunerIntegrationService());
+            //servicesManager.AddService(new QuickSaveIntegration());
+            servicesManager.AddService(new CentralStationIntegration());
+            //
             //  add utility services
             //
             servicesManager.AddService(new ModDataKeysService());
             servicesManager.AddService(new AutoMapService());
-            servicesManager.AddService(new CGCMIntergrationService());
+            servicesManager.AddService(new MiniMapManagerService());
             servicesManager.AddService(new ModAPIService());
             //servicesManager.AddService(new FrameworkService());
             servicesManager.AddService(new GridManager());
@@ -100,6 +115,9 @@ namespace SDV_Realty_Core.Framework.Objects
             servicesManager.AddService(new JunimoHutService());
             servicesManager.AddService(new GameFixesService());
             servicesManager.AddService(new ChatBoxCommandsService());
+            servicesManager.AddService(new CustomProductionService());
+            servicesManager.AddService(new FarmServicesService());
+            servicesManager.AddService(new CustomTrainService());
             //
             //  add gui services
             //
@@ -150,6 +168,8 @@ namespace SDV_Realty_Core.Framework.Objects
             servicesManager.AddService(new FileManagerService());
             servicesManager.AddService(new PLayerMComms());
             servicesManager.AddService(new TreasureManagerService());
+            //servicesManager.AddService(new ExpansionBridgingService());
+          
             //
             //  add the main application sservice
             //
@@ -163,7 +183,8 @@ namespace SDV_Realty_Core.Framework.Objects
             // load mod application
             //
             var mod = servicesManager.GetService<IStardewRealty>(typeof(IStardewRealty));
-
+            IConfigService config = servicesManager.GetService< IConfigService>(typeof(IConfigService));
+            //LocationCustomizer locationCustomizer = new LocationCustomizer(helper,Monitor, config.config.LocationTunerConfig);
 #if DEBUG
             //var gameEventService = servicesManager.GetService<IGameEventsService>(typeof(IGameEventsService));
             //var customEventService = servicesManager.GetService<ICustomEventsService>(typeof(ICustomEventsService));
@@ -262,11 +283,7 @@ namespace SDV_Realty_Core.Framework.Objects
                 //    }
 
             }
-        }
-        private void GameLaunched(EventArgs e)
-        {
-
-        }
+        }        
     }
 
 }

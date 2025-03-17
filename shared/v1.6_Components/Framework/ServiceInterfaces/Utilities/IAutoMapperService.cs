@@ -11,6 +11,7 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.Utilities
         public override Type ServiceType => typeof(IAutoMapperService);
         internal abstract void AddMapToken(string token, MapTokenHandlerDelegate fnc);
         internal abstract ExpansionPack ParseMap(Map sourceMap);
+        internal abstract bool MergeAutoMap(ExpansionPack autoMap, ExpansionPack destinationMap,Map mNewMap);
 
     }
 }

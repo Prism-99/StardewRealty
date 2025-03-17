@@ -46,7 +46,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
 
         private void HandleBackwoods(AssetRequestedEventArgs e)
         {
-            if (_utilitiesService.HaveExpansions || _utilitiesService.GameEnvironment.ExitsLoaded)
+            if (true||_utilitiesService.HaveExpansions || _utilitiesService.GameEnvironment.ExitsLoaded)
             {
                 EntrancePatch mapPatch = _utilitiesService.GameEnvironment.GetFarmDetails(999999).PathPatches.Values.ToArray()[0];
                 Map mExitPatchMap = _utilitiesService.MapLoaderService.LoadMap( Path.Combine(_utilitiesService.GameEnvironment.ModPath, "data", "mappatchs", mapPatch.PatchMapName), "patchmap", false);
@@ -57,35 +57,37 @@ namespace SDV_Realty_Core.Framework.DataProviders
                 e.Edit(asset =>
                 {
                     Map mapToEdit = asset.AsMap().Data;
-                    logger.Log($"Adding Backwoods patch", StardewModdingAPI.LogLevel.Debug);
+#if DEBUG
+                    logger.Log($"Adding Backwoods patch", LogLevel.Debug);
+#endif
                     _utilitiesService.MapUtilities.PatchInMap(mapToEdit, mExitPatchMap, new Vector2(mapPatch.MapPatchPointX, mapPatch.MapPatchPointY));
 
-                    if (_modDataService.MapGrid.Any())
+                    if (true||_modDataService.MapGrid.Any())
                     {
                         //logger?.Log($"Applying backwoods patch", LogLevel.Debug);
                         //
                         //  add warps
                         //
-                        EntrancePatch destinationPatch = _modDataService.validContents[_modDataService.MapGrid[0]].EntrancePatches["1"];
+                        //EntrancePatch destinationPatch = _modDataService.validContents[_modDataService.MapGrid[0]].EntrancePatches["1"];
 
-                        MapWarp[] backwoodOutWarps = mapPatch.GetWarpOutList(_modDataService.MapGrid[0]).ToArray();
-                        MapWarp[] destInWarps = destinationPatch.GetWarpInList("Backwoods").ToArray();
+                        //MapWarp[] backwoodOutWarps = mapPatch.GetWarpOutList(_modDataService.MapGrid[0]).ToArray();
+                        //MapWarp[] destInWarps = destinationPatch.GetWarpInList("Backwoods").ToArray();
 
-                        string warpText = "";
-                        int iPtr = 0;
-                        foreach (MapWarp warp in backwoodOutWarps)
-                        {
-                            warpText += $"{warp.FromX} {warp.FromY} {_modDataService.MapGrid[0]} {destInWarps[iPtr].ToX} {destInWarps[iPtr].ToY} ";
-                        }
-                        if (mapToEdit.Properties.ContainsKey("Warp"))
-                        {
+                        //string warpText = "";
+                        //int iPtr = 0;
+                        //foreach (MapWarp warp in backwoodOutWarps)
+                        //{
+                        //    warpText += $"{warp.FromX} {warp.FromY} {_modDataService.MapGrid[0]} {destInWarps[iPtr].ToX} {destInWarps[iPtr].ToY} ";
+                        //}
+                        //if (mapToEdit.Properties.ContainsKey("Warp"))
+                        //{
 
-                            mapToEdit.Properties["Warp"] = mapToEdit.Properties["Warp"] + " " + warpText.TrimEnd();
-                        }
-                        else
-                        {
-                            mapToEdit.Properties.Add("Warp", warpText.TrimEnd());
-                        }
+                        //    mapToEdit.Properties["Warp"] = mapToEdit.Properties["Warp"] + " " + warpText.TrimEnd();
+                        //}
+                        //else
+                        //{
+                        //    mapToEdit.Properties.Add("Warp", warpText.TrimEnd());
+                        //}
                     }
                     else
                     {

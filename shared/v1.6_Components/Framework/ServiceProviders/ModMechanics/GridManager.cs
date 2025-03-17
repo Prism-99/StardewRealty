@@ -10,8 +10,10 @@ using xTile.Layers;
 using SDV_Realty_Core.Framework.Expansions;
 using SDV_Realty_Core.Framework.Locations;
 using SDV_Realty_Core.Framework.ServiceInterfaces.GUI;
-using System.Runtime.CompilerServices;
-
+using CustomMenuFramework.Menus;
+using xTile;
+using SDV_Realty_Core.Framework.Objects;
+using SDV_Realty_Core.Framework.ServiceProviders.ModData;
 
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
@@ -21,18 +23,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
     /// </summary>
     internal class GridManager : IGridManager
     {
-        public struct FarmProfile
-        {
-            //
-            //  flags for farm Exits
-            //
 
-            public bool UseFarmExit1;
-            public bool UseFarmExit2;
-            public bool PatchFarmExits;
-            public bool PatchBackwoodExits;
-            public bool SDEInstalled;
-        }
 
         private IMapUtilities mapUtilities;
         private IContentManagerService contentManager;
@@ -41,7 +32,6 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         private IModHelperService modHelperService;
         private IMineCartMenuService mineCartMenuService;
         private IGameEnvironmentService gameEnvironmentService;
-
         public override Type ServiceType => typeof(IGridManager);
 
         public override Type[] InitArgs => new Type[]
@@ -50,6 +40,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             typeof(IContentManagerService) , typeof(IContentPackService),
             typeof(IUtilitiesService),typeof(IModHelperService),
             typeof(IMineCartMenuService),typeof(IGameEnvironmentService)
+
         };
         public override List<string> CustomServiceEventTriggers => new List<string>
         {
@@ -57,6 +48,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         };
         internal override void Initialize(ILoggerService logger, object[] args)
         {
+            this.logger = logger;
             modDataService = (IModDataService)args[0];
             mapUtilities = (IMapUtilities)args[1];
             contentManager = (IContentManagerService)args[2];
@@ -66,29 +58,135 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             mineCartMenuService = (IMineCartMenuService)args[6];
             gameEnvironmentService = (IGameEnvironmentService)args[7];
 
-            this.logger = logger;
-
-            MapGrid = modDataService.MapGrid;
-
+            GameLocation.RegisterTouchAction(ModKeyStrings.TAction_PickDestination, HandlePickDestination);
         }
         #region "Public Methods"
 
-        internal override string SwapGridLocations(int GridIdA, int GridIdB)
+        public override void AddMapExitBlockers(string expansionName)
+        {
+            int gridId = GetLocationGridId(expansionName);
+
+            foreach (EntrancePatch patch in modDataService.validContents[expansionName].EntrancePatches.Values)
+            {
+                if ((patch.PatchSide != EntranceDirection.East) || (gridId == 2 && !utilitiesService.GameEnvironment.ActiveFarmProfile.UseFarmExit1) || (gridId == 3 && !utilitiesService.GameEnvironment.ActiveFarmProfile.UseFarmExit2))
+                {
+                    GameLocation targetLocation;
+                    if (string.IsNullOrEmpty(patch.WarpOut.LocationName))
+                    {
+                        targetLocation = Game1.getLocationFromName(expansionName);
+                    }
+                    else
+                    {
+                        targetLocation = Game1.getLocationFromName(patch.WarpOut.LocationName);
+                    }
+                    utilitiesService.MapUtilities.AddPathBlock(new Vector2(patch.PathBlockX, patch.PathBlockY), targetLocation.map, patch.WarpOrientation, patch.WarpOut.NumberofPoints);
+                }
+            }
+        }
+        public override void AddMapExitBlockers(int iGridId)
+        {
+            //
+            //  An Expansion should have an exit on each of the 4 map sides
+            //  add path blocks to each of the 4 exits
+            //
+            string expansionName = modDataService.MapGrid[iGridId];
+            AddMapExitBlockers(expansionName);
+        }
+        internal override string? GetNeighbourExpansionTTId(int gridId, EntranceDirection side)
+        {
+            return gridId switch
+            {
+                0 => side switch
+                {
+                    EntranceDirection.West => "1/Default",
+                    EntranceDirection.South => "-1/Default",
+                    _ => ""
+                },
+                1 => side switch
+                {
+                    EntranceDirection.West => "4/Default",
+                    EntranceDirection.East => "0/Default",
+                    EntranceDirection.South => "2/Default",
+                    _ => ""
+                },
+                2 => side switch
+                {
+                    EntranceDirection.North => "1/Default",
+                    EntranceDirection.East => "-3/Default",
+                    EntranceDirection.South => "3/Default",
+                    EntranceDirection.West => gridId + 3 < modDataService.MaximumExpansions ? "5/Default" :"",
+                    _ => ""
+                },
+                3 => side switch
+                {
+                    EntranceDirection.North => "2/Default",
+                    EntranceDirection.East => "-5/Default",
+                    EntranceDirection.West => gridId + 3 < modDataService.MaximumExpansions ? "6/Default" :"",
+                    _ => ""
+                },
+                _ => new Func<string>(() =>
+                {
+                    if ((gridId - 1) % 3 == 0)
+                    {
+                        return side switch
+                        {
+                            EntranceDirection.West =>gridId+3< modDataService.MaximumExpansions? $"{gridId + 3}/Default":"",
+                            EntranceDirection.East => $"{gridId - 3}/Default",
+                            EntranceDirection.South => gridId + 1 < modDataService.MaximumExpansions ? $"{gridId + 1}/Default":"",
+                            _ => ""
+                        };
+                    }
+                    else if (gridId % 3 == 0)
+                    {
+                        return side switch
+                        {
+                            EntranceDirection.West => gridId + 3 < modDataService.MaximumExpansions ? $"{gridId + 3}/Default":"",
+                            EntranceDirection.East => $"{gridId - 3}/Default",
+                            EntranceDirection.North => gridId + 1 < modDataService.MaximumExpansions ? $"{gridId - 1}/Default":"",
+                            _ => ""
+                        };
+                    }
+                    return side switch
+                    {
+                        EntranceDirection.West => gridId + 3 < modDataService.MaximumExpansions ? $"{gridId + 3}/Default":"",
+                        EntranceDirection.East => $"{gridId - 3}/Default",
+                        EntranceDirection.North => $"{gridId - 1}/Default",
+                        EntranceDirection.South => gridId + 1 < modDataService.MaximumExpansions ? $"{gridId + 1}/Default":"",
+                        _=>""
+                    };
+
+                })()
+            };
+            //string? expansionName = GetNeighbourExpansionName(gridId, side);
+            //if (expansionName == null)
+            //    return null;
+            //return $"{expansionName}/{expansionName}.tt";
+            //return $"{modDataService.validContents[expName].Owner.Manifest.UniqueID}.{expName}/{modDataService.validContents[expName].Owner.Manifest.UniqueID}.{expName}.tt";
+            //return $"{expName}.tt";
+            //return $"{expName}.tt";
+        }
+        /// <summary>
+        /// Swap Farm Expansions grid locations
+        /// </summary>
+        /// <param name="gridIdA">Source Grid Id</param>
+        /// <param name="gridIdB">Target Grid Id</param>
+        /// <returns></returns>
+        internal override string SwapGridLocations(int gridIdA, int gridIdB)
         {
             string result = "";
 
-            if (!IsMapGridOccupied(GridIdA))
+            if (!IsMapGridOccupied(gridIdA))
             {
-                result = $"{GridIdA} is not occupied.";
+                result = $"{gridIdA} is not occupied.";
             }
-            else if (!IsMapGridOccupied(GridIdB))
+            else if (!IsMapGridOccupied(gridIdB))
             {
-                result = $"{GridIdB} is not occupied.";
+                result = $"{gridIdB} is not occupied.";
             }
             else
             {
-                string farmA = MapGrid[GridIdA];
-                string farmB = MapGrid[GridIdB];
+                string farmA = modDataService.MapGrid[gridIdA];
+                string farmB = modDataService.MapGrid[gridIdB];
                 //
                 //  re-block each map
                 //
@@ -97,20 +195,20 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                 //
                 //  update modData
                 //
-                modDataService.farmExpansions[farmA].GridId = GridIdB;
-                modDataService.farmExpansions[farmA].modData["prism99.advize.stardewrealty.FEGridId"] = GridIdB.ToString();
-                modDataService.farmExpansions[farmB].GridId = GridIdA;
-                modDataService.farmExpansions[farmB].modData["prism99.advize.stardewrealty.FEGridId"] = GridIdA.ToString();
+                modDataService.farmExpansions[farmA].GridId = gridIdB;
+                modDataService.farmExpansions[farmA].modData[IModDataKeysService.FEGridId] = gridIdB.ToString();
+                modDataService.farmExpansions[farmB].GridId = gridIdA;
+                modDataService.farmExpansions[farmB].modData[IModDataKeysService.FEGridId] = gridIdA.ToString();
                 //
                 //  swap references
                 //
-                MapGrid[GridIdA] = farmB;
-                MapGrid[GridIdB] = farmA;
+                modDataService.MapGrid[gridIdA] = farmB;
+                modDataService.MapGrid[gridIdB] = farmA;
                 //
                 //  re-patch maps
                 //
-                PatchInMap(GridIdA);
-                PatchInMap(GridIdB);
+                PatchInMap(gridIdA);
+                PatchInMap(gridIdB);
                 //
                 //  invalidate world map
                 //
@@ -125,221 +223,254 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             }
             return result;
         }
-        internal override void PatchInMap(int iGridId)
+        /// <summary>
+        /// Patch in a Farm Expansion map
+        /// -remove required exit blockers
+        /// -add required warps between Farm Expansion
+        /// </summary>
+        /// <param name="targetGridId">Grid Id to patch in</param>
+        internal override void PatchInMap(int targetGridId)
         {
-            string sExpansionName = MapGrid[iGridId];
+            string expansionName = modDataService.MapGrid[targetGridId];
 #if DEBUG_LOG
-            logger.Log($"     PatchInMap {iGridId}:{sExpansionName}", LogLevel.Debug);
+            logger.Log($"     PatchInMap {targetGridId}:{expansionName}", LogLevel.Debug);
 #endif
             try
             {
-                GameLocation oExp = modDataService.farmExpansions[sExpansionName];
-                bool bAutoAdd = modDataService.farmExpansions[sExpansionName].AutoAdd;
-                ExpansionPack oPackToActivate = modDataService.validContents[sExpansionName];
-                //AddSign(ContentPacks.ValidContents[sExpansionName]);
-                if (iGridId > -1)
+                GameLocation expansionToAdd = modDataService.farmExpansions[expansionName];
+                bool autoAdd = modDataService.farmExpansions[expansionName].AutoAdd;
+                ExpansionPack expansionPackToAdd = modDataService.validContents[expansionName];
+
+                if (targetGridId > -1)
                 {
                     //
                     //  based upon the grid location, remove path blocks and add warps
                     //  to join new Expansion to its neighbours
                     //
-                    FarmDetails oFarm = null;
-                    ExpansionPack oNewPack = modDataService.validContents[sExpansionName];
-                    EntrancePatch oExpPatch;
-                    int iGridRow;
-                    int iGridCol;
-                    int iPatchIndex;
+                    FarmDetails farmDetails = null;
+                    EntrancePatch entrancePatch;
+                    int patchIndex;
 
-                    switch (iGridId)
+                    switch (targetGridId)
                     {
                         case 0:
                             //
                             //  initial grid spot
                             //  linked off of the Backwoods
                             //
-                            oFarm = GetFarmDetails(999999);
+                            farmDetails = GetFarmDetails(999999);
 
-                            if (oFarm != null)
+                            if (farmDetails != null)
                             {
-                                GameLocation glBackwoods = Game1.getLocationFromName(oFarm.MapName);
-                                EntrancePatch oBackWoodsPatch = oFarm.PathPatches["0"];
+                                GameLocation glBackwoods = Game1.getLocationFromName(farmDetails.MapName);
+                                EntrancePatch backWoodsPatch = farmDetails.PathPatches[((int)EntranceDirection.North).ToString()];
                                 //RemovePathBlock(new Vector2(oFarm.PathPatches["0"].PathBlockX, oFarm.PathPatches["0"].PathBlockY), glBackwoods, oBackWoodsPatch.WarpOrientation, oBackWoodsPatch.WarpOut.NumberofPoints);
-                                iGridRow = iGridId / oFarm.PathPatches.Count;
-                                iGridCol = iGridId % oFarm.PathPatches.Count;
                                 //
                                 //    add basic left side warp ins/outs
                                 //
-                                oExpPatch = oNewPack.EntrancePatches[eastSidePatch];
-                                AddExpansionIntersection(oBackWoodsPatch, oFarm.MapName, oExpPatch, sExpansionName);
+                                entrancePatch = expansionPackToAdd.EntrancePatches[((int)EntranceDirection.East).ToString()];
+                                AddExpansionIntersection(backWoodsPatch, farmDetails.MapName, entrancePatch, expansionName);
 
-                                if (oExpPatch.Sign?.UseSign ?? false)
+                                if (entrancePatch.Sign?.UseSign ?? false)
                                 {
-                                    AddSignPost(oExp, oExpPatch, "EastMessage", FormatDirectionText(eastSidePatch, glBackwoods.Name));
+                                    AddSignPost(expansionToAdd, entrancePatch, "EastMessage", FormatDirectionText(EntranceDirection.East, glBackwoods.Name));
                                 }
-                                if (MapGrid.ContainsKey(1))
+                                if (modDataService.MapGrid.ContainsKey(1))
                                 {
-                                    JoinMaps(iGridId, iGridId + 1, westSidePatch);
+                                    JoinMaps(targetGridId, targetGridId + 1, EntranceDirection.West);
                                 }
                             }
                             break;
                         case 1:
                         case 4:
                         case 7:
+                        case 10:
                             //
                             //  top row 
                             //
                             //
                             //  get expansion to right details
                             //
-                            int iRightGridId = iGridId == 1 ? 0 : iGridId - 3;
+                            int rightGridId = targetGridId == 1 ? 0 : targetGridId - 3;
 
-                            JoinMaps(iGridId, iRightGridId, eastSidePatch);
+                            JoinMaps(targetGridId, rightGridId, EntranceDirection.East);
 
                             //
                             //  check for other neighbours from swapping
                             //
                             //  check for neighbour to the south
                             //
-                            if (MapGrid.ContainsKey(iGridId + 1))
+                            if (modDataService.MapGrid.ContainsKey(targetGridId + 1))
                             {
-                                JoinMaps(iGridId, iGridId + 1, southSidePatch);
+                                JoinMaps(targetGridId, targetGridId + 1, EntranceDirection.South);
                             }
                             //
                             //  check for neighbour to the west
                             //
-                            if (MapGrid.ContainsKey(iGridId + 3))
+                            if (modDataService.MapGrid.ContainsKey(targetGridId + 3))
                             {
-                                JoinMaps(iGridId, iGridId + 3, westSidePatch);
+                                JoinMaps(targetGridId, targetGridId + 3, EntranceDirection.West);
                             }
                             break;
-                        case 2:
                         case 5:
                         case 8:
+                        case 11:
+                        case 2:
                             //
                             //  middle row
                             //
                             //  remove patch block to the right
                             //
-                            iPatchIndex = iGridId == 2 ? -1 : iGridId - 3;
-                            string sRightKey = iPatchIndex == -1 ? "Farm" : MapGrid[iPatchIndex];
-                            string sMessageKey = iPatchIndex == -1 ? "WestMessage.1" : "WestMessage";
+                            patchIndex = targetGridId == 2 ? -1 : targetGridId - 3;
+                            //string sRightKey = iPatchIndex == -1 ? "Farm" : MapGrid[iPatchIndex];
+                            //string sMessageKey = iPatchIndex == -1 ? "WestMessage.1" : "WestMessage";
 
-                            GameLocation glMidRight = Game1.getLocationFromName(sRightKey);
-                            EntrancePatch oMidRightPatch = null;
-                            ExpansionPack oMidRightPack = null;
+                            //GameLocation glMidRight = Game1.getLocationFromName(sRightKey);
+                            EntrancePatch midRightPatch = null;
+                            //ExpansionPack oMidRightPack = null;
 
-                            if (iPatchIndex == -1)
+                            if (patchIndex == -1)
                             {
-                                oFarm = GetFarmDetails(Game1.whichFarm);
-                                oMidRightPatch = oFarm?.PathPatches["0"];
+                                farmDetails = GetFarmDetails(Game1.whichFarm);
+                                if (utilitiesService.GameEnvironment.ActiveFarmProfile.UseFarmExit1)
+                                {
+                                    midRightPatch = farmDetails?.PathPatches[((int)EntranceDirection.North).ToString()];
+                                    if (midRightPatch != null)
+                                    {
+                                        //RemovePathBlock(new Vector2(oMidRightPatch?.PathBlockX ?? 0, oMidRightPatch?.PathBlockY ?? 0), glMidRight, oMidRightPatch?.WarpOrientation ?? 0, oMidRightPatch?.WarpOut.NumberofPoints ?? 0);
+
+                                        //
+                                        //    add basic right/left side warp ins/outs
+                                        //
+                                        entrancePatch = expansionPackToAdd.EntrancePatches[((int)EntranceDirection.East).ToString()];
+                                        if (midRightPatch != null)
+                                            AddExpansionIntersection(midRightPatch, "Farm", entrancePatch, expansionName);
+
+                                        if (entrancePatch.Sign?.UseSign ?? false)
+                                        {
+                                            AddSignPost(expansionToAdd, entrancePatch, "EastMessage", FormatDirectionText(EntranceDirection.East, "Farm"));
+                                        }
+                                        if (midRightPatch.Sign != null && (midRightPatch.Sign?.UseSign ?? false))
+                                        {
+                                            AddSignPost(GetLocation("Farm"), midRightPatch, "WestMessage.1", FormatDirectionText(EntranceDirection.West, expansionPackToAdd.DisplayName));
+                                        }
+                                    }
+                                }
                             }
                             else
                             {
-                                oMidRightPack = modDataService.validContents[MapGrid[iPatchIndex]];
-                                oMidRightPatch = oMidRightPack.EntrancePatches[westSidePatch];
+                                //
+                                //  check for eastside exit
+                                //
+                                if (modDataService.MapGrid.ContainsKey(targetGridId - 3))
+                                {
+                                    JoinMaps(targetGridId, targetGridId - 3, EntranceDirection.East);
+                                }
+                                //oMidRightPack = modDataService.validContents[MapGrid[iPatchIndex]];
+                                //oMidRightPatch = oMidRightPack.EntrancePatches[westSidePatch];
                             }
 
-                            if (oMidRightPatch != null && (iPatchIndex == -1 && utilitiesService.GameEnvironment.ActiveFarmProfile.UseFarmExit1) || iPatchIndex > -1)
-                            {
-                                //RemovePathBlock(new Vector2(oMidRightPatch?.PathBlockX ?? 0, oMidRightPatch?.PathBlockY ?? 0), glMidRight, oMidRightPatch?.WarpOrientation ?? 0, oMidRightPatch?.WarpOut.NumberofPoints ?? 0);
 
-                                //
-                                //    add basic right/left side warp ins/outs
-                                //
-                                oExpPatch = oNewPack.EntrancePatches[eastSidePatch];
-                                if (oMidRightPatch != null)
-                                    AddExpansionIntersection(oMidRightPatch, sRightKey, oExpPatch, sExpansionName);
-
-                                if (oExpPatch.Sign?.UseSign ?? false)
-                                {
-                                    AddSignPost(oExp, oExpPatch, "EastMessage", FormatDirectionText(eastSidePatch, iPatchIndex == -1 ? "Farm" : oMidRightPack.DisplayName));
-                                }
-                                if (oMidRightPatch.Sign != null && (oMidRightPatch.Sign?.UseSign ?? false))
-                                {
-                                    AddSignPost(Game1.getLocationFromName(sRightKey), oMidRightPatch, sMessageKey, FormatDirectionText(westSidePatch, oPackToActivate.DisplayName));
-                                }
-
-                            }
                             //
                             //  add northside exit
                             //
-                            JoinMaps(iGridId, iGridId - 1, northSidePatch);
+                            JoinMaps(targetGridId, targetGridId - 1, EntranceDirection.North);
                             //
                             //  check for southside exit
                             //
-                            if (MapGrid.ContainsKey(iGridId + 1))
+                            if (modDataService.MapGrid.ContainsKey(targetGridId + 1))
                             {
-                                JoinMaps(iGridId, iGridId + 1, southSidePatch);
+                                JoinMaps(targetGridId, targetGridId + 1, EntranceDirection.South);
                             }
                             //
                             //  check for westside exit
                             //
-                            if (MapGrid.ContainsKey(iGridId + 3))
+                            if (modDataService.MapGrid.ContainsKey(targetGridId + 3))
                             {
-                                JoinMaps(iGridId, iGridId + 3, westSidePatch);
+                                JoinMaps(targetGridId, targetGridId + 3, EntranceDirection.West);
                             }
                             break;
                         case 3:
                         case 6:
                         case 9:
+                        case 12:
                             //
                             // bottom row
                             //
                             //
                             //  remove patch block to the right
                             //
-                            iPatchIndex = iGridId == 3 ? -1 : iGridId - 3;
-                            string sBottomRightKey = iPatchIndex == -1 ? "Farm" : MapGrid[iPatchIndex];
+                            patchIndex = targetGridId == 3 ? -1 : targetGridId - 3;
+                            string bottomRightKey = patchIndex == -1 ? "Farm" : modDataService.MapGrid[patchIndex];
 
-                            GameLocation glBottomRight = Game1.getLocationFromName(sBottomRightKey);
-                            EntrancePatch oBottomRightPatch;
-                            ExpansionPack oBottomRightPack = null;
+                            GameLocation glBottomRight = GetLocation(bottomRightKey);
+                            EntrancePatch bottomRightPatch;
+                            ExpansionPack bottomRightPack = null;
 
-                            if (iPatchIndex == -1)
+                            if (patchIndex == -1)
                             {
-                                oFarm = GetFarmDetails(Game1.whichFarm);
-                                oBottomRightPatch = oFarm?.PathPatches["1"];
+                                farmDetails = GetFarmDetails(Game1.whichFarm);
+                                bottomRightPatch = farmDetails?.PathPatches[((int)EntranceDirection.East).ToString()];
+                                if (bottomRightPatch != null && utilitiesService.GameEnvironment.ActiveFarmProfile.UseFarmExit2)
+                                {
+                                    RemovePathBlock(new Vector2(bottomRightPatch.PathBlockX, bottomRightPatch.PathBlockY), glBottomRight, bottomRightPatch.WarpOrientation, bottomRightPatch.WarpOut.NumberofPoints);
+
+                                    //
+                                    //    add basic right/left side warp ins/outs
+                                    //
+                                    entrancePatch = expansionPackToAdd.EntrancePatches[((int)EntranceDirection.East).ToString()];
+                                    AddExpansionIntersection(bottomRightPatch, bottomRightKey, entrancePatch, expansionName);
+                                    if (entrancePatch.Sign?.UseSign ?? false)
+                                    {
+                                        AddSignPost(expansionToAdd, entrancePatch, "EastMessage", FormatDirectionText(EntranceDirection.East, (patchIndex == -1 ? "Farm" : bottomRightPack?.DisplayName ?? "")));
+                                    }
+                                    if (bottomRightPatch.Sign?.UseSign ?? false)
+                                    {
+                                        AddSignPost(Game1.getLocationFromName(bottomRightKey), bottomRightPatch, "WestMessage", FormatDirectionText(EntranceDirection.West, expansionPackToAdd.DisplayName));
+                                    }
+                                }
                             }
                             else
                             {
-                                oBottomRightPack = modDataService.validContents[MapGrid[iPatchIndex]];
-                                oBottomRightPatch = oBottomRightPack.EntrancePatches[westSidePatch];
+                                //oBottomRightPack = modDataService.validContents[MapGrid[iPatchIndex]];
+                                //oBottomRightPatch = oBottomRightPack.EntrancePatches[westSidePatch];
+                                JoinMaps(targetGridId, targetGridId - 3, EntranceDirection.East);
                             }
 
-                            if (oBottomRightPatch != null && (iPatchIndex == -1 && utilitiesService.GameEnvironment.ActiveFarmProfile.UseFarmExit2) || iPatchIndex > -1)
-                            {
-                                RemovePathBlock(new Vector2(oBottomRightPatch.PathBlockX, oBottomRightPatch.PathBlockY), glBottomRight, oBottomRightPatch.WarpOrientation, oBottomRightPatch.WarpOut.NumberofPoints);
+                            //if (oBottomRightPatch != null && (iPatchIndex == -1 && utilitiesService.GameEnvironment.ActiveFarmProfile.UseFarmExit2) || iPatchIndex > -1)
+                            //{
+                            //    RemovePathBlock(new Vector2(oBottomRightPatch.PathBlockX, oBottomRightPatch.PathBlockY), glBottomRight, oBottomRightPatch.WarpOrientation, oBottomRightPatch.WarpOut.NumberofPoints);
 
-                                //
-                                //    add basic right/left side warp ins/outs
-                                //
-                                oExpPatch = oNewPack.EntrancePatches[eastSidePatch];
-                                AddExpansionIntersection(oBottomRightPatch, sBottomRightKey, oExpPatch, sExpansionName);
-                                if (oExpPatch.Sign?.UseSign ?? false)
-                                {
-                                    AddSignPost(oExp, oExpPatch, "EastMessage", FormatDirectionText(eastSidePatch, (iPatchIndex == -1 ? "Farm" : oBottomRightPack?.DisplayName ?? "")));
-                                }
-                                if (oBottomRightPatch.Sign?.UseSign ?? false)
-                                {
-                                    AddSignPost(Game1.getLocationFromName(sBottomRightKey), oBottomRightPatch, "WestMessage", FormatDirectionText(westSidePatch, oPackToActivate.DisplayName));
-                                }
-                            }
+                            //    //
+                            //    //    add basic right/left side warp ins/outs
+                            //    //
+                            //    oExpPatch = oNewPack.EntrancePatches[eastSidePatch];
+                            //    AddExpansionIntersection(oBottomRightPatch, sBottomRightKey, oExpPatch, sExpansionName);
+                            //    if (oExpPatch.Sign?.UseSign ?? false)
+                            //    {
+                            //        AddSignPost(oExp, oExpPatch, "EastMessage", FormatDirectionText(EntranceDirection.East, (iPatchIndex == -1 ? "Farm" : oBottomRightPack?.DisplayName ?? "")));
+                            //    }
+                            //    if (oBottomRightPatch.Sign?.UseSign ?? false)
+                            //    {
+                            //        AddSignPost(Game1.getLocationFromName(sBottomRightKey), oBottomRightPatch, "WestMessage", FormatDirectionText(EntranceDirection.West, oPackToActivate.DisplayName));
+                            //    }
+                            //}
                             //
                             //  add northside patch
                             //
-                            JoinMaps(iGridId, iGridId - 1, northSidePatch);
+                            JoinMaps(targetGridId, targetGridId - 1, EntranceDirection.North);
                             //
                             //  check for westside exit
                             //
-                            if (MapGrid.ContainsKey(iGridId + 3))
+                            if (modDataService.MapGrid.ContainsKey(targetGridId + 3))
                             {
-                                JoinMaps(iGridId, iGridId + 3, westSidePatch);
+                                JoinMaps(targetGridId, targetGridId + 3, EntranceDirection.West);
                             }
                             break;
                     }
 
                 }
-                else if (!bAutoAdd)
+                else if (!autoAdd)
                 {
                     //
                     //  expansion has explicit location details
@@ -348,20 +479,66 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             }
             catch (Exception ex)
             {
-                logger.Log($"Error patching in map {iGridId}:{sExpansionName}", LogLevel.Error);
+                logger.Log($"Error patching in map {targetGridId}:{expansionName}", LogLevel.Error);
                 logger.LogError($"PatchInMap", ex);
             }
         }
 
         #endregion
+
+        private void HandlePickDestination(GameLocation location, string[] args, Farmer who, Vector2 position)
+        {
+            if (modDataService.TryGetExpansionPack(location.Name, out ExpansionPack expansionPack))
+
+                if (TryGetLocationNeighbours(expansionPack.LocationName, out Neighbours neighbours))
+                {
+                    if (expansionPack.isAdditionalFarm)
+                    {
+                        if (neighbours.West != null)
+                        {
+                            List<KeyValuePair<string, string>> locations = new List<KeyValuePair<string, string>>
+                        {
+                            new KeyValuePair<string, string>("west",neighbours.West.DisplayName),
+                            new KeyValuePair<string, string>("north",neighbours.North.DisplayName)
+                        };
+                            GenericPickListMenu pickLocationResponse = new GenericPickListMenu();
+                            pickLocationResponse.ShowPagedResponses(I18n.GridManagerSelectDestination(), locations, delegate (string value)
+                            {
+                                if (value == "west")
+                                {
+                                    Point warp = new Point(neighbours.West.GetEntrancePatch(EntranceDirection.East).WarpIn.X, neighbours.West.GetEntrancePatch(EntranceDirection.East).WarpIn.Y);
+                                    Game1.warpFarmer(neighbours.West.LocationName, warp.X, warp.Y, false);
+                                }
+                                else
+                                {
+                                    Point warp = new Point(neighbours.North.GetEntrancePatch(EntranceDirection.South).WarpIn.X, neighbours.North.GetEntrancePatch(EntranceDirection.South).WarpIn.Y);
+                                    Game1.warpFarmer(neighbours.North.LocationName, warp.X, warp.Y, false);
+                                }
+
+                            }, auto_select_single_choice: true);
+                        }
+
+                    }
+                }
+
+            //return true;
+        }
+
         /// <summary>
         /// Gets the world map location for an expansion in the Auto Grid
         /// </summary>
-        /// <param name="sExpansionName"></param>
+        /// <param name="expansionName"></param>
         /// <returns>A bounding Rectangle with the map placement for the specified expansion</returns>mm
-        internal override Rectangle GetExpansionWorldMapLocation(string sExpansionName)
+        internal override Rectangle GetExpansionWorldMapLocation(string expansionName)
         {
-            List<KeyValuePair<int, string>> gridEntry = MapGrid.Where(p => p.Value == sExpansionName).ToList();
+            //if (expansionName == "Home") 
+            //{
+            //    // return home square locaation
+            //    //return new Rectangle(left - iRow * imageBoxWidth - imageBoxWidth + boxPadding, top + topMargin + iCol * imageBoxHeight + boxPadding, imageWidth, imageHeight);
+            //    return GetExpansionWorldMapLocation(-1);
+            //}
+
+            List<KeyValuePair<int, string>> gridEntry = modDataService.MapGrid.Where(p => p.Value == expansionName).ToList();
             if (gridEntry.Any())
             {
                 return GetExpansionWorldMapLocation(gridEntry.First().Key);
@@ -371,55 +548,36 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                 return Rectangle.Empty;
             }
         }
-        internal override Rectangle GetExpansionMainMapLocation(int iGridId, int left, int top)
-        {
-            int iCol = (iGridId - 1) / 3;
-            int iRow = (iGridId - 1) % 3;
+        //internal override Rectangle GetExpansionMainMapLocation(int iGridId, int left, int top)
+        //{
+        //    //return utilitiesService.GetGridLocationCoordinates(iGridId, new Rectangle(left, top, 765, 525));
+        //    int iCol = (iGridId - 1) / 3;
+        //    int iRow = (iGridId - 1) % 3;
 
-            int iPadding = 1;
-            int iBoxWidth = 20;
-            int iBoxHeight = 10;
-            int iImageWidth = iBoxWidth - iPadding * 2;
-            int iImageHeight = iBoxHeight - iPadding * 2;
+        //    int iPadding = 1;
+        //    int iBoxWidth = 20;
+        //    int iBoxHeight = 10;
+        //    int iImageWidth = iBoxWidth - iPadding * 2;
+        //    int iImageHeight = iBoxHeight - iPadding * 2;
 
-            switch (iGridId)
-            {
-                case 0: //by the Backwoods
-                    return new Rectangle(left + iPadding + 70, top + iPadding - 5, iImageWidth, iImageHeight);
-                //case 1:
-                //    return new Rectangle(63, 64 + iMapIndex * 14, iImageWidth, iImageHeight);
-                default:
-                    return new Rectangle(left + (3 - iCol) * iBoxWidth + iPadding - 10, top + iRow * iBoxHeight + iPadding - 5, iImageWidth, iImageHeight);
-            }
-        }
+        //    switch (iGridId)
+        //    {
+        //        case 0: //by the Backwoods
+        //            return new Rectangle(left + iPadding + 70, top + iPadding - 5, iImageWidth, iImageHeight);
+        //        //case 1:
+        //        //    return new Rectangle(63, 64 + iMapIndex * 14, iImageWidth, iImageHeight);
+        //        default:
+        //            return new Rectangle(left + (3 - iCol) * iBoxWidth + iPadding - 10, top + iRow * iBoxHeight + iPadding - 5, iImageWidth, iImageHeight);
+        //    }
+        //}
         /// <summary>
         /// Gets the world map location for an expansion in the Auto Grid
         /// </summary>
         /// <param name="iGridId"></param>
-        /// <returns>A bounding Rectangle with the map placement for the specified expansion</returns>mm
+        /// <returns>A bounding Rectangle with the map placement for the specified expansion</returns>
         internal override Rectangle GetExpansionWorldMapLocation(int iGridId)
         {
-            int iRow = (iGridId - 1) / 3;
-            int iCol = (iGridId - 1) % 3;
-
-            int iPadding = 4;
-            int iBoxWidth = 64;
-            int iBoxHeight = 44;
-            int iImageWidth = iBoxWidth - iPadding * 2;
-            int iImageHeight = iBoxHeight - iPadding * 2;
-            int iTop = 5;
-            int iLeft = 210;
-
-            switch (iGridId)
-            {
-                case 0: //by the Backwoods
-                    return new Rectangle(iLeft + iPadding, iTop + iPadding, iImageWidth, iImageHeight);
-                //case 1:
-                //    return new Rectangle(63, 64 + iMapIndex * 14, iImageWidth, iImageHeight);
-                default:
-                    return new Rectangle(iLeft - iRow * iBoxWidth - iBoxWidth + iPadding, iTop + iCol * iBoxHeight + iPadding, iImageWidth, iImageHeight);
-            }
-
+            return utilitiesService.GetGridLocationCoordinates(iGridId, new Rectangle(0, -20, 300, 190));
         }
 
         internal override int AddMapToGrid(string expansionName, int gridId)
@@ -440,9 +598,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                     {
                         //addition from MP Server, not always, called  by load
                         //
-                        if (MapGrid.Where(p => p.Value == expansionName).Any())
+                        if (modDataService.MapGrid.Where(p => p.Value == expansionName).Any())
                         {
-                            int localId = MapGrid.Where(p => p.Value == expansionName).First().Key;
+                            int localId = modDataService.MapGrid.Where(p => p.Value == expansionName).First().Key;
                             if (localId == gridId)
                             {
                                 //
@@ -463,12 +621,12 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                         {
                             //  expansion key not found, supplied id
                             //  is invalid
-                            if (!MapGrid.ContainsKey(gridId))
+                            if (!modDataService.MapGrid.ContainsKey(gridId))
                                 returnId = gridId;
                             else
                                 returnId = GetMapGridId();
                         }
-                        if (!MapGrid.TryAdd(returnId, expansionName))
+                        if (!modDataService.MapGrid.TryAdd(returnId, expansionName))
                         {
                             returnId = -1;
                             //  still screwed up, fix it up
@@ -495,12 +653,12 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                     }
                     else
                     {
-                        if (MapGrid.Where(p => p.Value == expansionName).Any())
+                        if (modDataService.MapGrid.Where(p => p.Value == expansionName).Any())
                         {
                             //
                             //  already added, return existing id
                             //  skip caves addition
-                            return MapGrid.Where(p => p.Value == expansionName).First().Key;
+                            return modDataService.MapGrid.Where(p => p.Value == expansionName).First().Key;
                         }
                         else
                         {
@@ -509,7 +667,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                             //
                             if (oBase.GridId > -1)
                             {
-                                if (MapGrid.ContainsKey(oBase.GridId))
+                                if (modDataService.MapGrid.ContainsKey(oBase.GridId))
                                 {
                                     //
                                     //  conflict grid allocations, should not happen
@@ -517,13 +675,13 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                                     oBase.GridId = GetMapGridId();
                                     if (oBase.GridId > -1)
                                     {
-                                        if (MapGrid.TryAdd(oBase.GridId, expansionName))
+                                        if (modDataService.MapGrid.TryAdd(oBase.GridId, expansionName))
                                             returnId = oBase.GridId;
                                     }
                                 }
                                 else
                                 {
-                                    if (MapGrid.TryAdd(oBase.GridId, expansionName))
+                                    if (modDataService.MapGrid.TryAdd(oBase.GridId, expansionName))
                                         returnId = oBase.GridId;
                                 }
                             }
@@ -532,7 +690,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                                 oBase.GridId = GetMapGridId();
                                 if (oBase.GridId > -1)
                                 {
-                                    if (MapGrid.TryAdd(oBase.GridId, expansionName))
+                                    if (modDataService.MapGrid.TryAdd(oBase.GridId, expansionName))
                                         returnId = oBase.GridId;
                                 }
                             }
@@ -554,11 +712,12 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                     //
                     //  check for Cave entrance
                     //             
-                    ExpansionPack oPackToActivate = contentPackService.contentPackLoader.ValidContents[expansionName];
+                    ExpansionPack oPackToActivate = modDataService.validContents[expansionName];
 
                     if (oPackToActivate.CaveEntrance != null && oPackToActivate.CaveEntrance.WarpIn != null && oPackToActivate.CaveEntrance.WarpOut != null)
                     {
-                        modDataService.farmExpansions[expansionName].warps.Add(new Warp(oPackToActivate.CaveEntrance.WarpOut.X, oPackToActivate.CaveEntrance.WarpOut.Y, WarproomManager.WarpRoomLoacationName, (int)WarproomManager.WarpRoomEntrancePoint.X, (int)WarproomManager.WarpRoomEntrancePoint.Y, false));
+                        mapUtilities.AddTouchAction(modDataService.farmExpansions[expansionName].Map, new Point(oPackToActivate.CaveEntrance.WarpOut.X, oPackToActivate.CaveEntrance.WarpOut.Y), ModKeyStrings.TAction_ToMeadows);
+                        //modDataService.farmExpansions[expansionName].warps.Add(new Warp(oPackToActivate.CaveEntrance.WarpOut.X, oPackToActivate.CaveEntrance.WarpOut.Y, WarproomManager.StardewMeadowsLoacationName, (int)WarproomManager.WarpRoomEntrancePoint.X, (int)WarproomManager.WarpRoomEntrancePoint.Y, false));
                         utilitiesService.CustomEventsService.TriggerCustomEvent("AddCaveEntrance", new object[] { expansionName, Tuple.Create(oPackToActivate.DisplayName, oPackToActivate.CaveEntrance) });
                         //warproomService.warproomManager.AddCaveEntrance(sExpName, Tuple.Create(oPackToActivate.DisplayName, oPackToActivate.CaveEntrance));
                         //CaveEntrances.Add(sExpName, Tuple.Create(oPackToActivate.DisplayName, oPackToActivate.CaveEntrance));
@@ -573,7 +732,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         }
         private int GetMapGridId()
         {
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < modDataService.MaximumExpansions; i++)
             {
                 if (!IsMapGridOccupied(i))
                 {
@@ -592,14 +751,14 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         /// <param name="direction"></param>
         /// <param name="text"></param>
         /// <returns>String with direction symbol and sign text</returns>
-        private string FormatDirectionText(string direction, string text)
+        private string FormatDirectionText(EntranceDirection direction, string text)
         {
             return direction switch
             {
-                eastSidePatch => "> " + text,
-                westSidePatch => "@ " + text,
-                northSidePatch => "` " + text,
-                southSidePatch => "" + text,
+                EntranceDirection.East => "> " + text,
+                EntranceDirection.West => "@ " + text,
+                EntranceDirection.North => "` " + text,
+                EntranceDirection.South => "" + text,
                 _ => text
             };
         }
@@ -643,33 +802,44 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         /// <param name="oExpPatch"></param>
         /// <param name="messageKeySuffix"></param>
         /// <param name="signMessage"></param>
-        internal void AddSignPost(GameLocation oExp, EntrancePatch oExpPatch, string messageKeySuffix, string signMessage)
+        internal override void AddSignPost(GameLocation oExp, EntrancePatch oExpPatch, string messageKeySuffix, string signMessage)
         {
             //
             //  the sign post can either be on the building layer to block,
             //  or added to the Front of an existing map with a building layer tile
             //
-            try
+            if (modDataService.Config.UseSignPosts)
             {
-                string layerName = oExpPatch.Sign.UseFront ? "Front" : "Buildings";
-                int iTileSheetId = mapUtilities.GetTileSheetId(oExp.map, "*_outdoorsTileSheet");
-                mapUtilities.SetTile(oExp.map, oExpPatch.Sign.Position.X, oExpPatch.Sign.Position.Y, iTileSheetId, 435, layerName);
-                //
-                //  add name of expansion the the MapStrings
-                //
-                string messageKey = oExp.Name + "." + messageKeySuffix;
+                try
+                {
+                    if (oExp == null)
+                    {
+                        logger.Log($"Attempt to add sign to non-loaded expansion {messageKeySuffix}", LogLevel.Debug);
+                    }
+                    else
+                    {
+                        string layerName = oExpPatch.Sign.UseFront ? "Front" : "Buildings";
+                        int iTileSheetId = mapUtilities.GetTileSheetId(oExp.map, "*_outdoorsTileSheet");
+                        mapUtilities.SetTile(oExp.map, oExpPatch.Sign.Position.X, oExpPatch.Sign.Position.Y, iTileSheetId, 435, layerName);
+                        //
+                        //  add name of expansion the the MapStrings
+                        //
+                        string messageKey = oExp.Name + "." + messageKeySuffix;
 
-                contentManager.UpsertStringFromMap(messageKey, signMessage);
-                //ContentHandler?.UpsertStringFromMap(messageKey, signMessage);
-                //
-                //  add tile action to view the message
-                //
-                mapUtilities.SetTileProperty(oExp, oExpPatch.Sign.Position.X, oExpPatch.Sign.Position.Y, "Buildings", "Action", "Message \"" + messageKey + "\"");
-                mapUtilities.SetTile(oExp.map, oExpPatch.Sign.Position.X, oExpPatch.Sign.Position.Y - 1, iTileSheetId, 410, "Front");
-            }
-            catch (Exception ex)
-            {
-                logger.Log($"Error AddingSignPost. {ex}", LogLevel.Error);
+                        contentManager.UpsertStringFromMap(messageKey, signMessage);
+                        //ContentHandler?.UpsertStringFromMap(messageKey, signMessage);
+                        //
+                        //  add tile action to view the message
+                        //
+                        mapUtilities.SetTileProperty(oExp, oExpPatch.Sign.Position.X, oExpPatch.Sign.Position.Y, "Buildings", "Action", "Message \"" + messageKey + "\"");
+                        mapUtilities.SetTile(oExp.map, oExpPatch.Sign.Position.X, oExpPatch.Sign.Position.Y - 1, iTileSheetId, 410, "Front");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Log($"Error AddingSignPost to {oExp.Name}", LogLevel.Error);
+                    logger.LogError(ex);
+                }
             }
         }
 
@@ -677,102 +847,198 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         ///  Joins the entrance/exit warps of two maps
         ///  removes the path blocks for the entrance from the 2 maps
         /// </summary>
-        /// <param name="oExitPatch"></param>
-        /// <param name="sLocationNameA"></param>
-        /// <param name="oEntrancePath"></param>
-        /// <param name="sLocationNameB"></param>
-        private void AddExpansionIntersection(EntrancePatch oExitPatch, string sLocationNameA, EntrancePatch oEntrancePath, string sLocationNameB)
+        /// <param name="exitPatch"></param>
+        /// <param name="exitLocationName"></param>
+        /// <param name="entrancePatch"></param>
+        /// <param name="entranceLocationName"></param>
+        private void AddExpansionIntersection(EntrancePatch exitPatch, string exitLocationName, EntrancePatch entrancePatch, string entranceLocationName)
         {
             //
             //  get Gameloactions
             //
-            GameLocation glA = Game1.getLocationFromName(sLocationNameA);
+            string sourceLocationName = exitLocationName;
+            if (!string.IsNullOrEmpty(exitPatch.WarpOut.LocationName))
+                sourceLocationName = exitPatch.WarpOut.LocationName;
+
+            GameLocation glA = Game1.getLocationFromName(sourceLocationName);
             if (glA is null)
             {
-                logger.Log($"AddExpansionIntersection could not location: {sLocationNameA}", LogLevel.Debug);
+                logger.Log($"AddExpansionIntersection could not find location: {exitLocationName}", LogLevel.Debug);
                 return;
             }
-            GameLocation glB = Game1.getLocationFromName(sLocationNameB);
+            string targetLocationName = entranceLocationName;
+            if (!string.IsNullOrEmpty(entrancePatch.WarpIn.LocationName))
+                targetLocationName = entrancePatch.WarpIn.LocationName;
+
+            GameLocation glB = Game1.getLocationFromName(targetLocationName);
             if (glB is null)
             {
-                logger.Log($"AddExpansionIntersection could not location: {sLocationNameB}", LogLevel.Debug);
+                logger.Log($"AddExpansionIntersection could not find location: {entranceLocationName}", LogLevel.Debug);
                 return;
             }
             //
             //  remove path blocks from each expansion
             //
-            RemovePathBlock(new Vector2(oExitPatch.PathBlockX, oExitPatch.PathBlockY), glA, oExitPatch.WarpOrientation, oExitPatch.WarpOut.NumberofPoints);
-            RemovePathBlock(new Vector2(oEntrancePath.PathBlockX, oEntrancePath.PathBlockY), glB, oEntrancePath.WarpOrientation, oEntrancePath.WarpOut.NumberofPoints);
+            RemovePathBlock(new Vector2(exitPatch.PathBlockX, exitPatch.PathBlockY), glA, exitPatch.WarpOrientation, exitPatch.WarpOut.NumberofPoints);
+            RemovePathBlock(new Vector2(entrancePatch.PathBlockX, entrancePatch.PathBlockY), glB, entrancePatch.WarpOrientation, entrancePatch.WarpOut.NumberofPoints);
             //
             //  add the warps between the expansions
             //
-            AddExpansionWarps(oExitPatch, glA, oEntrancePath, glB);
+            AddExpansionWarps(exitPatch, glA, entrancePatch, glB);
         }
         /// <summary>
         /// add warps between 2 expansions
         /// Compensates for mis-matches in the size of each destination
         /// </summary>
-        /// <param name="oExitPatch"></param>
+        /// <param name="exitPatch"></param>
         /// <param name="glA"></param>
-        /// <param name="oEntrancePath"></param>
+        /// <param name="entrancePatch"></param>
         /// <param name="glB"></param>
-        private void AddExpansionWarps(EntrancePatch oExitPatch, GameLocation glA, EntrancePatch oEntrancePath, GameLocation glB)
+        private void AddExpansionWarps(EntrancePatch exitPatch, GameLocation glA, EntrancePatch entrancePatch, GameLocation glB, bool addWarpBack = true)
         {
-            int numWarps = Math.Max(oExitPatch.WarpOut.NumberofPoints, oEntrancePath.WarpIn.NumberofPoints);
+            int numberOfWarps = Math.Max(exitPatch.WarpOut.NumberofPoints, entrancePatch.WarpIn.NumberofPoints);
 
 #if DEBUG
             logger.Log($"       AddExpansionWarps. {glA.NameOrUniqueName} to {glB.NameOrUniqueName}", LogLevel.Debug);
-            logger.Log($"       numwarps: {numWarps}", LogLevel.Debug);
-            logger.Log($"       exit points: {oExitPatch.WarpOut.NumberofPoints} {oExitPatch.WarpOrientation}", LogLevel.Debug);
-            logger.Log($"   entrance points: {oEntrancePath.WarpIn.NumberofPoints} {oEntrancePath.WarpOrientation}", LogLevel.Debug);
+            logger.Log($"       numwarps: {numberOfWarps}", LogLevel.Debug);
+            logger.Log($"       exit points: {exitPatch.WarpOut.NumberofPoints} {exitPatch.WarpOrientation}", LogLevel.Debug);
+            logger.Log($"   entrance points: {entrancePatch.WarpIn.NumberofPoints} {entrancePatch.WarpOrientation}", LogLevel.Debug);
 #endif
 
-            for (int iWarp = 0; iWarp < numWarps; iWarp++)
+            for (int warpIndex = 0; warpIndex < numberOfWarps; warpIndex++)
             {
                 try
                 {
                     //
                     //  check for patch point underflows
                     //
-                    int iExitCell = iWarp < oExitPatch.WarpOut.NumberofPoints ? iWarp : oExitPatch.WarpOut.NumberofPoints - 1;
-                    int iEntCell = iWarp < oEntrancePath.WarpIn.NumberofPoints - 1 ? iWarp : oEntrancePath.WarpIn.NumberofPoints - 1;
+                    int exitCellIndex = warpIndex < exitPatch.WarpOut.NumberofPoints ? warpIndex : exitPatch.WarpOut.NumberofPoints - 1;
+                    int entranceCellIndex = warpIndex < entrancePatch.WarpIn.NumberofPoints ? warpIndex : entrancePatch.WarpIn.NumberofPoints - 1;
 
-                    if (oExitPatch.WarpOrientation == WarpOrientations.Horizontal)
+                    logger.Log($"   exitIndex: {exitCellIndex}, entIndex: {entranceCellIndex} ", LogLevel.Debug);
+                    int exitWarpOutX;
+                    int exitWarpOutY;
+                    int exitWarpInX;
+                    int exitWarpInY;
+                    if (exitPatch.WarpOrientation == WarpOrientations.Horizontal)
                     {
-                        //
-                        //  remove existing warp to support swapping expansions
-                        //
-                        IEnumerable<Warp> existingWarp = glA.warps.Where(p => p.X == oExitPatch.WarpOut.X + iExitCell && p.Y == oExitPatch.WarpOut.Y);
-                        if (existingWarp.Any())
-                        {
-                            glA.warps.Remove(glA.warps.Where(p => p.X == oExitPatch.WarpOut.X + iExitCell && p.Y == oExitPatch.WarpOut.Y).First());
-                        }
-                        glA.warps.Add(new Warp(oExitPatch.WarpOut.X + iExitCell, oExitPatch.WarpOut.Y, glB.Name, oEntrancePath.WarpIn.X + iEntCell, oEntrancePath.WarpIn.Y, false));
-                        //
-                        //  remove existing warp to support swapping expansions
-                        //
-                        existingWarp = glB.warps.Where(p => p.X == oEntrancePath.WarpOut.X + iExitCell && p.Y == oEntrancePath.WarpOut.Y);
-                        if (existingWarp.Any())
-                        {
-                            glB.warps.Remove(glB.warps.Where(p => p.X == oEntrancePath.WarpOut.X + iExitCell && p.Y == oEntrancePath.WarpOut.Y).First());
-                        }
-                        glB.warps.Add(new Warp(oEntrancePath.WarpOut.X + iEntCell, oEntrancePath.WarpOut.Y, glA.Name, oExitPatch.WarpIn.X + iExitCell, oExitPatch.WarpIn.Y, false));
+                        exitWarpOutX = exitPatch.WarpOut.X + exitCellIndex;
+                        exitWarpOutY = exitPatch.WarpOut.Y;
+                        exitWarpInX = exitPatch.WarpIn.X + exitCellIndex;
+                        exitWarpInY = exitPatch.WarpIn.Y;
                     }
                     else
                     {
-                        IEnumerable<Warp> existingWarp = glA.warps.Where(p => p.X == oExitPatch.WarpOut.X && p.Y == oExitPatch.WarpOut.Y + iExitCell);
-                        if (existingWarp.Any())
-                        {
-                            glA.warps.Remove(glA.warps.Where(p => p.X == oExitPatch.WarpOut.X && p.Y == oExitPatch.WarpOut.Y + iExitCell).First());
-                        }
-                        glA.warps.Add(new Warp(oExitPatch.WarpOut.X, oExitPatch.WarpOut.Y + iExitCell, glB.Name, oEntrancePath.WarpIn.X, oEntrancePath.WarpIn.Y + iEntCell, false));
-                        existingWarp = glB.warps.Where(p => p.X == oEntrancePath.WarpOut.X && p.Y == oEntrancePath.WarpOut.Y + iEntCell);
-                        if (existingWarp.Any())
-                        {
-                            glB.warps.Remove(glB.warps.Where(p => p.X == oEntrancePath.WarpOut.X && p.Y == oEntrancePath.WarpOut.Y + iEntCell).First());
-                        }
-                        glB.warps.Add(new Warp(oEntrancePath.WarpOut.X, oEntrancePath.WarpOut.Y + iEntCell, glA.Name, oExitPatch.WarpIn.X, oExitPatch.WarpIn.Y + iExitCell, false));
+                        exitWarpOutX = exitPatch.WarpOut.X;
+                        exitWarpOutY = exitPatch.WarpOut.Y + exitCellIndex;
+                        exitWarpInX = exitPatch.WarpIn.X;
+                        exitWarpInY = exitPatch.WarpIn.Y + exitCellIndex;
                     }
+                    int entranceWarpInX;
+                    int entranceWarpInY;
+                    int entranceWarpOutX;
+                    int entranceWarpOutY;
+                    if (entrancePatch.WarpOrientation == WarpOrientations.Horizontal)
+                    {
+                        entranceWarpInX = entrancePatch.WarpIn.X + entranceCellIndex;
+                        entranceWarpInY = entrancePatch.WarpIn.Y;
+                        entranceWarpOutX = entrancePatch.WarpOut.X + entranceCellIndex;
+                        entranceWarpOutY = entrancePatch.WarpOut.Y;
+                    }
+                    else
+                    {
+                        entranceWarpInX = entrancePatch.WarpIn.X;
+                        entranceWarpInY = entrancePatch.WarpIn.Y + entranceCellIndex;
+                        entranceWarpOutX = entrancePatch.WarpOut.X;
+                        entranceWarpOutY = entrancePatch.WarpOut.Y + entranceCellIndex;
+                    }
+                    if (warpIndex < exitPatch.WarpOut.NumberofPoints)
+                    {
+                        IEnumerable<Warp> currentWarp = glA.warps.Where(p => p.X == exitWarpOutX && p.Y == exitWarpOutY);
+                        if (currentWarp.Any())
+                        {
+                            glA.warps.Remove(glA.warps.Where(p => p.X == exitWarpOutX && p.Y == exitWarpOutY).First());
+                        }
+                        glA.warps.Add(new Warp(exitWarpOutX, exitWarpOutY, glB.Name, entranceWarpInX, entranceWarpInY, false));
+                    }
+                    if (addWarpBack && warpIndex < entrancePatch.WarpOut.NumberofPoints)
+                    {
+                        var existingWarp = glB.warps.Where(p => p.X == entranceWarpOutX && p.Y == entranceWarpOutY);
+                        if (existingWarp.Any())
+                        {
+                            glB.warps.Remove(glB.warps.Where(p => p.X == entranceWarpOutX && p.Y == entranceWarpOutY).First());
+                        }
+                        glB.warps.Add(new Warp(entranceWarpOutX, entranceWarpOutY, glA.Name, exitWarpInX, exitWarpInY, false));
+                    }
+
+                    //if (exitPatch.WarpOrientation == WarpOrientations.Horizontal)
+                    //{
+                    //    //
+                    //    //  remove existing warp to support swapping expansions
+                    //    //
+                    //    IEnumerable<Warp> existingWarp = glA.warps.Where(p => p.X == exitPatch.WarpOut.X + exitCellIndex && p.Y == exitPatch.WarpOut.Y);
+                    //    if (existingWarp.Any())
+                    //    {
+                    //        glA.warps.Remove(glA.warps.Where(p => p.X == exitPatch.WarpOut.X + exitCellIndex && p.Y == exitPatch.WarpOut.Y).First());
+                    //    }
+                    //    glA.warps.Add(new Warp(exitPatch.WarpOut.X + exitCellIndex, exitPatch.WarpOut.Y, glB.Name, entrancePatch.WarpIn.X + entranceCellIndex, entrancePatch.WarpIn.Y, false));
+                    //    //if (addWarpBack)
+                    //    //{
+                    //    //    //
+                    //    //    //  remove existing warp to support swapping expansions
+                    //    //    //
+                    //    //    existingWarp = glB.warps.Where(p => p.X == entrancePatch.WarpOut.X + iExitCell && p.Y == entrancePatch.WarpOut.Y);
+                    //    //    if (existingWarp.Any())
+                    //    //    {
+                    //    //        glB.warps.Remove(glB.warps.Where(p => p.X == entrancePatch.WarpOut.X + iExitCell && p.Y == entrancePatch.WarpOut.Y).First());
+                    //    //    }
+                    //    //    glB.warps.Add(new Warp(entrancePatch.WarpOut.X + iEntCell, entrancePatch.WarpOut.Y, glA.Name, oExitPatch.WarpIn.X + iExitCell, oExitPatch.WarpIn.Y, false));
+                    //    //}
+                    //}
+                    //else
+                    //{
+                    //    IEnumerable<Warp> existingWarp = glA.warps.Where(p => p.X == exitPatch.WarpOut.X && p.Y == exitPatch.WarpOut.Y + exitCellIndex);
+                    //    if (existingWarp.Any())
+                    //    {
+                    //        glA.warps.Remove(glA.warps.Where(p => p.X == exitPatch.WarpOut.X && p.Y == exitPatch.WarpOut.Y + exitCellIndex).First());
+                    //    }
+                    //    glA.warps.Add(new Warp(exitPatch.WarpOut.X, exitPatch.WarpOut.Y + exitCellIndex, glB.Name, entrancePatch.WarpIn.X, entrancePatch.WarpIn.Y + entranceCellIndex, false));
+
+                    //    //if (addWarpBack)
+                    //    //{
+                    //    //    existingWarp = glB.warps.Where(p => p.X == entrancePatch.WarpOut.X && p.Y == entrancePatch.WarpOut.Y + iEntCell);
+                    //    //    if (existingWarp.Any())
+                    //    //    {
+                    //    //        glB.warps.Remove(glB.warps.Where(p => p.X == entrancePatch.WarpOut.X && p.Y == entrancePatch.WarpOut.Y + iEntCell).First());
+                    //    //    }
+                    //    //    glB.warps.Add(new Warp(entrancePatch.WarpOut.X, entrancePatch.WarpOut.Y + iEntCell, glA.Name, oExitPatch.WarpIn.X, oExitPatch.WarpIn.Y + iExitCell, false));
+                    //    //}
+                    //}
+
+                    //if (addWarpBack)
+                    //{
+                    //    if (entrancePatch.WarpOrientation == WarpOrientations.Horizontal)
+                    //    {
+                    //        //
+                    //        //  remove existing warp to support swapping expansions
+                    //        //
+                    //        var existingWarp = glB.warps.Where(p => p.X == entrancePatch.WarpOut.X + entranceCellIndex && p.Y == entrancePatch.WarpOut.Y);
+                    //        if (existingWarp.Any())
+                    //        {
+                    //            glB.warps.Remove(glB.warps.Where(p => p.X == entrancePatch.WarpOut.X + entranceCellIndex && p.Y == entrancePatch.WarpOut.Y).First());
+                    //        }
+                    //        glB.warps.Add(new Warp(entrancePatch.WarpOut.X + entranceCellIndex, entrancePatch.WarpOut.Y, glA.Name, exitPatch.WarpIn.X + exitCellIndex, exitPatch.WarpIn.Y, false));
+                    //    }
+                    //    else
+                    //    {
+                    //        var existingWarp = glB.warps.Where(p => p.X == entrancePatch.WarpOut.X && p.Y == entrancePatch.WarpOut.Y + entranceCellIndex);
+                    //        if (existingWarp.Any())
+                    //        {
+                    //            glB.warps.Remove(glB.warps.Where(p => p.X == entrancePatch.WarpOut.X && p.Y == entrancePatch.WarpOut.Y + entranceCellIndex).First());
+                    //        }
+                    //        glB.warps.Add(new Warp(entrancePatch.WarpOut.X, entrancePatch.WarpOut.Y + entranceCellIndex, glA.Name, exitPatch.WarpIn.X, exitPatch.WarpIn.Y + exitCellIndex, false));
+                    //    }
+                    //}
                 }
                 catch (Exception ex)
                 {
@@ -797,52 +1063,52 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
 
             return null;
         }
-        private void RemovePathBlock(Vector2 oBlockPos, GameLocation gl, WarpOrientations eBlockOrientation, int iBlockWidth)
+        private void RemovePathBlock(Vector2 blockPosition, GameLocation location, WarpOrientations blockOrientation, int blockWidth)
         {
 #if DEBUG_LOG
-            logger.Log($"   Removing path block {gl.Name} {oBlockPos}, {eBlockOrientation} for {iBlockWidth}", LogLevel.Debug);
+            logger.Log($"   Removing path block {location.Name} {blockPosition}, {blockOrientation} for {blockWidth}", LogLevel.Debug);
 #endif
 
             try
             {
-                Layer oBuilding = gl.map.GetLayer("Buildings");
-                switch (iBlockWidth)
+                Layer buildingsLayer = location.map.GetLayer("Buildings");
+                switch (blockWidth)
                 {
                     case 2:
                         //
                         //  remove boulder
                         //
-                        if (oBuilding.Tiles[(int)oBlockPos.X, (int)oBlockPos.Y] != null) gl.removeTile((int)oBlockPos.X, (int)oBlockPos.Y, "Buildings");
-                        if (oBuilding.Tiles[(int)oBlockPos.X + 1, (int)oBlockPos.Y] != null) gl.removeTile((int)oBlockPos.X + 1, (int)oBlockPos.Y, "Buildings");
-                        if (oBuilding.Tiles[(int)oBlockPos.X, (int)oBlockPos.Y + 1] != null) gl.removeTile((int)oBlockPos.X, (int)oBlockPos.Y + 1, "Buildings");
-                        if (oBuilding.Tiles[(int)oBlockPos.X + 1, (int)oBlockPos.Y + 1] != null) gl.removeTile((int)oBlockPos.X + 1, (int)oBlockPos.Y + 1, "Buildings");
+                        if (buildingsLayer.Tiles[(int)blockPosition.X, (int)blockPosition.Y] != null) location.removeTile((int)blockPosition.X, (int)blockPosition.Y, "Buildings");
+                        if (buildingsLayer.Tiles[(int)blockPosition.X + 1, (int)blockPosition.Y] != null) location.removeTile((int)blockPosition.X + 1, (int)blockPosition.Y, "Buildings");
+                        if (buildingsLayer.Tiles[(int)blockPosition.X, (int)blockPosition.Y + 1] != null) location.removeTile((int)blockPosition.X, (int)blockPosition.Y + 1, "Buildings");
+                        if (buildingsLayer.Tiles[(int)blockPosition.X + 1, (int)blockPosition.Y + 1] != null) location.removeTile((int)blockPosition.X + 1, (int)blockPosition.Y + 1, "Buildings");
                         break;
                     default:
                         //
                         //  remove fence
                         //
-                        if (eBlockOrientation == WarpOrientations.Horizontal)
+                        if (blockOrientation == WarpOrientations.Horizontal)
                         {
-                            RemoveTile(gl, (int)oBlockPos.X, (int)oBlockPos.Y - 1, "Buildings");
-                            RemoveTile(gl, (int)oBlockPos.X, (int)oBlockPos.Y, "Buildings");
+                            RemoveTile(location, (int)blockPosition.X, (int)blockPosition.Y - 1, "Buildings");
+                            RemoveTile(location, (int)blockPosition.X, (int)blockPosition.Y, "Buildings");
                             int iMid;
-                            for (iMid = 1; iMid < iBlockWidth - 1; iMid++)
+                            for (iMid = 1; iMid < blockWidth - 1; iMid++)
                             {
-                                RemoveTile(gl, (int)oBlockPos.X + iMid, (int)oBlockPos.Y - 1, "Buildings");
-                                RemoveTile(gl, (int)oBlockPos.X + iMid, (int)oBlockPos.Y, "Buildings");
+                                RemoveTile(location, (int)blockPosition.X + iMid, (int)blockPosition.Y - 1, "Buildings");
+                                RemoveTile(location, (int)blockPosition.X + iMid, (int)blockPosition.Y, "Buildings");
                             }
-                            RemoveTile(gl, (int)oBlockPos.X + iMid, (int)oBlockPos.Y - 1, "Buildings");
-                            RemoveTile(gl, (int)oBlockPos.X + iMid, (int)oBlockPos.Y, "Buildings");
+                            RemoveTile(location, (int)blockPosition.X + iMid, (int)blockPosition.Y - 1, "Buildings");
+                            RemoveTile(location, (int)blockPosition.X + iMid, (int)blockPosition.Y, "Buildings");
                         }
                         else
                         {
-                            RemoveTile(gl, (int)oBlockPos.X, (int)oBlockPos.Y - 1, "AlwaysFront");
+                            RemoveTile(location, (int)blockPosition.X, (int)blockPosition.Y - 1, "AlwaysFront");
                             //RemoveTile(gl, (int)oBlockPos.X, (int)oBlockPos.Y -  1, "Buildings", 361);
-                            RemoveTile(gl, (int)oBlockPos.X, (int)oBlockPos.Y, "Buildings");
+                            RemoveTile(location, (int)blockPosition.X, (int)blockPosition.Y, "Buildings");
                             int iMid;
-                            for (iMid = 1; iMid < iBlockWidth; iMid++)
+                            for (iMid = 1; iMid < blockWidth; iMid++)
                             {
-                                RemoveTile(gl, (int)oBlockPos.X, (int)oBlockPos.Y + iMid, "Buildings");
+                                RemoveTile(location, (int)blockPosition.X, (int)blockPosition.Y + iMid, "Buildings");
                             }
 
                         }
@@ -870,7 +1136,11 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         {
             RemoveTile(gl, x, y, sLayer, -1);
         }
-        private void JoinMaps(int sourceGrid, int targetGrid, string sourceSide)
+        private GameLocation GetLocation(string locationName)
+        {
+            return Game1.getLocationFromName(locationName);
+        }
+        private void JoinMaps(int sourceGridId, int targetGridId, EntranceDirection sourceSide)
         {
             //
             //  Join intersecting expansions
@@ -879,28 +1149,365 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             //  - add warps
             //  - add signs
             //
-            string targetSide = GetNeighbourSide(sourceSide);
+            List<int> topRow = new List<int> { 0, 1, 4, 7, 10 };
+            EntranceDirection targetSide = GetNeighbourSide(sourceSide);
             string sourceMessageName = GetSignPostMessagePrefix(sourceSide);
             string targetMessageName = GetSignPostMessagePrefix(targetSide);
-
-            ExpansionPack targetPack = modDataService.validContents[MapGrid[targetGrid]];
-            EntrancePatch targetEntPatch = targetPack.EntrancePatches[targetSide];
-
-            ExpansionPack sourcePack = modDataService.validContents[MapGrid[sourceGrid]];
-            EntrancePatch sourceEntPatch = sourcePack.EntrancePatches[sourceSide];
-
-            AddExpansionIntersection(sourceEntPatch, sourcePack.LocationName, targetEntPatch, targetPack.LocationName);
-
-            if (sourceEntPatch.Sign?.UseSign ?? false)
+            ExpansionPack targetPack = modDataService.validContents[modDataService.MapGrid[targetGridId]];
+            ExpansionPack sourcePack = modDataService.validContents[modDataService.MapGrid[sourceGridId]];
+            if (targetSide == EntranceDirection.West && targetPack.isAdditionalFarm)
             {
-                AddSignPost(modDataService.farmExpansions[sourcePack.LocationName], sourceEntPatch, sourceMessageName, FormatDirectionText(sourceSide, targetPack.DisplayName));
-            }
-            if (targetEntPatch.Sign?.UseSign ?? false)
-            {
-                AddSignPost(modDataService.farmExpansions[targetPack.LocationName], targetEntPatch, targetMessageName, FormatDirectionText(targetSide, sourcePack.DisplayName));
-            }
+                //add TouchAction to the Northern exit of source
+                //add warp source-east => target-north
 
+                //  map directly east exit to northern entrance
+                // remove northern path block and add back warp
+                // to sourceGrid east entrance
+                EntrancePatch entrancePatch = targetPack.EntrancePatches[((int)EntranceDirection.North).ToString()];
+                EntrancePatch exitPatch = sourcePack.EntrancePatches[((int)EntranceDirection.East).ToString()];
+
+                string exitLocation = sourcePack.LocationName;
+                if (!string.IsNullOrEmpty(exitPatch.WarpOut.LocationName))
+                    exitLocation = exitPatch.WarpOut.LocationName;
+
+                string entranceLocation = targetPack.LocationName;
+                if (!string.IsNullOrEmpty(entrancePatch.WarpIn.LocationName))
+                    entranceLocation = entrancePatch.WarpIn.LocationName;
+                //
+                //  remove path block from target
+                RemovePathBlock(new Vector2(entrancePatch.PathBlockX, entrancePatch.PathBlockY), GetLocation(entranceLocation), entrancePatch.WarpOrientation, entrancePatch.WarpOut.NumberofPoints);
+                // remove path block from source
+                RemovePathBlock(new Vector2(exitPatch.PathBlockX, exitPatch.PathBlockY), GetLocation(exitLocation), exitPatch.WarpOrientation, exitPatch.WarpOut.NumberofPoints);
+                // add warp source-east => target-north
+                AddExpansionWarps(exitPatch, GetLocation(exitLocation), entrancePatch, GetLocation(entranceLocation), false);
+                // add exit warp
+                if (topRow.Contains(targetGridId))
+                {
+                    // add source-north => target-east warp
+                    AddExpansionWarps(exitPatch, GetLocation(exitLocation), entrancePatch, GetLocation(entranceLocation));
+                }
+                else
+                {
+                    // add TouchAction 
+                    AddWarpPickTouchAction(entrancePatch, entranceLocation);
+                }
+            }
+            else if (sourceSide == EntranceDirection.West && sourcePack.isAdditionalFarm)
+            {
+                //add TouchAction to the Northern exit of source
+                // add warp target-east => south-north
+                EntrancePatch exitPatch = sourcePack.EntrancePatches[((int)EntranceDirection.North).ToString()];
+                EntrancePatch entrancePatch = targetPack.EntrancePatches[((int)EntranceDirection.East).ToString()];
+                string exitLocation = sourcePack.LocationName;
+                if (!string.IsNullOrEmpty(exitPatch.WarpOut.LocationName))
+                    exitLocation = exitPatch.WarpOut.LocationName;
+                string entranceLocation = targetPack.LocationName;
+                if (!string.IsNullOrEmpty(entrancePatch.WarpIn.LocationName))
+                    entranceLocation = entrancePatch.WarpIn.LocationName;
+                //
+                //  remove path block from target
+                RemovePathBlock(new Vector2(entrancePatch.PathBlockX, entrancePatch.PathBlockY), GetLocation(entranceLocation), entrancePatch.WarpOrientation, entrancePatch.WarpOut.NumberofPoints);
+                //
+                // remove path block from source
+                RemovePathBlock(new Vector2(exitPatch.PathBlockX, exitPatch.PathBlockY), GetLocation(exitLocation), exitPatch.WarpOrientation, exitPatch.WarpOut.NumberofPoints);
+                // add exit warp
+                if (topRow.Contains(sourceGridId))
+                {
+                    // add source-north => target-east warp
+                    AddExpansionWarps(exitPatch, GetLocation(exitLocation), entrancePatch, GetLocation(entranceLocation));
+                }
+                else
+                {
+                    // add TouchAction 
+                    AddWarpPickTouchAction(exitPatch, exitLocation);
+                    // add warp back from the east
+                    AddExpansionWarps(entrancePatch, GetLocation(entranceLocation), exitPatch, GetLocation(exitLocation), false);
+                }
+            }
+            else if (sourceSide == EntranceDirection.North && modDataService.validContents[modDataService.MapGrid[sourceGridId]].isAdditionalFarm && modDataService.MapGrid.ContainsKey(targetGridId + 4))
+            {
+                // north side has a pick destination
+                //  only add target-south => source-north
+                EntrancePatch exitPatch = targetPack.EntrancePatches[((int)EntranceDirection.South).ToString()];
+                EntrancePatch entrancePatch = sourcePack.EntrancePatches[((int)EntranceDirection.North).ToString()];
+                string exitLocation = sourcePack.LocationName;
+                if (!string.IsNullOrEmpty(exitPatch.WarpOut.LocationName))
+                    exitLocation = exitPatch.WarpOut.LocationName;
+                string entranceLocation = targetPack.LocationName;
+                if (!string.IsNullOrEmpty(entrancePatch.WarpIn.LocationName))
+                    entranceLocation = entrancePatch.WarpIn.LocationName;
+
+                RemovePathBlock(new Vector2(exitPatch.PathBlockX, exitPatch.PathBlockY), GetLocation(exitLocation), exitPatch.WarpOrientation, exitPatch.WarpOut.NumberofPoints);
+
+                AddExpansionWarps(exitPatch, GetLocation(exitLocation), entrancePatch, GetLocation(entranceLocation), false);
+
+            }
+            else if (targetSide == EntranceDirection.North && modDataService.validContents[modDataService.MapGrid[targetGridId]].isAdditionalFarm && modDataService.MapGrid.ContainsKey(targetGridId + 3))
+            {
+                // north entrance has a pick destination 
+                //
+                EntrancePatch exitPatch = sourcePack.EntrancePatches[((int)EntranceDirection.South).ToString()];
+                EntrancePatch entrancePatch = targetPack.EntrancePatches[((int)EntranceDirection.North).ToString()];
+                string exitLocation = sourcePack.LocationName;
+                if (!string.IsNullOrEmpty(exitPatch.WarpOut.LocationName))
+                    exitLocation = exitPatch.WarpOut.LocationName;
+                string entranceLocation = targetPack.LocationName;
+                if (!string.IsNullOrEmpty(entrancePatch.WarpIn.LocationName))
+                    entranceLocation = entrancePatch.WarpIn.LocationName;
+                RemovePathBlock(new Vector2(exitPatch.PathBlockX, exitPatch.PathBlockY), GetLocation(exitLocation), exitPatch.WarpOrientation, exitPatch.WarpOut.NumberofPoints);
+                AddExpansionWarps(exitPatch, GetLocation(exitLocation), entrancePatch, GetLocation(entranceLocation), false);
+            }
+            else if (sourceGridId == 0)
+            {
+
+
+                //if (sourcePack.isAdditionalFarm)
+                //{
+                //    // add TouchAction to the Northern exit
+                //    EntrancePatch sourceExitPatch = sourcePack.EntrancePatches["0"];
+                //    AddWarpPickTouchAction(sourceExitPatch, sourcePack.LocationName);
+                //}
+                //else
+                //{
+                // add warp from source-west => target-east
+                EntrancePatch targetEntPatch = targetPack.EntrancePatches[((int)EntranceDirection.East).ToString()];
+                EntrancePatch sourceEntPatch = sourcePack.EntrancePatches[((int)EntranceDirection.North).ToString()];
+
+                RemovePathBlock(new Vector2(targetEntPatch.PathBlockX, targetEntPatch.PathBlockY), modDataService.farmExpansions[targetPack.LocationName], targetEntPatch.WarpOrientation, targetEntPatch.WarpOut.NumberofPoints);
+                AddExpansionWarps(targetEntPatch, modDataService.farmExpansions[targetPack.LocationName], sourceEntPatch, modDataService.farmExpansions[sourcePack.LocationName]);
+                //}
+            }
+            //else if (targetGrid == 0)
+            //{
+
+            //}
+            //else if (targetSide == EntranceDirection.West && targetPack.isAdditionalFarm)
+            //{
+            //    //if (sourceGrid == 0 || (sourceGrid + 2) % 3 == 0)
+            //    //{
+            //    //  map directly east exit to northern entrance
+            //    // remove northern path block and add back warp
+            //    // to sourceGrid east entrance
+            //    EntrancePatch targetEntPatch = targetPack.EntrancePatches[((int)EntranceDirection.North).ToString()];
+            //    EntrancePatch sourceEntPatch = sourcePack.EntrancePatches[((int)sourceSide).ToString()];
+            //    //
+            //    //  remove path block from target
+            //    RemovePathBlock(new Vector2(targetEntPatch.PathBlockX, targetEntPatch.PathBlockY), modDataService.farmExpansions[targetPack.LocationName], targetEntPatch.WarpOrientation, targetEntPatch.WarpOut.NumberofPoints);
+            //    AddExpansionWarps(targetEntPatch, modDataService.farmExpansions[targetPack.LocationName], sourceEntPatch, modDataService.farmExpansions[sourcePack.LocationName]);
+
+            //    //}
+            //    //else
+            //    //{
+            //    //    int x = 3;
+            //    //    EntrancePatch sourceExitPatch = sourcePack.EntrancePatches[((int)sourceSide).ToString()];
+            //    //    EntrancePatch targetEntrancePatch = targetPack.EntrancePatches[((int)EntranceDirection.East).ToString()];
+
+            //    //    AddWarpPickTouchAction(sourceExitPatch, sourcePack.LocationName);
+            //    //    //AddWarpToBridgeLocation(sourceExitPatch, sourcePack.LocationName, true);
+            //    //    // remove eastern path block on sourceGrid+3
+            //    //    RemovePathBlock(new Vector2(targetEntrancePatch.PathBlockX, targetEntrancePatch.PathBlockY), modDataService.farmExpansions[targetPack.LocationName], targetEntrancePatch.WarpOrientation, targetEntrancePatch.WarpOut.NumberofPoints);
+            //    //    // add warp to north entrance from west neighbour
+            //    //    AddExpansionWarps(sourceExitPatch, modDataService.farmExpansions[sourcePack.LocationName], targetEntrancePatch, modDataService.farmExpansions[targetPack.LocationName]);
+            //    //}
+            //}
+            //else if (sourceSide == EntranceDirection.West && sourcePack.isAdditionalFarm)
+            //{
+            //    if (sourceGridId == 0 || (sourceGridId + 2) % 3 == 0)
+            //    {
+            //        //  map directly east exit to northern entrance
+            //        // remove northern path block and add back warp
+            //        // to sourceGrid east entrance
+            //        EntrancePatch targetEntPatch = targetPack.EntrancePatches[((int)targetSide).ToString()];
+            //        EntrancePatch sourceEntPatch = sourcePack.EntrancePatches[((int)EntranceDirection.North).ToString()];
+            //        //
+            //        //  remove path block from target
+            //        RemovePathBlock(new Vector2(sourceEntPatch.PathBlockX, sourceEntPatch.PathBlockY), modDataService.farmExpansions[sourcePack.LocationName], sourceEntPatch.WarpOrientation, sourceEntPatch.WarpOut.NumberofPoints);
+            //        AddExpansionWarps(sourceEntPatch, modDataService.farmExpansions[sourcePack.LocationName], targetEntPatch, modDataService.farmExpansions[targetPack.LocationName]);
+            //    }
+            //    else
+            //    {
+            //        int x = 1;
+
+            //        EntrancePatch sourceExitPatch = sourcePack.EntrancePatches[((int)EntranceDirection.North).ToString()];
+            //        EntrancePatch targetEntrancePatch = targetPack.EntrancePatches[((int)EntranceDirection.East).ToString()];
+
+            //        // add warp to bridge loctaion
+            //        AddWarpPickTouchAction(sourceExitPatch, sourcePack.LocationName);
+            //        //AddWarpToBridgeLocation(sourceExitPatch, sourcePack.LocationName, true);
+            //        // remove eastern path block on sourceGrid+3
+            //        RemovePathBlock(new Vector2(targetEntrancePatch.PathBlockX, targetEntrancePatch.PathBlockY), modDataService.farmExpansions[targetPack.LocationName], targetEntrancePatch.WarpOrientation, targetEntrancePatch.WarpOut.NumberofPoints);
+            //        // add warp to north entrance from west neighbour
+            //        AddExpansionWarps(targetEntrancePatch, modDataService.farmExpansions[targetPack.LocationName], sourceExitPatch, modDataService.farmExpansions[sourcePack.LocationName], false);
+
+
+
+            //        //EntrancePatch sourceExitPatch = sourcePack.EntrancePatches[((int)EntranceDirection.North).ToString()];
+            //        ////EntrancePatch targetEntrancePatch = targetPack.EntrancePatches[((int)EntranceDirection.East).ToString()];
+
+            //        //// add warp to bridge loctaion
+            //        //AddWarpToBridgeLocation(sourceExitPatch, sourcePack.LocationName, false);
+            //        //// remove eastern path block on sourceGrid+3
+            //        ////RemovePathBlock(new Vector2(targetEntrancePatch.PathBlockX, targetEntrancePatch.PathBlockY), modDataService.farmExpansions[targetPack.LocationName], targetEntrancePatch.WarpOrientation, targetEntrancePatch.WarpOut.NumberofPoints);
+            //        //// add warp back to bridge location in sourceGrid+3
+            //        ////AddWarpToBridgeLocation(targetEntrancePatch, targetPack.LocationName, false);
+            //    }
+
+            //}
+            //else if (sourceSide == EntranceDirection.North && sourceGridId < 8 && modDataService.MapGrid.ContainsKey(sourceGridId + 3) && sourcePack.isAdditionalFarm)
+            //{
+            //    EntrancePatch sourceExitPatch = sourcePack.EntrancePatches[((int)sourceSide).ToString()];
+            //    EntrancePatch targetEntrancePatch = targetPack.EntrancePatches[((int)EntranceDirection.East).ToString()];
+
+            //    // add warp to bridge loctaion
+            //    AddWarpPickTouchAction(sourceExitPatch, sourcePack.LocationName);
+            //    //AddWarpToBridgeLocation(sourceExitPatch, sourcePack.LocationName, true);
+            //    // remove eastern path block on sourceGrid+3
+            //    RemovePathBlock(new Vector2(targetEntrancePatch.PathBlockX, targetEntrancePatch.PathBlockY), modDataService.farmExpansions[targetPack.LocationName], targetEntrancePatch.WarpOrientation, targetEntrancePatch.WarpOut.NumberofPoints);
+            //    // add warp to north entrance from west neighbour
+            //    AddExpansionWarps(targetEntrancePatch, modDataService.farmExpansions[targetPack.LocationName], sourceExitPatch, modDataService.farmExpansions[sourcePack.LocationName], false);
+
+            //}
+            //else if (sourceSide == EntranceDirection.South && modDataService.MapGrid.ContainsKey(sourceGridId + 1) && modDataService.validContents[modDataService.MapGrid[sourceGridId + 1]].isAdditionalFarm)
+            //{
+            //    EntrancePatch sourceExitPatch = sourcePack.EntrancePatches[((int)sourceSide).ToString()];
+            //    EntrancePatch targetEntrancePatch = targetPack.EntrancePatches[((int)EntranceDirection.North).ToString()];
+
+            //    // remove eastern path block on sourceGrid+1
+            //    RemovePathBlock(new Vector2(targetEntrancePatch.PathBlockX, targetEntrancePatch.PathBlockY), modDataService.farmExpansions[targetPack.LocationName], targetEntrancePatch.WarpOrientation, targetEntrancePatch.WarpOut.NumberofPoints);
+            //    // add warp to north entrance from south neighbour
+            //    AddExpansionWarps(sourceExitPatch, modDataService.farmExpansions[sourcePack.LocationName], targetEntrancePatch, modDataService.farmExpansions[targetPack.LocationName], false);
+
+            //}
+            else
+            {
+                if (!targetPack.EntrancePatches.ContainsKey(((int)targetSide).ToString()))
+                    return;
+
+                EntrancePatch targetEntPatch = targetPack.EntrancePatches[((int)targetSide).ToString()];
+                EntrancePatch sourceEntPatch = sourcePack.EntrancePatches[((int)sourceSide).ToString()];
+
+                AddExpansionIntersection(sourceEntPatch, sourcePack.LocationName, targetEntPatch, targetPack.LocationName);
+
+                if (sourceEntPatch.Sign?.UseSign ?? false)
+                {
+                    AddSignPost(modDataService.farmExpansions[sourcePack.LocationName], sourceEntPatch, sourceMessageName, FormatDirectionText(sourceSide, targetPack.DisplayName));
+                }
+                if (targetEntPatch.Sign?.UseSign ?? false)
+                {
+                    AddSignPost(modDataService.farmExpansions[targetPack.LocationName], targetEntPatch, targetMessageName, FormatDirectionText(targetSide, sourcePack.DisplayName));
+                }
+
+            }
         }
+        private void AddWarpPickTouchAction(EntrancePatch patch, string locationName)
+        {
+            Map map = GetLocation(locationName).Map;
+
+            Layer backLayer = map.GetLayer("Back");
+
+            if (backLayer != null)
+            {
+                for (int index = 0; index < patch.WarpOut.NumberofPoints; index++)
+                {
+                    if (backLayer.IsValidTileLocation(patch.WarpOut.X + index, Math.Max(0, patch.WarpOut.Y)))
+                    {
+                        backLayer.Tiles[patch.WarpOut.X + index, Math.Max(0, patch.WarpOut.Y)].Properties["TouchAction"] = ModKeyStrings.TAction_PickDestination;
+                    }
+                }
+            }
+        }
+        //private void AddWarpToBridgeLocation(EntrancePatch sourcePatch, string sourceLocationName, bool southernPatch)
+        //{
+        //    GameLocation gameLocation = Game1.getLocationFromName(sourceLocationName);
+
+        //    if (gameLocation != null)
+        //    {
+        //        for (int index = 0; index < sourcePatch.WarpOut.NumberofPoints; index++)
+        //        {
+        //            int outPosX = sourcePatch.WarpOut.X;
+        //            int outPosY = sourcePatch.WarpOut.Y;
+        //            if (sourcePatch.WarpOrientation == WarpOrientations.Horizontal)
+        //                outPosX += index;
+        //            else
+        //                outPosY += index;
+
+        //            var currentWarps = gameLocation.warps.Where(p => p.X == outPosX && p.Y == outPosY);
+        //            if (currentWarps.Any())
+        //                gameLocation.warps.Remove(currentWarps.First());
+
+        //            if (southernPatch)
+        //            {
+        //                gameLocation.warps.Add(new Warp(
+        //                    sourcePatch.WarpOut.X + index, sourcePatch.WarpOut.Y,
+        //                    ExpansionBridgingService.BridgingLocationName,
+        //                    ExpansionBridgingService.SouthernExit.WarpOut.X + index, ExpansionBridgingService.SouthernExit.WarpOut.Y,
+        //                    false
+        //                    ));
+        //            }
+        //            else
+        //            {
+        //                gameLocation.warps.Add(new Warp(
+        //                    sourcePatch.WarpOut.X + index, sourcePatch.WarpOut.Y,
+        //                    ExpansionBridgingService.BridgingLocationName,
+        //                    ExpansionBridgingService.WesternExit.WarpOut.X, ExpansionBridgingService.WesternExit.WarpOut.Y + index,
+        //                    false
+        //                    ));
+
+        //            }
+        //            //if (sourcePatch.WarpOrientation == WarpOrientations.Horizontal)
+        //            //{
+        //            //    //var currentWarps = gameLocation.warps.Where(p => p.X == sourcePatch.WarpOut.X + index && p.Y == sourcePatch.WarpOut.Y);
+        //            //    //if (currentWarps.Any())
+        //            //    //    gameLocation.warps.Remove(currentWarps.First());
+
+        //            //    if (southernPatch)
+        //            //    {
+        //            //        gameLocation.warps.Add(new Warp(
+        //            //            sourcePatch.WarpOut.X + index, sourcePatch.WarpOut.Y,
+        //            //            ExpansionBridgingService.BridgingLocationName,
+        //            //            ExpansionBridgingService.SouthernExit.WarpOut.X + index, ExpansionBridgingService.SouthernExit.WarpOut.Y,
+        //            //            false
+        //            //            ));
+        //            //    }
+        //            //    else
+        //            //    {
+        //            //        gameLocation.warps.Add(new Warp(
+        //            //            sourcePatch.WarpOut.X + index, sourcePatch.WarpOut.Y,
+        //            //            ExpansionBridgingService.BridgingLocationName,
+        //            //            ExpansionBridgingService.WesternExit.WarpOut.X, ExpansionBridgingService.WesternExit.WarpOut.Y + index,
+        //            //            false
+        //            //            ));
+
+        //            //    }
+        //            //}
+        //            //else
+        //            //{
+        //            //    //var currentWarps = gameLocation.warps.Where(p => p.X == sourcePatch.WarpOut.X && p.Y == sourcePatch.WarpOut.Y + index);
+        //            //    //if (currentWarps.Any())
+        //            //    //    gameLocation.warps.Remove(currentWarps.First());
+
+        //            //    if (southernPatch)
+        //            //    {
+        //            //        gameLocation.warps.Add(new Warp(
+        //            //            sourcePatch.WarpOut.X, sourcePatch.WarpOut.Y + index,
+        //            //            ExpansionBridgingService.BridgingLocationName,
+        //            //            ExpansionBridgingService.SouthernExit.WarpOut.X, ExpansionBridgingService.SouthernExit.WarpOut.Y + index,
+        //            //            false
+        //            //            ));
+        //            //    }
+        //            //    else
+        //            //    {
+        //            //        gameLocation.warps.Add(new Warp(
+        //            //         sourcePatch.WarpOut.X, sourcePatch.WarpOut.Y + index,
+        //            //         ExpansionBridgingService.BridgingLocationName,
+        //            //         ExpansionBridgingService.WesternExit.WarpOut.X, ExpansionBridgingService.WesternExit.WarpOut.Y + index,
+        //            //         false
+        //            //         ));
+        //            //    }
+        //            //}
+        //        }
+        //    }
+        //}
         private string GetSignPostMessagePrefix(EntranceDirection side)
         {
             return side switch
@@ -912,81 +1519,43 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                 _ => ""
             };
         }
-        private string GetSignPostMessagePrefix(string side)
+        //private string GetSignPostMessagePrefix(EntranceDirection side)
+        //{
+        //    return side switch
+        //    {
+        //        EntranceDirection.West => "WestMessage",
+        //        EntranceDirection.East => "EastMessage",
+        //        EntranceDirection.North => "NorthMessage",
+        //        EntranceDirection.South => "SouthMessage",
+        //        _ => ""
+        //    };
+        //}
+        private static EntranceDirection GetNeighbourSide(EntranceDirection side)
         {
             return side switch
             {
-                westSidePatch => "WestMessage",
-                eastSidePatch => "EastMessage",
-                northSidePatch => "NorthMessage",
-                southSidePatch => "SouthMessage",
-                _ => ""
+                EntranceDirection.West => EntranceDirection.East,// eastSidePatch,
+                EntranceDirection.East => EntranceDirection.West,// westSidePatch,
+                EntranceDirection.North => EntranceDirection.South,// southSidePatch,
+                EntranceDirection.South => EntranceDirection.North,// northSidePatch,
+                _ => EntranceDirection.None
             };
         }
-        private static string GetNeighbourSide(EntranceDirection side)
-        {
-            return side switch
-            {
-                EntranceDirection.West => eastSidePatch,
-                EntranceDirection.East => westSidePatch,
-                EntranceDirection.North => southSidePatch,
-                EntranceDirection.South => northSidePatch,
-                _ => ""
-            };
-        }
-        private string GetNeighbourSide(string side)
-        {
-            return side switch
-            {
-                westSidePatch => eastSidePatch,
-                eastSidePatch => westSidePatch,
-                northSidePatch => southSidePatch,
-                southSidePatch => northSidePatch,
-                _ => ""
-            };
-        }
+        //private string GetNeighbourSide(string side)
+        //{
+        //    return side switch
+        //    {
+        //        westSidePatch => eastSidePatch,
+        //        eastSidePatch => westSidePatch,
+        //        northSidePatch => southSidePatch,
+        //        southSidePatch => northSidePatch,
+        //        _ => ""
+        //    };
+        //}
         private bool IsMapGridOccupied(int iGridId)
         {
-            return MapGrid.ContainsKey(iGridId);
+            return modDataService.MapGrid.ContainsKey(iGridId);
         }
-        internal override string GetNeighbourExpansionName(int iGridId, EntranceDirection side)
-        {
-            //
-            //  returns the neighbouring expasion in the direction supplied
-            //
-            int nGridId;
-            switch (side)
-            {
-                case EntranceDirection.North:
-                    //  top row has no northern neighbour
-                    if (iGridId == 0 || (iGridId - 1) % 3 == 0) return null;
-                    nGridId = iGridId - 1;
-                    if (MapGrid.ContainsKey(nGridId))
-                        return MapGrid[nGridId];
-                    break;
-                case EntranceDirection.East:
-                    nGridId = iGridId == 1 ? 0 : iGridId - 3;
-                    if (MapGrid.ContainsKey(nGridId))
-                        return MapGrid[nGridId];
-                    break;
-                case EntranceDirection.South:
-                    //  bottom row has no southern neighbour
-                    if (iGridId == 0 || iGridId % 3 == 0) return null;
-                    nGridId = iGridId + 1;
-                    if (MapGrid.ContainsKey(nGridId))
-                        return MapGrid[nGridId];
-                    break;
-                case EntranceDirection.West:
-                    nGridId = iGridId == 0 ? 1 : iGridId + 3;
-                    if (MapGrid.ContainsKey(nGridId))
-                        return MapGrid[nGridId];
-                    break;
-
-            }
-
-            return null;
-        }
-
 
         private void AddAllMapExitBlockers(string sExpansionName)
         {
@@ -1013,13 +1582,14 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                 }
                 else
                 {
-                    EntrancePatch patchNeighbour = null;
+                    EntrancePatch? patchNeighbour = null;
                     string neighbour = GetNeighbourExpansionName(iGridId, oPatch.PatchSide);
-                    GameLocation glNeighbour = null;
+                    GameLocation? glNeighbour = null;
                     if (!string.IsNullOrEmpty(neighbour))
                     {
-                        string opside = GetNeighbourSide(oPatch.PatchSide);
-                        patchNeighbour = modDataService.validContents[neighbour].EntrancePatches[opside];
+                        EntranceDirection opside = GetNeighbourSide(oPatch.PatchSide);
+                        modDataService.validContents[neighbour].EntrancePatches.TryGetValue(((int)opside).ToString(), out patchNeighbour);
+                        //patchNeighbour = modDataService.validContents[neighbour].EntrancePatches[((int)opside).ToString()];
                         glNeighbour = Game1.getLocationFromName(neighbour);
                     }
                     //
@@ -1079,24 +1649,29 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
         }
         internal override void FixGrid()
         {
+#if DEBUG
+            logger.Log($"Fixing grid", LogLevel.Debug);
+#endif
             //
             //  called after save to fix any holes in the grid
             //
-            for (int iCounter = 0; iCounter < 10; iCounter++)
+            for (int farmCounter = 0; farmCounter < modDataService.MaximumExpansions; farmCounter++)
             {
-                if (!MapGrid.ContainsKey(iCounter))
+                if (!modDataService.MapGrid.ContainsKey(farmCounter))
                 {
                     bool found = false;
-                    for (int replace = iCounter + 1; replace < 10; replace++)
+                    for (int replace = farmCounter + 1; replace < modDataService.MaximumExpansions; replace++)
                     {
-                        if (MapGrid.ContainsKey(replace))
+                        if (modDataService.MapGrid.ContainsKey(replace))
                         {
+#if DEBUG
+                            logger.Log($"* moving Grid: {replace} to {farmCounter}", LogLevel.Debug);
+#endif
                             found = true;
-                            MapGrid[iCounter] = MapGrid[replace];
-                            modDataService.farmExpansions[MapGrid[iCounter]].modData.Remove("prism99.advize.stardewrealty.FEGridId");
-                            modDataService.farmExpansions[MapGrid[iCounter]].modData.Add("prism99.advize.stardewrealty.FEGridId", iCounter.ToString());
-                            modDataService.farmExpansions[MapGrid[iCounter]].GridId = iCounter;
-                            MapGrid.Remove(replace);
+                            modDataService.MapGrid[farmCounter] = modDataService.MapGrid[replace];
+                            modDataService.farmExpansions[modDataService.MapGrid[farmCounter]].modData["prism99.advize.stardewrealty.FEGridId"] = farmCounter.ToString();
+                            modDataService.farmExpansions[modDataService.MapGrid[farmCounter]].GridId = farmCounter;
+                            modDataService.MapGrid.Remove(replace);
                             break;
                         }
                     }

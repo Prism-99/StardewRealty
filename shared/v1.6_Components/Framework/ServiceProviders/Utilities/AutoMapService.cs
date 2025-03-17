@@ -9,6 +9,7 @@ using System.Reflection;
 using xTile.Layers;
 using xTile.Tiles;
 using xTile;
+using StardewValley.GameData.Minecarts;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
 {
@@ -41,7 +42,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
                 try
                 {
                     MapTokenHandlers[method.Name] = (MapTokenHandlerDelegate)Delegate.CreateDelegate(typeof(MapTokenHandlerDelegate), method);
+#if DEBUG
                     logger.Log($"added mapToken '{method.Name}'", LogLevel.Debug);
+#endif
                 }
                 catch (Exception ex)
                 {
@@ -123,7 +126,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
         {
             ExpansionPack result = new ExpansionPack
             {
-                EntrancePatches = new Dictionary<string, EntrancePatch> { }
+                EntrancePatches = new Dictionary<string, EntrancePatch> { },
+                InternalMineCarts = new MinecartNetworkData()
             };
 
             result.CaveEntrance = new EntranceDetails
@@ -194,6 +198,152 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             }
 
             return null;
+        }
+
+        internal override bool MergeAutoMap(ExpansionPack autoParse, ExpansionPack destinationPack, Map mNewMap)
+        {
+            bool mapIsValid = true;
+
+            destinationPack.ShippingBinLocation = autoParse.ShippingBinLocation;
+            destinationPack.Bushes.AddRange(autoParse.Bushes);
+            destinationPack.TreasureSpots = autoParse.TreasureSpots;
+
+            if (autoParse.InternalMineCarts.Destinations?.Any() ?? false)
+            {
+                autoParse.InternalMineCarts.Destinations.ForEach(p => p.TargetLocation = destinationPack.LocationName);
+                if (destinationPack.InternalMineCarts == null)
+                {
+                    destinationPack.InternalMineCarts = autoParse.InternalMineCarts;
+                }
+                else
+                {
+                    destinationPack.InternalMineCarts.Destinations = autoParse.InternalMineCarts.Destinations;
+                }
+                if (string.IsNullOrEmpty(destinationPack.InternalMineCarts.ChooseDestinationMessage))
+                    destinationPack.InternalMineCarts.ChooseDestinationMessage = "Select your destination";
+            }
+
+            if (autoParse.CaveEntrance.WarpIn.X != -1 && autoParse.CaveEntrance.WarpIn.Y != -1)
+            {
+                logger.Log($"   auto-mapping CaveEntrance.WarpIn", LogLevel.Debug);
+                if (destinationPack.CaveEntrance == null) { destinationPack.CaveEntrance = new EntranceDetails(); }
+                destinationPack.CaveEntrance.WarpIn = autoParse.CaveEntrance.WarpIn;
+            }
+            else
+            {
+                logger.Log($"    missing CaveEntrance WarpIn tag", LogLevel.Warn);
+            }
+            if (autoParse.CaveEntrance.WarpOut.X != -1 && autoParse.CaveEntrance.WarpOut.Y != -1)
+            {
+                logger.Log($"   auto-mapping CaveEntrance.WarpOut", LogLevel.Debug);
+                if (destinationPack.CaveEntrance == null) { destinationPack.CaveEntrance = new EntranceDetails(); }
+                destinationPack.CaveEntrance.WarpOut = autoParse.CaveEntrance.WarpOut;
+            }
+            else
+            {
+                logger.Log($"    missing CaveEntrance WarpOut tag", LogLevel.Warn);
+            }
+            if (destinationPack.EntrancePatches == null)
+            {
+                destinationPack.EntrancePatches = new Dictionary<string, EntrancePatch> { };
+
+            }
+            if (autoParse.EntrancePatches.ContainsKey("0"))
+            {
+                logger.Log($"   auto-mapping North Entrance Patch", LogLevel.Debug);
+                if (destinationPack.EntrancePatches.ContainsKey("0"))
+                    destinationPack.EntrancePatches.Remove("0");
+
+                destinationPack.EntrancePatches.Add("0", autoParse.EntrancePatches["0"]);
+            }
+            else
+            {
+                mapIsValid = false;
+                logger.Log($"    missing North Entrance Patch", LogLevel.Warn);
+            }
+            if (autoParse.EntrancePatches.ContainsKey("1"))
+            {
+                logger.Log($"   auto-mapping East Entrance Patch", LogLevel.Debug);
+                if (destinationPack.EntrancePatches.ContainsKey("1"))
+                    destinationPack.EntrancePatches.Remove("1");
+
+                destinationPack.EntrancePatches.Add("1", autoParse.EntrancePatches["1"]);
+            }
+            else
+            {
+                mapIsValid = false;
+                logger.Log($"    missing East Entrance Patch", LogLevel.Warn);
+            }
+            if (autoParse.EntrancePatches.ContainsKey("2"))
+            {
+                logger.Log($"   auto-mapping South Entrance Patch", LogLevel.Debug);
+                if (destinationPack.EntrancePatches.ContainsKey("2"))
+                    destinationPack.EntrancePatches.Remove("2");
+
+                destinationPack.EntrancePatches.Add("2", autoParse.EntrancePatches["2"]);
+            }
+            else
+            {
+                mapIsValid = false;
+                logger.Log($"    missing South Entrance Patch", LogLevel.Warn);
+            }
+            if (autoParse.EntrancePatches.ContainsKey("3"))
+            {
+                logger.Log($"   auto-mapping West Entrance Patch", LogLevel.Debug);
+                if (destinationPack.EntrancePatches.ContainsKey("3"))
+                    destinationPack.EntrancePatches.Remove("3");
+
+                destinationPack.EntrancePatches.Add("3", autoParse.EntrancePatches["3"]);
+            }
+            else
+            {
+                mapIsValid = false;
+                logger.Log($"    missing West Entrance Patch", LogLevel.Warn);
+            }
+            if (autoParse.FishAreas != null)
+            {
+                foreach (var area in autoParse.FishAreas)
+                {
+                    if (destinationPack.FishAreas.ContainsKey(area.Key))
+                    {
+                        destinationPack.FishAreas.Remove(area.Key);
+                    }
+
+                    destinationPack.FishAreas.Add(area.Key, area.Value);
+                }
+            }
+
+            destinationPack.FishData = autoParse.FishData;
+
+            destinationPack.MineCarts = autoParse.MineCarts;
+
+            if (autoParse.MineCarts.Any())
+            {
+                Layer backLayer = mNewMap.GetLayer("Buildings");
+
+                if (backLayer == null)
+                {
+                    logger.Log($"    Could not find Buildings layer for minecart mapping.", LogLevel.Debug);
+                }
+                else
+                {
+                    foreach (ExpansionPack.MineCartSpot mineCartStation in autoParse.MineCarts)
+                    {
+                        foreach (Point aTile in mineCartStation.MineCartActionPoints)
+                        {
+                            backLayer.Tiles[aTile.X, aTile.Y].Properties.Add("Action", $"MinecartTransport Default {destinationPack.LocationName}.{mineCartStation.MineCartDisplayName}");
+                        }
+                        logger.Log($"    Added minecart Action square(s)", LogLevel.Debug);
+                    }
+                }
+            }
+            logger.Log($"    FishData: {(destinationPack.FishData == null ? 0 : destinationPack.FishData.Count())}", LogLevel.Debug);
+            logger.Log($"   FishAreas: {(destinationPack.FishAreas == null ? 0 : destinationPack.FishAreas.Count())}", LogLevel.Debug);
+
+            destinationPack.suspensionBridges = autoParse.suspensionBridges;
+            logger.Log($"       Added {destinationPack.suspensionBridges.Count()} Suspension Bridges", LogLevel.Debug);
+
+            return mapIsValid;
         }
     }
 }

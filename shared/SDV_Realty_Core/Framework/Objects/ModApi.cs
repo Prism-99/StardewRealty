@@ -29,9 +29,9 @@ namespace SDV_Realty_Core.Framework.Objects
         /// <summary>The Farm Expansion core framework.</summary>
         //private readonly FEFramework Framework;
         //private FEContent content;
-        private SDRContentManager contentManager;        
+        private SDRContentManager contentManager;
         private ILoggerService logger;
-        private CustomBuildingManager _customBuildingManager=null;
+        private CustomBuildingManager _customBuildingManager = null;
         private IExpansionManager expansionManager;
         //private IContentPackService contentPackService;
         private IWarproomService warproomService;
@@ -41,7 +41,7 @@ namespace SDV_Realty_Core.Framework.Objects
              *********/
         /// <summary>Construct an instance.</summary>
         /// <param name="framework">The Farm Expansion core framework.</param>
-        internal ModApi( SDRContentManager cMan, ILoggerService olog, IExpansionManager expansionManager,IContentPackService contentPackService, IWarproomService warproomService, IExpansionCustomizationService expansionCustomizationService)
+        internal ModApi(SDRContentManager cMan, ILoggerService olog, IExpansionManager expansionManager, IContentPackService contentPackService, IWarproomService warproomService, IExpansionCustomizationService expansionCustomizationService)
         {
             logger = olog;
             contentManager = cMan;
@@ -157,7 +157,7 @@ namespace SDV_Realty_Core.Framework.Objects
                                     //
                                     //  update definition cache
                                     //
-                                    if(expansionManager.expansionManager.ExpDetails.ContainsKey(expansionName) && expansionManager.expansionManager.ExpDetails[expansionName].FishAreas.ContainsKey(areaId))
+                                    if (expansionManager.expansionManager.ExpDetails.ContainsKey(expansionName) && expansionManager.expansionManager.ExpDetails[expansionName].FishAreas.ContainsKey(areaId))
                                     {
                                         expansionManager.expansionManager.ExpDetails[expansionName].FishAreas[areaId].StockData.Remove(item);
                                     }
@@ -269,7 +269,7 @@ namespace SDV_Realty_Core.Framework.Objects
             {
                 _modDataService.CustomDefinitions[expName].ArtifactList.Remove(entry.First());
                 _eventsService.TriggerCustomEvent("SaveExpansionCustomizations", null);
-               // _modDataService.SaveDefinitions();
+                // _modDataService.SaveDefinitions();
             }
         }
 
@@ -402,7 +402,7 @@ namespace SDV_Realty_Core.Framework.Objects
 
             return list;
         }
-  
+
         public List<string> GetInstalledExpansionNames()
         {
             var list = _modDataService.validContents.Select(p => p.Key).ToList();
@@ -463,7 +463,8 @@ namespace SDV_Realty_Core.Framework.Objects
                 //    //    locdefn = cd.GetGameDefintion();
                 //    //}
                 //}
-                mods.Add(_modDataService.expDetails[oExp.LocationName]);
+                if (_modDataService.expDetails.TryGetValue(oExp.LocationName, out var expDetails))
+                    mods.Add(expDetails);
                 //mods.Add(expansionManager.expansionManager.ExpDetails[oExp.LocationName]);
                 //dcRet.Add(oExp.LocationName, new Dictionary<string, string> {
 

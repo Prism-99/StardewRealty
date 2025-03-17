@@ -1,8 +1,7 @@
-﻿using Prism99_Core.Utilities;
+﻿
 using SDV_Realty_Core.ContentPackFramework.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using StardewModHelpers;
-using StardewModdingAPI.Events;
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -11,7 +10,7 @@ using xTile;
 using System.Linq;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
-using SDV_Realty_Core.Framework.DataProviders;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace SDV_Realty_Core.Framework.AssetUtils
 {
@@ -29,7 +28,7 @@ namespace SDV_Realty_Core.Framework.AssetUtils
         private ILoggerService logger;
         private IModHelperService helper;
         public Dictionary<string, string> stringFromMaps = null;
-        public Dictionary<string, object> ExternalReferences = new();
+        //public Dictionary<string, object> ExternalReferences = new();
         public Dictionary<string, string> ChairTiles = new();
         public Dictionary<string, Dictionary<string, List<string>>> NPCTastes = new();
         public Dictionary<string, Map> Maps = new();
@@ -39,7 +38,7 @@ namespace SDV_Realty_Core.Framework.AssetUtils
         internal IStringService stringService;
         public SDRContentManager(IUtilitiesService utilitiesService, IModDataService modDataService)
         {
-            this.utilitiesService= utilitiesService;
+            this.utilitiesService = utilitiesService;
             logger = utilitiesService.logger;
             helper = utilitiesService.ModHelperService;
             this.modDataService = modDataService;
@@ -60,29 +59,49 @@ namespace SDV_Realty_Core.Framework.AssetUtils
         {
             NPCTastes.Add(objectId, tastes);
         }
-        public void AddExpansionFiles()
+        public void AddExpansionFiles(string expansionKey)
         {
-            //
-            //  add expansions
-            //
-            foreach (string expansionKey in modDataService.ExpansionMaps.Keys)
+            try
             {
                 //
                 //  add map source file
                 //
-                if (!string.IsNullOrEmpty(modDataService.validContents[expansionKey].WorldMapTexture))
+                if (modDataService.validContents[expansionKey].InternalWorldMapTexture)
                 {
-                    string worldMap = $"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{expansionKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{Path.GetFileName( modDataService.validContents[expansionKey].WorldMapTexture)}";
-                    logger.Log($"Loaded WorldMap Texture: '{worldMap}' for expansion {expansionKey}", LogLevel.Trace);
-                    //ExternalReferences.Add(worldMap, new StardewBitmap(Path.Combine(modDataService.validContents[expansionKey].ModPath, "assets", Path.GetFileName(modDataService.validContents[expansionKey].WorldMapTexture))).Texture());
-                    ExternalReferences.Add(worldMap, new StardewBitmap(Path.Combine(modDataService.validContents[expansionKey].ModPath, "assets", modDataService.validContents[expansionKey].WorldMapTexture)).Texture());
+                    if (!string.IsNullOrEmpty(modDataService.validContents[expansionKey].WorldMapTexture))
+                    {
+                        string worldMap = $"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{expansionKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{utilitiesService.RemoveTextureExtensions(modDataService.validContents[expansionKey].WorldMapTexture)}";
+                        logger?.Log($"Loaded WorldMap Texture: '{worldMap}' for expansion {expansionKey}", LogLevel.Trace);
+                        //ExternalReferences.Add(worldMap, new StardewBitmap(Path.Combine(modDataService.validContents[expansionKey].ModPath, "assets", Path.GetFileName(modDataService.validContents[expansionKey].WorldMapTexture))).Texture());
+                        if (modDataService.validContents[expansionKey].isAdditionalFarm)
+                        {
+                            try
+                            {
+                                modDataService.ExternalReferences.Add(worldMap, utilitiesService.ModHelperService.modHelper.GameContent.Load<Texture2D>(modDataService.validContents[expansionKey].WorldMapTexture));
+                            }
+                            catch
+                            {
+                                if (!modDataService.validContents[expansionKey].isAdditionalFarm)
+                                    modDataService.validContents[expansionKey].WorldMapTexture = "";
+                            }
+                        }
+                        else
+                            modDataService.ExternalReferences[worldMap] = new StardewBitmap(Path.Combine(modDataService.validContents[expansionKey].ModPath, "assets", modDataService.validContents[expansionKey].WorldMapTexture)).Texture();
+                    }
+                    foreach (string mapTexture in modDataService.validContents[expansionKey].SeasonalWorldMapTextures.Keys)
+                    {
+                        string worldMap = $"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{expansionKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{utilitiesService.RemoveTextureExtensions(modDataService.validContents[expansionKey].SeasonalWorldMapTextures[mapTexture])}";
+                        logger?.Log($"Loaded WorldMap Texture: '{worldMap}' for expansion {expansionKey}", LogLevel.Trace);
+                        //ExternalReferences.Add(worldMap, new StardewBitmap(Path.Combine(modDataService.validContents[expansionKey].ModPath, "assets", Path.GetFileName(modDataService.validContents[expansionKey].WorldMapTexture))).Texture());
+                        modDataService.ExternalReferences.Add(worldMap, new StardewBitmap(Path.Combine(modDataService.validContents[expansionKey].ModPath, "assets", modDataService.validContents[expansionKey].SeasonalWorldMapTextures[mapTexture])).Texture());
+                    }
                 }
-                Map expansionMap = modDataService.ExpansionMaps[expansionKey];
+                Map expansionMap = modDataService.ExpansionMaps[utilitiesService.GetMapUniqueName(modDataService.validContents[expansionKey])];
                 if (!string.IsNullOrEmpty(modDataService.validContents[expansionKey].MapName))
                 {
                     string sMapPath = $"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{expansionKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{modDataService.validContents[expansionKey].MapName}";
-                    logger.Log($"Loaded Map: '{sMapPath}' for expansion {expansionKey}", LogLevel.Trace);
-                    ExternalReferences.Add(sMapPath, expansionMap);
+                    logger?.Log($"Loaded Map: '{sMapPath}' for expansion {expansionKey}", LogLevel.Trace);
+                    modDataService.ExternalReferences.Add(sMapPath, expansionMap);
                 }
                 //
                 //  check for seat tiles
@@ -110,8 +129,16 @@ namespace SDV_Realty_Core.Framework.AssetUtils
                         {
                             tileSheet.ImageSource = $"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{expansionKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{Path.GetFileNameWithoutExtension(tileSheet.ImageSource)}";
                             string rawSource = Path.Join(modDataService.validContents[expansionKey].ModPath, "assets", Path.GetFileName(tileSheet.ImageSource) + ".png");
-                            ExternalReferences.Add(tileSheet.ImageSource, new StardewBitmap(rawSource).Texture());
-                            logger.Log($"Loaded TileSheet texture '{tileSheet.ImageSource}' for expansion {expansionKey}", LogLevel.Trace);
+                            modDataService.ExternalReferences.Add(tileSheet.ImageSource, new StardewBitmap(rawSource).Texture());
+                            //if (Path.GetFileName(tileSheet.ImageSource) != Path.GetFileNameWithoutExtension(tileSheet.ImageSource))
+                            //{
+                            //    int end = tileSheet.ImageSource.LastIndexOf('.');
+                            //    if (end > -1)
+                            //    {
+                            //        ExternalReferences.Add(tileSheet.ImageSource.Substring(0, end - 1), new StardewBitmap(rawSource).Texture());
+                            //    }
+                            //}
+                            logger?.Log($"Loaded TileSheet texture '{tileSheet.ImageSource}' for expansion {expansionKey}", LogLevel.Trace);
                             //
                             //  check for seasonal tilesheets
                             //
@@ -132,12 +159,12 @@ namespace SDV_Realty_Core.Framework.AssetUtils
                                         if (File.Exists(rawSource))
                                         {
                                             string assetFinalName = $"SDR{FEConstants.AssetDelimiter}Expansion{FEConstants.AssetDelimiter}{expansionKey}{FEConstants.AssetDelimiter}assets{FEConstants.AssetDelimiter}{filename}";
-                                            ExternalReferences.Add(assetFinalName, new StardewBitmap(rawSource).Texture());
-                                            logger.Log($"Loaded Seasonal TileSheet: '{assetFinalName}' for expansion {expansionKey}", LogLevel.Trace);
+                                            modDataService.ExternalReferences.Add(assetFinalName, new StardewBitmap(rawSource).Texture());
+                                            logger?.Log($"Loaded Seasonal TileSheet: '{assetFinalName}' for expansion {expansionKey}", LogLevel.Trace);
                                         }
                                         else
                                         {
-                                            logger.Log($"Missing Seasonal TileSheet: '{rawSource}' for expansion {expansionKey}", LogLevel.Warn);
+                                            logger?.Log($"Missing Seasonal TileSheet: '{rawSource}' for expansion {expansionKey}", LogLevel.Warn);
                                         }
                                     }
                                     seasonPointer++;
@@ -147,6 +174,22 @@ namespace SDV_Realty_Core.Framework.AssetUtils
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                logger?.Log($"Error loading expansion {expansionKey}", LogLevel.Error);
+                logger?.LogError(ex);
+            }
+
+        }
+        public void AddAllExpansionFiles()
+        {
+            //
+            //  add expansions
+            //
+            foreach (string expansionKey in modDataService.validContents.Keys)
+            {
+                AddExpansionFiles(expansionKey);
+            }
 
         }
 
@@ -154,110 +197,110 @@ namespace SDV_Realty_Core.Framework.AssetUtils
         {
             ChairTiles.Add(tileRef, seatDetails);
         }
-        private void CheckForLooseFiles(AssetRequestedEventArgs e, string cleanAssetName)
-        {
-            string sModName = "";
-            string normName = SDVPathUtilities.NormalizeKey(cleanAssetName);
-           
-            //
-            //  custom locations added by the mod
-            //
-            string[] assetNameParts = normName.Split(FEConstants.AssetDelimiter[0]);
-            if (assetNameParts.Length > 2)
-            {
-                sModName = assetNameParts[2];
-            }
-            //}
+        //private void CheckForLooseFiles(AssetRequestedEventArgs e, string cleanAssetName)
+        //{
+        //    string sModName = "";
+        //    string normName = SDVPathUtilities.NormalizeKey(cleanAssetName);
 
-            if (!string.IsNullOrEmpty(sModName))
-            {
+        //    //
+        //    //  custom locations added by the mod
+        //    //
+        //    string[] assetNameParts = normName.Split(FEConstants.AssetDelimiter[0]);
+        //    if (assetNameParts.Length > 2)
+        //    {
+        //        sModName = assetNameParts[2];
+        //    }
+        //    //}
 
-                string fileExtension = ".png";
-                if (Path.GetExtension(normName) != "") fileExtension = "";
-                string sAssetPath = normName.Replace(FEConstants.AssetDelimiter, Path.DirectorySeparatorChar.ToString()) + fileExtension;
+        //    if (!string.IsNullOrEmpty(sModName))
+        //    {
 
-                sAssetPath = sAssetPath.Replace($"Maps{Path.DirectorySeparatorChar}femaps{Path.DirectorySeparatorChar}{sModName}{Path.DirectorySeparatorChar}", "");
-                string filePath;
-                if (sModName == "SDR")
-                {
-                    //sPath = SDVPathUtilities.NormalizePath($"{FEConstants.MapPathPrefix}stardewrealty{FEConstants.AssetDelimiter}WorldMap.png");
-                    filePath = Path.Combine(helper.DirectoryPath, "data", "assets", sAssetPath);
-                }
-                else
-                {
-                    if (modDataService.validContents.ContainsKey(sModName))
-                    {
-                        logger.Log($"    Mod Name: {sModName}", LogLevel.Debug);
-                        filePath = Path.Combine(modDataService.validContents[sModName].ModPath, "assets", sAssetPath);
-                    }
-                    else
-                    {
-                        filePath = sAssetPath;
-                    }
-                }
-                try
-                {
-                    switch (Path.GetExtension(filePath))
-                    {
-                        case ".png":
-                        case "":
-                            // return asset png
+        //        string fileExtension = ".png";
+        //        if (Path.GetExtension(normName) != "") fileExtension = "";
+        //        string sAssetPath = normName.Replace(FEConstants.AssetDelimiter, Path.DirectorySeparatorChar.ToString()) + fileExtension;
 
-                            if (modDataService.ExpansionMaps.ContainsKey(sModName))
-                            {
-                                e.LoadFrom(() => { return new StardewBitmap(filePath).Texture(); }, AssetLoadPriority.Medium);
-                            }
-                            else if (ExternalReferences.ContainsKey(sModName + "." + filePath))
-                            {
-                                e.LoadFrom(() => { return new StardewBitmap(ExternalReferences[sModName + "." + filePath].ToString()).Texture(); }, AssetLoadPriority.Medium);
-                            }
-                            else if (File.Exists(filePath))
-                            {
-                                e.LoadFrom(() => { return new StardewBitmap(filePath).Texture(); }, AssetLoadPriority.Medium);
-                            }
-                            break;
-                        case ".tbin":
-                        case ".tmx":
-                            // get pre-loaded map file
+        //        sAssetPath = sAssetPath.Replace($"Maps{Path.DirectorySeparatorChar}femaps{Path.DirectorySeparatorChar}{sModName}{Path.DirectorySeparatorChar}", "");
+        //        string filePath;
+        //        if (sModName == "SDR")
+        //        {
+        //            //sPath = SDVPathUtilities.NormalizePath($"{FEConstants.MapPathPrefix}stardewrealty{FEConstants.AssetDelimiter}WorldMap.png");
+        //            filePath = Path.Combine(helper.DirectoryPath, "data", "assets", sAssetPath);
+        //        }
+        //        else
+        //        {
+        //            if (modDataService.validContents.ContainsKey(sModName))
+        //            {
+        //                logger.Log($"    Mod Name: {sModName}", LogLevel.Debug);
+        //                filePath = Path.Combine(modDataService.validContents[sModName].ModPath, "assets", sAssetPath);
+        //            }
+        //            else
+        //            {
+        //                filePath = sAssetPath;
+        //            }
+        //        }
+        //        try
+        //        {
+        //            switch (Path.GetExtension(filePath))
+        //            {
+        //                case ".png":
+        //                case "":
+        //                    // return asset png
 
-                            if (modDataService.ExpansionMaps.ContainsKey(sModName))
-                            {
-                                e.LoadFrom(() => { return modDataService.ExpansionMaps[sModName]; }, AssetLoadPriority.Medium);
-                            }
-                            else if (ExternalReferences.ContainsKey(sModName))
-                            {
-                                e.LoadFrom(() => { return ExternalReferences[sModName]; }, AssetLoadPriority.Medium);
-                            }
-                            break;
-                        default:
-                            // asume is png and serve asset png
-                            if (File.Exists(filePath))
-                            {
-                                e.LoadFrom(() => { return new StardewBitmap(filePath).Texture(); }, AssetLoadPriority.Medium);
-                            }
-                            break;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError($"CheckForLooseFiles.  Asset={normName}", ex);
-                }
-            }
-        }
-        public void RemoveStringFromMap(string assetName)
-        {
-            stringFromMaps.Remove(assetName);
-        }
-        public void UpsertStringFromMap(string assetName, string assValue)
-        {
-            if (stringFromMaps.ContainsKey(assetName))
-            {
-                stringFromMaps[assetName] = assValue;
-            }
-            else
-            {
-                stringFromMaps.Add(assetName, assValue);
-            }
-        }
+        //                    if (modDataService.ExpansionMaps.ContainsKey(sModName))
+        //                    {
+        //                        e.LoadFrom(() => { return new StardewBitmap(filePath).Texture(); }, AssetLoadPriority.Medium);
+        //                    }
+        //                    else if (ExternalReferences.ContainsKey(sModName + "." + filePath))
+        //                    {
+        //                        e.LoadFrom(() => { return new StardewBitmap(ExternalReferences[sModName + "." + filePath].ToString()).Texture(); }, AssetLoadPriority.Medium);
+        //                    }
+        //                    else if (File.Exists(filePath))
+        //                    {
+        //                        e.LoadFrom(() => { return new StardewBitmap(filePath).Texture(); }, AssetLoadPriority.Medium);
+        //                    }
+        //                    break;
+        //                case ".tbin":
+        //                case ".tmx":
+        //                    // get pre-loaded map file
+
+        //                    if (modDataService.ExpansionMaps.ContainsKey(sModName))
+        //                    {
+        //                        e.LoadFrom(() => { return modDataService.ExpansionMaps[sModName]; }, AssetLoadPriority.Medium);
+        //                    }
+        //                    else if (ExternalReferences.ContainsKey(sModName))
+        //                    {
+        //                        e.LoadFrom(() => { return ExternalReferences[sModName]; }, AssetLoadPriority.Medium);
+        //                    }
+        //                    break;
+        //                default:
+        //                    // asume is png and serve asset png
+        //                    if (File.Exists(filePath))
+        //                    {
+        //                        e.LoadFrom(() => { return new StardewBitmap(filePath).Texture(); }, AssetLoadPriority.Medium);
+        //                    }
+        //                    break;
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            logger.LogError($"CheckForLooseFiles.  Asset={normName}", ex);
+        //        }
+        //    }
+        //}
+        //public void RemoveStringFromMap(string assetName)
+        //{
+        //    stringFromMaps.Remove(assetName);
+        //}
+        //public void UpsertStringFromMap(string assetName, string assValue)
+        //{
+        //    if (stringFromMaps.ContainsKey(assetName))
+        //    {
+        //        stringFromMaps[assetName] = assValue;
+        //    }
+        //    else
+        //    {
+        //        stringFromMaps.Add(assetName, assValue);
+        //    }
+        //}
     }
 }

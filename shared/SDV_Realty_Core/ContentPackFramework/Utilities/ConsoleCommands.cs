@@ -80,11 +80,11 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
                 //
                 WriteLine("Command list:");
                 WriteLine("purchase expansionName   : purchases the named expansion");
-                    
+
             }
             else
             {
-                switch(args[0].ToLower())
+                switch (args[0].ToLower())
                 {
                     case "purchase":
                         Purchase(args.Skip(1).ToArray());
@@ -106,13 +106,9 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
         /// <param name="args"></param>
         private void sdr_config(string name, string[] args)
         {
-            foreach (PropertyInfo prop in utilitiesService.ConfigService.config.GetType().GetProperties().OrderBy(p=>p.Name))
+            foreach (PropertyInfo prop in modDataService.Config.GetType().GetProperties().OrderBy(p => p.Name))
             {
-                //var type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-                //if (type == typeof(DateTime))
-                //{
-                    WriteLine($"{prop.Name}: {prop.GetValue(utilitiesService.ConfigService.config, null)}");
-                //}
+                WriteLine($"{prop.Name}: {prop.GetValue(modDataService.Config, null)}");
             }
         }
         private void sdr_render_location(string name, string[] args)
@@ -143,7 +139,7 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             {
                 string picfile = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), Path.GetFileNameWithoutExtension(args[1]));
                 mapRendererService.RenderMap(gl).Save($"{picfile}.png");
-                WriteLine($"Map saved to {picfile}.png");           
+                WriteLine($"Map saved to {picfile}.png");
             }
             catch (Exception ex)
             {
@@ -193,15 +189,15 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
         {
             if (args.Length == 0)
             {
-                WriteLine($"  Current Light Level is {utilitiesService.ConfigService.config.LightLevel * 100:N0}");
+                WriteLine($"  Current Light Level is {modDataService.Config.LightLevel * 100:N0}");
             }
             else
             {
                 if (int.TryParse(args[0], out var brightness))
                 {
-                    utilitiesService.ConfigService.config.LightLevel = Math.Clamp(brightness / 100f, 0, 1);
+                    modDataService.Config.LightLevel = Math.Clamp(brightness / 100f, 0, 1);
                     utilitiesService.ConfigService.SaveConfig();
-                    WriteLine($"  Light Level is set to {utilitiesService.ConfigService.config.LightLevel * 100:N0}");
+                    WriteLine($"  Light Level is set to {modDataService.Config.LightLevel * 100:N0}");
                 }
             }
         }
@@ -256,7 +252,7 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             WriteLine($".locations ({Game1.locations.Count()})");
             foreach (GameLocation loc in Game1.locations)
             {
-                if (notFiltered || modDataService.farmExpansions.ContainsKey(loc.Name) || loc.Name == WarproomManager.WarpRoomLoacationName)
+                if (notFiltered || modDataService.farmExpansions.ContainsKey(loc.Name) || loc.Name == WarproomManager.StardewMeadowsLoacationName)
                 {
                     WriteLine($"[{index}] {loc.Name}");
                 }
@@ -266,7 +262,7 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             WriteLine($"._locationLookup ({Game1._locationLookup.Count()})");
             foreach (KeyValuePair<string, GameLocation> loc in Game1._locationLookup)
             {
-                if (notFiltered || modDataService.farmExpansions.ContainsKey(loc.Key) || loc.Key.StartsWith("fe.") || loc.Key == WarproomManager.WarpRoomLoacationName)
+                if (notFiltered || modDataService.farmExpansions.ContainsKey(loc.Key) || loc.Key.StartsWith("fe.") || loc.Key == WarproomManager.StardewMeadowsLoacationName)
                 {
                     WriteLine($"[{index}] {loc.Key}");
                 }
@@ -278,7 +274,7 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             WriteLine($"always active ({always.Count()})");
             foreach (KeyValuePair<string, GameLocation> loc in always)
             {
-                if (notFiltered || modDataService.farmExpansions.ContainsKey(loc.Key) || loc.Key.StartsWith("fe.") || loc.Key == WarproomManager.WarpRoomLoacationName)
+                if (notFiltered || modDataService.farmExpansions.ContainsKey(loc.Key) || loc.Key.StartsWith("fe.") || loc.Key == WarproomManager.StardewMeadowsLoacationName)
                 {
                     WriteLine($"[{index}] {loc.Key}");
                 }
@@ -361,7 +357,7 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
                 }
                 string sForSale = "Unknown ";
 
-                sForSale = landManager.LandForSale.Contains(sKey) ? "   Yes  " : "   No   ";
+                sForSale = modDataService.LandForSale.Contains(sKey) ? "   Yes  " : "   No   ";
 
                 WriteLine(sKey.Truncate(15).PadRight(15, ' ') + "|" + (oPack.DisplayName ?? oPack.LocationName).Truncate(17).PadRight(17, ' ')
                     + "|" + oPack.AddedToDataLocation.ToString().PadRight(7, ' ')
@@ -488,13 +484,13 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             //  Dump the list of currently for
             //  sales lands to the console
             //
-            if (landManager.LandForSale.Count == 0)
+            if (modDataService.LandForSale.Count == 0)
             {
                 WriteLine("No land for sale.");
             }
             else
             {
-                foreach (string sLand in landManager.LandForSale)
+                foreach (string sLand in modDataService.LandForSale)
                 {
                     WriteLine("For Sale: " + sLand);
                 }

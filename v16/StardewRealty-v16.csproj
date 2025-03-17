@@ -9,21 +9,22 @@
 	<PropertyGroup>
 		<EnableHarmony>true</EnableHarmony>
 		<GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>$(DefineConstants);Current;SKIA;v16;v2;DEBUG_LOG</DefineConstants>
+    <DefineConstants>$(DefineConstants);Current;DEBUG_LOG;SKIA;v16;v169;v2;warpV2</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <DefineConstants>$(DefineConstants);Current;SKIA;v16;v2;DEBUG_LOG</DefineConstants>
+    <DefineConstants>$(DefineConstants);Current;DEBUG_LOG;SKIA;v16;v169;v2;warpV2</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DefineConstants>$(DefineConstants);Current,SKIA;v16;v2</DefineConstants>
+    <DefineConstants>$(DefineConstants);Current,SKIA;v16;v169;v2;warpV2</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <DefineConstants>$(DefineConstants);Current,SKIA;v16;v2</DefineConstants>
+    <DefineConstants>$(DefineConstants);Current,SKIA;v16;v169;v2;warpV2</DefineConstants>
   </PropertyGroup>
 	<ItemGroup>
 		<Using Include="StardewValley" />
@@ -44,21 +45,28 @@
     <None Remove="Common\**" />
     <None Remove="Shared\**" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="release_notes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="release_notes.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.1.1" />
+    <PackageReference Include="Pathoschild.Stardew.ModBuildConfig" Version="4.3.2" />
   </ItemGroup>
 
   <ItemGroup>
   
     <Reference Include="Newtonsoft.Json">
-      <HintPath>Y:\smapi-internal\Newtonsoft.Json.dll</HintPath>
+      <HintPath>T:\smapi-internal\Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
     </Reference>
   
     <Reference Include="SkiaSharp">
-      <HintPath>Y:\SkiaSharp.dll</HintPath>
-      <CopyLocal>False</CopyLocal>
+      <HintPath>T:\SkiaSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
@@ -83,12 +91,12 @@
 
   <Import Project="..\shared\v1.6_Components\v1.6_Components.projitems" Label="Shared" />
 
-  <Import Project="..\shared\locationDataDisplay\locationDataDisplay.projitems" Label="Shared" />
-
-  <Import Project="..\shared\LumberJack\LumberJack.projitems" Label="Shared" />
-
   <Import Project="..\v1.6 Base Content Packs\v1.6 Base Content Packs.projitems" Label="Shared" />
 
+  <Import Project="..\CustomMenuFramework\CustomMenuFramework.projitems" Label="Shared" />
+
   <Import Project="..\shared\SDV_MapRenderer\SDV_MapRenderer.projitems" Label="Shared" />
+
+  <Import Project="..\shared\locationDataDisplay\locationDataDisplay.projitems" Label="Shared" />
 
 </Project>

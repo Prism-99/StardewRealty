@@ -5,6 +5,8 @@ using SDV_Realty_Core.Framework.ServiceInterfaces;
 using SDV_Realty_Core.Framework.ServiceInterfaces.GUI;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+using SDV_Realty_Core.Framework.ServiceProviders.Utilities;
 
 namespace SDV_Realty_Core.Framework.Objects
 {
@@ -14,29 +16,62 @@ namespace SDV_Realty_Core.Framework.Objects
         //  version 1.6
         //
         private static ILoggerService logger;
-        private static FEConfig Config;
         private static bool controlDown = false;
         private static bool zKeyDown = false;
         private static IForSaleMenuService forSaleMenuService;
         private static IMineCartMenuService _mineCartMenuService;
-        private static ILandManager _landManager;
+        private  static IModDataService _modDataService;
+        private static IUtilitiesService _UtilitiesService;
+        private ILandManager landManager;
+        //private static ILandManager _landManager;
         //public static Vector2 lastPlayerPoint = Vector2.Zero;
-        public FEInputHandler(ILoggerService olog, IUtilitiesService utilitiesService, IForSaleMenuService forSaleMenuServ, IMineCartMenuService mineCartMenuService, ILandManager landManager)
+        public FEInputHandler(ILoggerService olog, IUtilitiesService UtilitiesService, ILandManager landManager, IUtilitiesService utilitiesService, IForSaleMenuService forSaleMenuServ, IMineCartMenuService mineCartMenuService, IModDataService modDataService)
         {
             logger = olog;
-            Config = utilitiesService.ConfigService.config;
-            forSaleMenuService = forSaleMenuServ;
+           forSaleMenuService = forSaleMenuServ;
             _mineCartMenuService = mineCartMenuService;
-            _landManager = landManager;
+            _modDataService = modDataService;
+            _UtilitiesService = UtilitiesService;
+            this.landManager = landManager;
+            //utilitiesService.PatchingService.patches.AddPatch(false, typeof(GameLocation), "performAction",
+            // new Type[] { typeof(string), typeof(Farmer), typeof(Location) },
+            // typeof(FEInputHandler), nameof(performAction),
+            // "To intercept player action to check for the for sale sign opening.",
+            // "GameLocation");
 
-            utilitiesService.PatchingService.patches.AddPatch(false, typeof(GameLocation), "performAction",
-             new Type[] { typeof(string), typeof(Farmer), typeof(Location) },
-             typeof(FEInputHandler), nameof(performAction),
-             "To intercept player action to check for the for sale sign opening.",
-             "GameLocation");
+            GameLocation.RegisterTileAction(ModKeyStrings.Action_WaterMe, HandleWaterMe);
+            GameLocation.RegisterTileAction(ModKeyStrings.Action_ForSale, HandleForSale);
+            GameLocation.RegisterTileAction(ModKeyStrings.Action_MineCartOld, HandleMineCart);
+            GameLocation.RegisterTileAction(ModKeyStrings.Action_MineCart, HandleMineCart);
         }
+        private bool HandleMineCart(GameLocation location, string[] args, Farmer who, Point pos)
+        {
+            _mineCartMenuService.MineCartMenu.EnableAllItems();
+            _mineCartMenuService.MineCartMenu.DisableItem(Game1.currentLocation.Name);
+            Game1.activeClickableMenu = _mineCartMenuService.MineCartMenu;
 
+            return true;
+        }
+        private bool HandleForSale(GameLocation location, string[] args, Farmer who, Point pos)
+        {
+            landManager.PopBuyingMenu();
+            //if (_modDataService.LandForSale.Count == 0)
+            //{
+            //    Game1.addHUDMessage(new HUDMessage(I18n.LandManagerNone()) { noIcon = true, timeLeft = 1500 });
+            //}
+            //else
+            //{
+            //    Game1.activeClickableMenu = forSaleMenuService.GetMenu();//  new FEForSaleMenu(logger);
+            //}
+            return true;
+        }
+        private bool HandleWaterMe(GameLocation location, string[] args, Farmer who, Point pos)
+        {
+            location.WaterMe();
+            _UtilitiesService.PopMessage(I18n.LocationWatered());
 
+            return true;
+        }
 
         //public static void Input_ButtonReleased(object sender, ButtonReleasedEventArgs e)
         //{
@@ -97,32 +132,32 @@ namespace SDV_Realty_Core.Framework.Objects
 
                 switch (fullActionString)
                 {
-                    case "prism99.sdr.WaterMe":
-                        Game1.player.currentLocation.WaterMe();
-                        Game1.addHUDMessage(new HUDMessage("Location watered") { noIcon = true, timeLeft = 1500 });
-                        __result = true;
-                        break;
-                    case "prism99.sdr.ForSale":
-                        //
-                        //  activate ForSaleMenu
-                        //
-                        if (_landManager.LandForSale.Count == 0)
-                        {
-                            Game1.addHUDMessage(new HUDMessage("There currently is no land for sale.") { noIcon = true, timeLeft = 1500 });
-                        }
-                        else
-                        {
-                            Game1.activeClickableMenu = forSaleMenuService.GetMenu();//  new FEForSaleMenu(logger);
-                        }
-                        __result = true;
-                        break;
-                    case "SDR_MineCart":
-                    case "prism99.sdr.MineCart":
-                        _mineCartMenuService.MineCartMenu.EnableAllItems();
-                        _mineCartMenuService.MineCartMenu.DisableItem(Game1.currentLocation.Name);
-                        Game1.activeClickableMenu = _mineCartMenuService.MineCartMenu;
-                         __result = true;
-                        break;
+                    //case "prism99.sdr.WaterMe":
+                    //    Game1.player.currentLocation.WaterMe();
+                    //    Game1.addHUDMessage(new HUDMessage("Location watered") { noIcon = true, timeLeft = 1500 });
+                    //    __result = true;
+                    //    break;
+                    //case "prism99.sdr.ForSale":
+                    //    //
+                    //    //  activate ForSaleMenu
+                    //    //
+                    //    if (_landManager.LandForSale.Count == 0)
+                    //    {
+                    //        Game1.addHUDMessage(new HUDMessage("There currently is no land for sale.") { noIcon = true, timeLeft = 1500 });
+                    //    }
+                    //    else
+                    //    {
+                    //        Game1.activeClickableMenu = forSaleMenuService.GetMenu();//  new FEForSaleMenu(logger);
+                    //    }
+                    //    __result = true;
+                    //    break;
+                    //case "SDR_MineCart":
+                    //case "prism99.sdr.MineCart":
+                    //    _mineCartMenuService.MineCartMenu.EnableAllItems();
+                    //    _mineCartMenuService.MineCartMenu.DisableItem(Game1.currentLocation.Name);
+                    //    Game1.activeClickableMenu = _mineCartMenuService.MineCartMenu;
+                    //    __result = true;
+                    //    break;
                         //
                         //  keeping in case want to add
                         //  popup message about moving to

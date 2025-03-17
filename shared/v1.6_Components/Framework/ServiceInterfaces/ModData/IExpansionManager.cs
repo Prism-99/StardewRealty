@@ -7,9 +7,11 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.ModData
 {
     internal abstract class IExpansionManager : IService
     {
-         public override Type ServiceType => typeof(IExpansionManager);
+        public override Type ServiceType => typeof(IExpansionManager);
         public ExpansionManager expansionManager;
         public abstract void ActivateExpansionOnRemote(string expansionName, int gridId);
         public abstract bool ActivateExpansion(string expansionName, int gridId = -1);
+        public abstract void HandlePreLoad();
+        public abstract void HandleGameSaved();
     }
 }

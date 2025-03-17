@@ -1,21 +1,31 @@
-﻿using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+﻿
+using SDV_Realty_Core.Framework.Expansions;
+using SDV_Realty_Core.Framework.Objects;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using StardewValley.Locations;
 using System.IO;
+using System.Xml.Serialization;
 using SDict = Prism99_Core.Objects.SerializableDictionary<string, SDV_Realty_Core.Framework.Expansions.FarmExpansionLocation>;
-using SubDict= Prism99_Core.Objects.SerializableDictionary<string, StardewValley.GameLocation>;
+using SubDict = Prism99_Core.Objects.SerializableDictionary<string, StardewValley.GameLocation>;
+
+
 namespace SDV_Realty_Core.Framework.Saves
 {
+    [XmlInclude(typeof(WarpSign))]
     public abstract class ISDRSave
     {
-      internal  IModHelper helper;
+        internal IModHelper helper;
         internal ILoggerService logger;
         public abstract string Version { get; }
         public abstract bool LoadSaveFile(string filename, bool loadOnly = false);
         public abstract bool SaveFile(string filename);
         public virtual SDict FarmExpansions { get; set; }
+        public FarmExpansionLocation StardewMeadows { get; set; }
+        public SDict LoadedExpansions { get; set; }
         public virtual SubDict SubLocations { get; set; }
         public virtual string GetSaveFilename(string dataDirectory)
         {
-           string saveFilename = Path.Combine(dataDirectory, $"{Constants.SaveFolderName}.xml");
+            string saveFilename = Path.Combine(dataDirectory, $"{Constants.SaveFolderName}.xml");
             string saveDirectory = Path.GetDirectoryName(saveFilename);
 
             if (saveDirectory == null)

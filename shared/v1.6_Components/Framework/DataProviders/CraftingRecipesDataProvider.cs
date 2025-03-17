@@ -4,6 +4,7 @@ using System.Linq;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using System.Collections.Generic;
 using SDV_Realty_Core.Framework.CustomEntities.BigCraftables;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 
 
 namespace SDV_Realty_Core.Framework.DataProviders
@@ -16,10 +17,12 @@ namespace SDV_Realty_Core.Framework.DataProviders
     {
         ICustomEntitiesServices customEntitiesServices;
         IUtilitiesService utilitiesService;
-        public CraftingRecipesDataProvider(ICustomEntitiesServices customEntitiesServices, IUtilitiesService utilitiesService)
+        IModDataService modDataService;
+        public CraftingRecipesDataProvider(IModDataService modDataService,ICustomEntitiesServices customEntitiesServices, IUtilitiesService utilitiesService)
         {
             this.customEntitiesServices = customEntitiesServices;
             this.utilitiesService = utilitiesService;
+            this.modDataService = modDataService;
         }
         public override string Name => "Data/CraftingRecipes";
 
@@ -55,7 +58,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                 //
                 //  add crafting recipe for Mushroom Box
                 //
-                if (utilitiesService.ConfigService.config.AddMushroomBoxRecipe)
+                if (modDataService.Config.AddMushroomBoxRecipe)
                     recipes.Add("Mushroom Box", "388 5/Home/128/true/default/");
 
                 foreach (CustomBigCraftableData bigCraftable in customEntitiesServices.customBigCraftableService.customBigCraftableManager.BigCraftables.Values)

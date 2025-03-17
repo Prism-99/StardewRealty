@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using StardewModdingAPI;
+﻿using StardewValley.GameData;
+using System;
+
 
 namespace SDV_Realty_Core
 {
@@ -12,6 +11,261 @@ namespace SDV_Realty_Core
         {
             Translations = translations;
         }
+        public static string WF_Total(int totalWeeds, int price)
+        {
+            return GetByKey("wf.total", new {weeds=$"{totalWeeds:N0}",total=$"{price:N0}"});
+        }
+        public static string WF_Quote(int quote)
+        {
+            return GetByKey("wf.quote", new {cost=$"{quote:N0}"});
+        }
+        public static string WF_Label()
+        {
+            return GetByKey("wf.label");
+        }
+        public static string WF_Label_TT()
+        {
+            return GetByKey("wf.label.tt");
+        }
+        public static string WF_Header()
+        {
+            return GetByKey("wf.header");
+        }
+        public static string Train_BTL()
+        {
+            return GetByKey("train.btl");
+        }
+        public static string WM_ScrollText()
+        {
+            return GetByKey("wm.scrolltext");
+        }
+        public static string WM_Requirements()
+        {
+            return GetByKey("wm.requirements");
+        }
+        public static string WM_AddPacks()
+        {
+            return GetByKey("wm.add.packs");
+        }
+        public static string NoMoney()
+        {
+            return GetByKey("fs.no.money");
+        }
+        public static string Size()
+        {
+            return GetByKey("size");
+        }
+        public static string PC_NoDirt()
+        {
+            return GetByKey("pc.no.dirt");
+        }
+        public static string PC_LineQuote(int cost)
+        {
+            return GetByKey("pc.line.quote", new { price = $"{cost:N0}" });
+        }
+        public static string PC_Quote(string cropName, int seedCost, int totalPrice)
+        {
+            return GetByKey("pc.quote", new { crop = cropName, price = $"{seedCost:N0}", total = $"{totalPrice:N0}" });
+        }
+        public static string PC_SeedHeader()
+        {
+            return GetByKey("pc.seed.header");
+        }
+        public static string PC_Label()
+        {
+            return GetByKey("pc.label");
+        }
+        public static string PC_Label_TT()
+        {
+            return GetByKey("pc.label.tt");
+        }
+        public static string PC_ExpHeader()
+        {
+            return GetByKey("pc.exp.header");
+        }
+        public static string PC_Total(int totalSeeded, int seedPrice, int totalCost)
+        {
+            return GetByKey("pc.total", new { totalseeded = $"{totalSeeded:N0}", price = $"{seedPrice:N0}", totalcost = $"{totalCost:N0}" });
+        }
+        public static string CF_Label()
+        {
+            return GetByKey("cf.label");
+        }
+        public static string CF_Label_TT()
+        {
+            return GetByKey("cf.label.tt");
+        }
+        public static string CF_Header()
+        {
+            return GetByKey("cf.header");
+        }
+        public static string CF_Quote( int quote)
+        {
+            return GetByKey("cf.quote", new {  cost = $"{quote:N0}" });
+        }
+        public static string CF_Total(string displayName, int cost)
+        {
+            return GetByKey("cf.total", new { expansionname = displayName, totalCost = $"{cost:N0}" });
+        }
+        public static string HF_Label()
+        {
+            return GetByKey("hf.label");
+        }
+        public static string HF_Label_TT()
+        {
+            return GetByKey("hf.label.tt");
+        }
+        public static string HF_Header()
+        {
+            return GetByKey("hf.header");
+        }
+        public static string HF_Quote( int quote)
+        {
+            return GetByKey("hf.quote", new {  cost = $"{quote:N0}" });
+        }
+        public static string HF_Total(int totalTiles, int totalCost)
+        {
+            return GetByKey("hf.total", new { tiles = $"{totalTiles:N0}", cost = $"{totalCost:N0}" });
+        }
+        public static string AF_NoDirt()
+        {
+            return GetByKey("af.no.dirt");
+        }
+        public static string AF_Label()
+        {
+            return GetByKey("af.label");
+        }
+        public static string AF_Label_TT()
+        {
+            return GetByKey("af.label.tt");
+        }
+        public static string AF_Header()
+        {
+            return GetByKey("af.header");
+        }
+        public static string AF_Quote(int quote)
+        {
+            return GetByKey("af.quote", new { cost = $"{quote:N0}" });
+        }
+        public static string AF_FertHeader()
+        {
+            return GetByKey("af.fertil.header");
+        }
+        public static string AF_Total(int totalFertilized, int cost, int total)
+        {
+            return GetByKey("af.total", new { totalfert = $"{totalFertilized:N0}", fertilizercost = $"{cost:N0}", totalcost = $"{total:N0}" });
+        }
+        public static string TrainArriving()
+        {
+            return GetByKey("train.arriving");
+        }
+        public static string MM_Set()
+        {
+            return GetByKey("mini.map.set");
+        }
+        public static string MM_Clear()
+        {
+            return GetByKey("mini.map.clear");
+        }
+
+        public static string MM_Open()
+        {
+            return GetByKey("mini.map.open");
+        }
+        public static string GMCM_UseWarps()
+        {
+            return GetByKey("gmcm.use.map.warps");
+        }
+        public static string GMCM_UseWarps_TT()
+        {
+            return GetByKey("gmcm.use.map.warps.tt");
+        }
+
+        public static string GMCM_Additional()
+        {
+            return GetByKey("gmcm.use.additional");
+        }
+        public static string GMCM_Additional_TT()
+        {
+            return GetByKey("gmcm.use.additional.tt");
+        }
+
+        public static string LocationWatered()
+        {
+            return GetByKey("location.watered");
+        }
+        public static string LandManagerLandSold(string locationSold, int sellingPrice)
+        {
+            return GetByKey("lm.land.sold", new { location = locationSold, price = sellingPrice.ToString("N0") });
+        }
+        public static string LandManagerNone()
+        {
+            return GetByKey("lm.none.for.sale");
+        }
+        public static string LandManagerBuying()
+        {
+            return GetByKey("lm.buying");
+        }
+        public static string LandManagerSelling()
+        {
+            return GetByKey("lm.selling");
+        }
+        public static string LandManagerMaxExp()
+        {
+            return GetByKey("lm.max.expansions");
+        }
+        public static string LandManagerBuyingSelling()
+        {
+            return GetByKey("lm.buying.or.selling");
+        }
+        public static string GridManagerSelectDestination()
+        {
+            return GetByKey("gm.select.destintaion");
+        }
+        public static string JunimoLetterSubject()
+        {
+            return GetByKey("junimo.letter.subject");
+        }
+        public static string JunimoLetterFooter()
+        {
+            return GetByKey("junimo.letter.footer");
+        }
+        public static string JunimoLetterSeedDiscount(int discount)
+        {
+            return GetByKey("junimo.letter.seeddiscount", new { discount = discount.ToString("N0") });
+        }
+        public static string JunimoLetterReseedService()
+        {
+            return GetByKey("junimo.letter.reseed");
+        }
+        public static string JunimoReseedServiceCost(int cost)
+        {
+            return GetByKey("junimo.letter.reseedcost", new { cost = cost.ToString("N0") });
+        }
+        public static string JunimoLetterWinterServiceCost(int cost)
+        {
+            return GetByKey("junimo.letter.wintercost", new { cost = cost.ToString("N0") });
+        }
+        public static string JunimoLetterWinterService()
+        {
+            return GetByKey("junimo.letter.winterservice");
+        }
+        public static string JunimoLetterRainServiceCost(int cost)
+        {
+            return GetByKey("junimo.letter.raincost", new { cost = cost.ToString("N0") });
+        }
+        public static string JunimoLetterRainService()
+        {
+            return GetByKey("junimo.letter.rainservice");
+        }
+        public static string JunimoLetterHeader()
+        {
+            return GetByKey("junimo.letter.header");
+        }
+        public static string JunimoLetterIntro()
+        {
+            return GetByKey("junimo.letter.introduction");
+        }
         public static string GotoRanch()
         {
             return GetByKey("goto.ranch");
@@ -20,7 +274,57 @@ namespace SDV_Realty_Core
         {
             return GetByKey("goto.carpenter");
         }
-   
+
+        public static string GMCM_GameFixes()
+        {
+            return GetByKey("gmcm.game.fixes");
+        }
+        public static string GMCM_FixHoppers()
+        {
+            return GetByKey("gmcm.game.hopper");            
+        }
+        public static string GMCM_FixHoppers_TT()
+        {
+            return GetByKey("gmcm.game.hopper.tt");
+        }
+        public static string GMCM_GlobalPrice_TT()
+        {
+            return GetByKey("gmcm.realty.globalprice.tt");
+        }
+
+        public static string GMCM_GlobalPrice()
+        {
+            return GetByKey("gmcm.realty.globalprice");
+        }
+        public static string GMCM_UseGlobalPrice_TT()
+        {
+            return GetByKey("gmcm.realty.useglobalprice.tt");
+        }
+
+        public static string GMCM_UseGlobalPrice()
+        {
+            return GetByKey("gmcm.realty.useglobalprice");
+        }
+        public static string GMCM_GlobalCond_TT()
+        {
+            return GetByKey("gmcm.realty.globalcondition.tt");
+        }
+        public static string GMCM_GlobalCond()
+        {
+            return GetByKey("gmcm.realty.globalcondition");
+        }
+        public static string GMCM_UseGlobalCond_TT()
+        {
+            return GetByKey("gmcm.realty.useglobalcondition.tt");
+        }
+        public static string GMCM_UseGlobalCond()
+        {
+            return GetByKey("gmcm.realty.useglobalcondition");
+        }
+        public static string GMCM_Globals()
+        {
+            return GetByKey("gmcm.realty.globals");
+        }
         public static string GMCM_BuildingLights_TT()
         {
             return GetByKey("gmcm.realty.buildinglights.tt");
@@ -101,6 +405,18 @@ namespace SDV_Realty_Core
         {
             return GetByKey("need_packs");
         }
+        //
+        //  premium junimo related
+        //
+        public static string GMCM_JO_Enabled()
+        {
+            return GetByKey("gmcm.junimos.premium");
+        }
+        public static string GMCM_JO_Enabled_TT()
+        {
+            return GetByKey("gmcm.junimos.premium.tt");
+        }
+
         public static string GMCM_JO_RealTime()
         {
             return GetByKey("gmcm.jo.realtime");
@@ -246,11 +562,11 @@ namespace SDV_Realty_Core
         {
             return GetByKey("gmcm.autograb.EnableAG.tt");
         }
-        public static string GMCM_AutoGrab_Keybind()
+        public static string GMCM_MeadowsWarp_Keybind()
         {
             return GetByKey("gmcm.realty.Keybind");
         }
-        public static string GMCM_AutoGrab_Keybind_TT()
+        public static string GMCM_MeadowsWarp_Keybind_TT()
         {
             return GetByKey("gmcm.realty.Keybind.tt");
         }
@@ -364,6 +680,14 @@ namespace SDV_Realty_Core
         //
         //  grace period options
         //
+        public static string GMCM_ForSale()
+        {
+            return GetByKey("gmcm.forsale");
+        }
+        public static string GMCM_ForSale_TT()
+        {
+            return GetByKey("gmcm.forsale.tt");
+        }
         public static string GMCM_GP_Title()
         {
             return GetByKey("gmcm.gp.Title");
@@ -409,11 +733,50 @@ namespace SDV_Realty_Core
             return GetByKey("gmcm.gp.ForFruits.tt");
         }
 
+        public static string GMCM_MeadowsTitle()
+        {
+            return GetByKey("gmcm.meadows.title");
+        }
+        public static string GMCM_MeadowsTrainEnable()
+        {
+            return GetByKey("gmcm.meadows.train.enable");
+        }
+        public static string GMCM_MeadowsTrainEnable_TT()
+        {
+            return GetByKey("gmcm.meadows.train.enable.tt");
+        }
+        public static string GMCM_MeadowsTrainTime()
+        {
+            return GetByKey("gmcm.meadows.train.arrival");
+        }
+        public static string GMCM_MeadowsTrainTime_TT()
+        {
+            return GetByKey("gmcm.meadows.train.arrival.tt");
+        }
+        public static string GMCM_MeadowsRing()
+        {
+            return GetByKey("gmcm.meadows.warp.ring");
+        }
+        public static string GMCM_MeadowsRing_TT()
+        {
+            return GetByKey("gmcm.meadows.warp.ring.tt");
+        }
 
-
+        public static string TrainStation()
+        {
+            return GetByKey("train.station");
+        }
+        public static string BoatDock()
+        {
+            return GetByKey("boat.dock");
+        }
+        public static string BusStop()
+        {
+            return GetByKey("bus.stop");
+        }
         public static string Cost(int cost)
         {
-            return GetByKey("cost", new { price=cost.ToString("N0") });
+            return GetByKey("cost", new { price = cost.ToString("N0") });
         }
         public static string Purchase()
         {
@@ -431,11 +794,12 @@ namespace SDV_Realty_Core
         {
             return GetByKey("deed_tomorrow");
         }
-        private static Translation GetByKey(string key, object tokens = null)
+        public static Translation GetByKey(string key, object tokens = null)
         {
             if (Translations == null)
                 throw new InvalidOperationException($"You must call {nameof(I18n)}.{nameof(Init)} from the mod's entry method before reading translations.");
             return Translations.Get(key, tokens);
         }
+
     }
 }

@@ -9,11 +9,12 @@ using System.Collections.Generic;
 
 namespace SDV_Realty_Core.Framework.Objects
 {
-    internal class WarpSign : SDObject
+    public class WarpSign : SDObject
     {
         private DateTime dtLastChange = DateTime.Now;
         private int CurrentLocationIndex = -1;
         private static Dictionary<string, Tuple<string, EntranceDetails>> _CaveEntrances;
+        public Warp CurrentWarp;
         public WarpSign() { }
         public WarpSign(Vector2 newLocation, Dictionary<string, Tuple<string, EntranceDetails>> CaveEntrances)
         {
@@ -74,20 +75,22 @@ namespace SDV_Realty_Core.Framework.Objects
                 //  update warps points in room
                 //
 
-                Vector2[] arWarps = new Vector2[] { new Vector2(7, 5), new Vector2(8, 5), new Vector2(9, 5) };
+                //Vector2[] arWarps = new Vector2[] { new Vector2(7, 5), new Vector2(8, 5), new Vector2(9, 5) };
+                //Vector2[] arWarps = new Vector2[] { new Vector2(tileLocation.X+1, tileLocation.Y+ 2), new Vector2(tileLocation.X + 2, tileLocation.Y + 2), new Vector2(tileLocation.X + 3, tileLocation.Y + 2) };
 
-                GameLocation glWarp = Game1.getLocationFromName(WarproomManager.WarpRoomLoacationName);
+                //GameLocation glWarp = Game1.getLocationFromName(WarproomManager.StardewMeadowsLoacationName);
 
-                foreach (Vector2 vWarp in arWarps)
-                {
-                    Warp wTmp = GetWarp(vWarp, glWarp);
-                    if (wTmp != null) glWarp.warps.Remove(wTmp);
-                    glWarp.warps.Add(new Warp((int)vWarp.X, (int)vWarp.Y, caveEntrance, _CaveEntrances[caveEntrance].Item2.WarpIn.X, _CaveEntrances[caveEntrance].Item2.WarpIn.Y, true));
-                }
+                //foreach (Vector2 vWarp in arWarps)
+                //{
+                //    Warp wTmp = GetWarp(vWarp, glWarp);
+                //    if (wTmp != null) glWarp.warps.Remove(wTmp);
+                //    glWarp.warps.Add(new Warp((int)vWarp.X, (int)vWarp.Y, caveEntrance, _CaveEntrances[caveEntrance].Item2.WarpIn.X, _CaveEntrances[caveEntrance].Item2.WarpIn.Y, true));
+                //}
 
+                CurrentWarp = new Warp(0, 0, caveEntrance, _CaveEntrances[caveEntrance].Item2.WarpIn.X, _CaveEntrances[caveEntrance].Item2.WarpIn.Y, true);
                 dtLastChange = DateTime.Now;
             }
-            spriteBatch.DrawString(Game1.smallFont, Text ?? "", locationNamePosition, Color.White);
+            spriteBatch.DrawString(Game1.smallFont, Text ?? "", locationNamePosition, Color.White,0,Vector2.Zero,1,SpriteEffects.None,1);
         }
         private Warp GetWarp(Vector2 vVector, GameLocation gl)
         {

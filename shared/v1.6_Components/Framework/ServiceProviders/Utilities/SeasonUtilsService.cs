@@ -11,7 +11,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
     {
         public override Type[] InitArgs => new Type[]
         {
-            typeof(IUtilitiesService),typeof(IExpansionManager)
+            typeof(IModDataService),typeof(IExpansionManager)
         };
 
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -26,11 +26,11 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
         {
            this.logger = logger;
 
-            IUtilitiesService utilitiesService= (IUtilitiesService)args[0];
+            IModDataService modDataService = (IModDataService)args[0];
             IExpansionManager expansionManager= (IExpansionManager)args[1];
 
             SeasonalUtils = new SeasonalUtils();
-            SeasonalUtils.Initialize(utilitiesService.ConfigService.config, logger,expansionManager);
+            SeasonalUtils.Initialize(modDataService.Config, logger,expansionManager);
         }
         public override bool isWinter(ModDataDictionary modData)
         {

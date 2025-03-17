@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using System.IO;
 using SDV_Realty_Core.ContentPackFramework.Utilities;
 using StardewValley.GameData.Movies;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 
 namespace SDV_Realty_Core.Framework.CustomEntities.Movies
 {
@@ -13,13 +14,13 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Movies
     {
         private IModHelper helper;
         private SDVLogger logger;
-        private SDRContentManager conMan;
+        private IContentManagerService contentManager;
         public Dictionary<string, CustomMovieData> Movies;
-        public void Initialize(SDVLogger ologger, IModHelper ohelper, SDRContentManager contentManager)
+        public void Initialize(SDVLogger ologger, IModHelper ohelper, IContentManagerService contentManager)
         {
             helper = ohelper;
             logger = ologger;
-            conMan = contentManager;
+            this.contentManager = contentManager;
             Movies = new Dictionary<string, CustomMovieData>();
             //var vanillaMovies = DataLoader.Movies(Game1.content);
 
@@ -94,7 +95,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities.Movies
             if (!string.IsNullOrEmpty(movie.MovieData.Texture))
             {
                 string moviePath = $"SDR{FEConstants.AssetDelimiter}movies{FEConstants.AssetDelimiter}{movieKey}{FEConstants.AssetDelimiter}{movie.MovieData.Texture}";
-                conMan.ExternalReferences.Add(moviePath, Path.Combine(movie.ModPath, movie.MovieData.Texture));
+                contentManager.AddExternalReference(moviePath, Path.Combine(movie.ModPath, movie.MovieData.Texture));
                 movie.MovieData.Texture = moviePath;
             }
 

@@ -8,5 +8,6 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces
 {
         public SDRChatboxCommands chatBoxCommands;
         public override Type ServiceType => typeof(IChatBoxCommandsService);
+        public abstract void AddCustomCommand(string command, Action<string[]> action);
     }
 }

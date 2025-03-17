@@ -1,6 +1,4 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using Prism99_Core.Objects;
-using Prism99_Core.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
@@ -8,6 +6,11 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using System;
 using System.Linq;
 using xTile;
+using StardewValley.Menus;
+using SDV_Realty_Core.Framework.ServiceInterfaces.GameMechanics;
+using SDV_Realty_Core.Framework.Locations;
+using System.Collections.Generic;
+using System.Security;
 
 
 namespace SDV_Realty_Core.Framework.Objects
@@ -18,20 +21,34 @@ namespace SDV_Realty_Core.Framework.Objects
         private ILoggerService logger;
         private IGridManager _gridManager;
         private IContentManagerService _contentManagerService;
-        public SDRChatboxCommands(ILoggerService olog, IModHelperService ohelper, IGridManager gridManager, IContentManagerService contentManagerService)
+        private Dictionary<string, Action<string[]>> customCommands = new();
+        public SDRChatboxCommands(ILoggerService olog,  IModHelperService ohelper, IGridManager gridManager, IContentManagerService contentManagerService)
         {
             helper = ohelper;
             logger = olog;
             _gridManager = gridManager;
             _contentManagerService = contentManagerService;
+#if v168
             ChatBoxCommands.Initialize(helper.modHelper, (SDVLogger)logger.CustomLogger);
             ChatBoxCommands.AddCommand("sdr", sdr);
-
+#else
+            ChatCommands.Register($"sdr", ChatBoxHandler, name => $"{name} [message]: sdr chat commands.");
+#endif
         }
-        private void PopHUDMessage(string message,int duration=6000)
+        public void AddCustomCommand(string command, Action<string[]> action)
+        {
+            customCommands[command] = action;
+        }
+        private void PopHUDMessage(string message, int duration = 6000)
         {
             Game1.addHUDMessage(new HUDMessage(message) { noIcon = true, timeLeft = duration });
         }
+#if !v168
+        internal void ChatBoxHandler(string[] command, ChatBox chatBox)
+        {
+            sdr(string.Join(" ", command));
+        }
+#endif
         internal void sdr(string commandLine)
         {
             //
@@ -44,6 +61,17 @@ namespace SDV_Realty_Core.Framework.Objects
                 case "":
                     PopHUDMessage($"Stardew Realty version {helper.ModRegistry.Get(helper.ModRegistry.ModID).Manifest.Version}");
                     break;
+                //case "train":
+                //    string location = WarproomManager.StardewMeadowsLoacationName;
+                //    if (arWords.Length > 1)
+                //        location = arWords[1];
+
+                //    int delay = 2000;
+                //    if (arWords.Length > 2 && int.TryParse(arWords[2], out int dly))
+                //        delay = dly;
+
+                //    customTrainService.setTrainComing(location, delay, true);
+                //    break;
                 case "swap":
                     swap(arWords);
                     break;
@@ -53,7 +81,12 @@ namespace SDV_Realty_Core.Framework.Objects
                 case "assets":
                     assets(arWords);
                     break;
-
+                default:
+                    if (customCommands.TryGetValue(arWords[0], out var command))
+                    {
+                        command(arWords);
+                    }
+                    break;
             }
         }
         public void assets(string[] arWords)

@@ -4,6 +4,7 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.GameMechanics;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Patches;
 using SDV_Realty_Core.Framework.GameMechanics;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 {
@@ -11,7 +12,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
     {
         public override Type[] InitArgs => new Type[]
         {
-            typeof(IPatchingService),typeof(IUtilitiesService)
+            typeof(IPatchingService),typeof(IModDataService)
         };
 
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -26,10 +27,14 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
         {
             this.logger = logger;
 
-            IPatchingService patchingService = (IPatchingService)args[0];
-            IUtilitiesService utilitiesService = (IUtilitiesService)args[1];
+#if DEBUG
+            logger.Log($"Crop Grace Period initialized", LogLevel.Debug);
+#endif
 
-            CropGracePeriod cropGracePeriod = new CropGracePeriod(logger,patchingService, utilitiesService);
+            IPatchingService patchingService = (IPatchingService)args[0];
+            IModDataService modDataService = (IModDataService)args[1];
+
+            CropGracePeriod cropGracePeriod = new CropGracePeriod(logger, modDataService, patchingService);
         }
     }
 }

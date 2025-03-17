@@ -6,7 +6,8 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceProviders.Game;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using System;
-using System.Diagnostics;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
 {
@@ -22,13 +23,16 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
         private IMapUtilities _mapUtilities;
         private IGameEnvironmentService _gameEnvironmentService;
         private ICustomEventsService _customEventsService;
+        private IPlayerComms _playerComms;
+        private IModDataService _modDataService;
         public override Type[] InitArgs => new Type[]
         {
             typeof(IModHelperService),typeof(IManifestService),
             typeof(IMonitorService),typeof(IConfigService),
             typeof(IPatchingService),typeof(IGameEventsService),
             typeof(IMapLoaderService),typeof(IMapUtilities),
-            typeof(IGameEnvironmentService),typeof(ICustomEventsService)
+            typeof(IGameEnvironmentService),typeof(ICustomEventsService),
+            typeof(IPlayerComms),typeof(IModDataService)
             };
 
         public override IModHelperService ModHelperService => _modHelperService;
@@ -46,6 +50,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
         public override IMapUtilities MapUtilities => _mapUtilities;
         public override IGameEnvironmentService GameEnvironment => _gameEnvironmentService;
         public override ICustomEventsService CustomEventsService => _customEventsService;
+        public override IModDataService ModDataService => _modDataService;
+        public override IPlayerComms PlayerComms => _playerComms;
+
         public override object ToType(Type conversionType, IFormatProvider provider)
         {
             if (conversionType == ServiceType)
@@ -67,7 +74,15 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.Utilities
             _mapUtilities = (IMapUtilities)args[7];
             _gameEnvironmentService = (IGameEnvironmentService)args[8];
             _customEventsService = (ICustomEventsService)args[9];
-        }
+            _playerComms = (IPlayerComms)args[10];
+            _modDataService= (IModDataService)args[11];
 
+            _customEventsService.AddCustomSubscription("InvalidateCache", InvalidateCache);
+        }
+        private void InvalidateCache(object[] args)
+        {
+            if(args.Length == 1)
+                InvalidateCache(args[0].ToString());
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using SDV_Realty_Core.Framework.AssetUtils;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using StardewModdingAPI.Events;
 using System.Collections.Generic;
@@ -15,9 +16,11 @@ namespace SDV_Realty_Core.Framework.DataProviders
         ///
         public override string Name => "Data/ChairTiles";
         private Dictionary<string, string> Tiles;
-        private IUtilitiesService utilitiesService;
-        public ChairTilesDataProviders(IUtilitiesService utilitiesService, SDRContentManager conMan)
+        private IModDataService modDataService;
+        IUtilitiesService utilitiesService;
+        public ChairTilesDataProviders(IUtilitiesService utilitiesService,IModDataService modDataService, SDRContentManager conMan)
         {
+            this.modDataService = modDataService;
             this.utilitiesService = utilitiesService;
             Tiles = conMan.ChairTiles;
             //
@@ -41,7 +44,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
             {
                 IDictionary<string, string> chairTiles = asset.AsDictionary<string, string>().Data;
                 // add game bridge as seat
-                if (utilitiesService.ConfigService.config.AddBridgeSeat && !chairTiles.ContainsKey("spring_town/18/29"))
+                if (modDataService.Config.AddBridgeSeat && !chairTiles.ContainsKey("spring_town/18/29"))
                 {
                     // this tile is usually on the Front layer
                     //chairTiles.Add("spring_town/13/30", "1/1/up/bench/-1/-1/false");

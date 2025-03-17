@@ -20,7 +20,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.DataProviders
         {
             typeof(IContentPackService),typeof(IContentManagerService),
             typeof(IConfigService),typeof(IUtilitiesService),
-            typeof(IGameDataProviderService)
+            typeof(IGameDataProviderService),typeof(IModDataService)
         };
         public override Type[] Dependants => new Type[] {  };
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -39,9 +39,10 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.DataProviders
             IConfigService configService = (IConfigService)args[2];
             IUtilitiesService utilitiesService = (IUtilitiesService)args[3];
             IGameDataProviderService gameDataProviderService = (IGameDataProviderService)args[4];
+            IModDataService modDataService= (IModDataService)args[5];
 
             dataProviderManager = new DataProviderManager();
-            dataProviderManager.Initialize(contentPackService.contentPackLoader, contentManager.contentManager, utilitiesService, logger, gameDataProviderService);
+            dataProviderManager.Initialize(modDataService,contentPackService.contentPackLoader, contentManager.contentManager, utilitiesService, logger, gameDataProviderService);
 
             utilitiesService.GameEventsService.AddSubscription(new SaveLoadedEventArgs(), dataProviderManager.CheckForActivations);
             utilitiesService.GameEventsService.AddSubscription(new DayStartedEventArgs(), dataProviderManager.CheckForActivations);

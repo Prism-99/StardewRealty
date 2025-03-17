@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="CentralStation">
+      <HintPath>T:\Mods-Testing-Realty\CentralStation\CentralStation\CentralStation.dll</HintPath>
+    </Reference>
+    <Reference Include="Stardew Valley">
+      <HintPath>T:\Stardew Valley.dll</HintPath>
+    </Reference>
+    <Reference Include="StardewModdingAPI">
+      <HintPath>T:\StardewModdingAPI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

@@ -5,6 +5,7 @@ using xTile;
 using SDV_Realty_Core.ContentPackFramework.ContentPacks.ExpansionPacks;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using SDV_Realty_Core.Framework.Locations;
 
 
 namespace SDV_Realty_Core.Framework.DataProviders
@@ -26,12 +27,15 @@ namespace SDV_Realty_Core.Framework.DataProviders
             _mapUtilities = mapUtilities;
             _modDataService = modDataService;
         }
-
+      
         public override void CheckForActivations()
         {
 
         }
-
+        //
+        //  not used
+        //  edit is handled by MapsDataProvider
+        //
         public override void HandleEdit(AssetRequestedEventArgs e)
         {
             if (_expansionManager.expansionManager.GetActiveFarmExpansions().Any() || _gameEnvironmentService.ExitsLoaded)
@@ -45,7 +49,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                 {
                     Map mapToEdit = asset.AsMap().Data;
                     logger.Log($"Adding Backwoods patch", StardewModdingAPI.LogLevel.Debug);
-                    _mapUtilities.PatchInMap(mapToEdit, mExitPatchMap, new Vector2(mapPatch.MapPatchPointX, mapPatch.MapPatchPointY));
+                    _mapUtilities.PatchInMap(mapToEdit, mExitPatchMap, new Point(mapPatch.MapPatchPointX, mapPatch.MapPatchPointY));
 
                     if (_modDataService.MapGrid.Any())
                     {
@@ -65,7 +69,6 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         }
                         if (mapToEdit.Properties.ContainsKey("Warp"))
                         {
-
                             mapToEdit.Properties["Warp"] = mapToEdit.Properties["Warp"] + " " + warpText.TrimEnd();
                         }
                         else
@@ -83,7 +86,7 @@ namespace SDV_Realty_Core.Framework.DataProviders
                         EntrancePatch oBackWoodsPatch = oFarm.PathPatches["0"];
                         _mapUtilities.AddPathBlock(new Vector2(oFarm.PathPatches["0"].PathBlockX, oFarm.PathPatches["0"].PathBlockY), mapToEdit, oBackWoodsPatch.WarpOrientation, oBackWoodsPatch.WarpOut.NumberofPoints);
                     }
-                });
+                }, AssetEditPriority.Late);
             }
 
         }

@@ -19,13 +19,20 @@ Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Prism99_Core", "shared\SDV_
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "v1.6_Components", "shared\v1.6_Components\v1.6_Components.shproj", "{FD37DA40-45BA-4376-B66D-05C277631998}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "locationDataDisplay", "shared\locationDataDisplay\locationDataDisplay.shproj", "{9E5A2993-BEE2-4678-9981-57CD6B8A884A}"
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "LumberJack", "shared\LumberJack\LumberJack.shproj", "{74C455F3-7326-4727-B6FF-EEBD09B2C2A6}"
-EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "v1.6 Base Content Packs", "v1.6 Base Content Packs\v1.6 Base Content Packs.shproj", "{E0BE34CB-CCCD-48E9-84CC-66AC7280D376}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SDV_MapRenderer", "shared\SDV_MapRenderer\SDV_MapRenderer.shproj", "{942D0177-FB63-4FE7-9A6E-7CCF29F6DB1E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{2A3CFC3F-6BF6-4E11-A018-32BBD7CC4A47}"
+	ProjectSection(SolutionItems) = preProject
+		game mechanics.txt = game mechanics.txt
+	EndProjectSection
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "CustomMenuFramework", "CustomMenuFramework\CustomMenuFramework.shproj", "{5F074B9F-4773-44E3-8EC5-8B46675DC62D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CentralStationIntegration", "CentralStationIntegration\CentralStationIntegration.csproj", "{364384FF-8F57-4813-871B-B0E57C26890D}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "locationDataDisplay", "shared\locationDataDisplay\locationDataDisplay.shproj", "{9E5A2993-BEE2-4678-9981-57CD6B8A884A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,6 +50,14 @@ Global
 		{E221CC52-FCA8-41CA-B562-D7071046502A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E221CC52-FCA8-41CA-B562-D7071046502A}.Release|x64.ActiveCfg = Release|x64
 		{E221CC52-FCA8-41CA-B562-D7071046502A}.Release|x64.Build.0 = Release|x64
+		{364384FF-8F57-4813-871B-B0E57C26890D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{364384FF-8F57-4813-871B-B0E57C26890D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{364384FF-8F57-4813-871B-B0E57C26890D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{364384FF-8F57-4813-871B-B0E57C26890D}.Debug|x64.Build.0 = Debug|Any CPU
+		{364384FF-8F57-4813-871B-B0E57C26890D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{364384FF-8F57-4813-871B-B0E57C26890D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{364384FF-8F57-4813-871B-B0E57C26890D}.Release|x64.ActiveCfg = Release|Any CPU
+		{364384FF-8F57-4813-871B-B0E57C26890D}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -54,10 +69,10 @@ Global
 		{483D70D9-7CE5-4D3B-B6CD-A8066F8831C2} = {F7B6A570-6C85-4942-A55E-74617135E2B8}
 		{ED5FBD23-2EC8-4FAF-BE7D-97D4225A1D0F} = {F7B6A570-6C85-4942-A55E-74617135E2B8}
 		{FD37DA40-45BA-4376-B66D-05C277631998} = {F7B6A570-6C85-4942-A55E-74617135E2B8}
-		{9E5A2993-BEE2-4678-9981-57CD6B8A884A} = {F7B6A570-6C85-4942-A55E-74617135E2B8}
-		{74C455F3-7326-4727-B6FF-EEBD09B2C2A6} = {F7B6A570-6C85-4942-A55E-74617135E2B8}
 		{E0BE34CB-CCCD-48E9-84CC-66AC7280D376} = {F7B6A570-6C85-4942-A55E-74617135E2B8}
 		{942D0177-FB63-4FE7-9A6E-7CCF29F6DB1E} = {F7B6A570-6C85-4942-A55E-74617135E2B8}
+		{5F074B9F-4773-44E3-8EC5-8B46675DC62D} = {F7B6A570-6C85-4942-A55E-74617135E2B8}
+		{9E5A2993-BEE2-4678-9981-57CD6B8A884A} = {F7B6A570-6C85-4942-A55E-74617135E2B8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0ED4CAA4-0FAC-4E01-AC8E-3E20A92D33C4}
@@ -65,14 +80,14 @@ Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		shared\SDV_Realty_Core\SDV_Realty_Core.projitems*{2ac72bb4-f71b-4adb-9b27-6a1dfd37ad6c}*SharedItemsImports = 13
 		shared\SDV_xTile\SDV_xTile.projitems*{483d70d9-7ce5-4d3b-b6cd-a8066f8831c2}*SharedItemsImports = 13
-		shared\LumberJack\LumberJack.projitems*{74c455f3-7326-4727-b6ff-eebd09b2c2a6}*SharedItemsImports = 13
+		CustomMenuFramework\CustomMenuFramework.projitems*{5f074b9f-4773-44e3-8ec5-8b46675dc62d}*SharedItemsImports = 13
 		shared\SDV_MapRenderer\SDV_MapRenderer.projitems*{942d0177-fb63-4fe7-9a6e-7ccf29f6db1e}*SharedItemsImports = 13
 		shared\locationDataDisplay\locationDataDisplay.projitems*{9e5a2993-bee2-4678-9981-57cd6b8a884a}*SharedItemsImports = 13
 		shared\SDV_StardewBitmap\SDV_StardewBitmap.projitems*{c3338739-f026-41b9-bb8d-e3e15573f19a}*SharedItemsImports = 13
 		shared\SDV_Realty_Interface\SDV_Realty_Interface.projitems*{d5d3ef10-9d0d-4071-a3d3-277f6b996261}*SharedItemsImports = 13
 		v1.6 Base Content Packs\v1.6 Base Content Packs.projitems*{e0be34cb-cccd-48e9-84cc-66ac7280d376}*SharedItemsImports = 13
+		CustomMenuFramework\CustomMenuFramework.projitems*{e221cc52-fca8-41ca-b562-d7071046502a}*SharedItemsImports = 5
 		shared\locationDataDisplay\locationDataDisplay.projitems*{e221cc52-fca8-41ca-b562-d7071046502a}*SharedItemsImports = 5
-		shared\LumberJack\LumberJack.projitems*{e221cc52-fca8-41ca-b562-d7071046502a}*SharedItemsImports = 5
 		shared\SDV_MapRenderer\SDV_MapRenderer.projitems*{e221cc52-fca8-41ca-b562-d7071046502a}*SharedItemsImports = 5
 		shared\SDV_Prism99_Core\Prism99_Core.projitems*{e221cc52-fca8-41ca-b562-d7071046502a}*SharedItemsImports = 5
 		shared\SDV_Realty_Core\SDV_Realty_Core.projitems*{e221cc52-fca8-41ca-b562-d7071046502a}*SharedItemsImports = 5

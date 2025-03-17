@@ -39,18 +39,16 @@ namespace SDV_Realty_Core.Framework.Weather
         private Dictionary<string, WeatherCycle> weatherCycles;
         private static Dictionary<string, IWeatherCondition> weatherConditions;
         private Dictionary<int, string> MapGrid;
-        private static FEConfig config;
         private Random randomWeather = new Random();
         private IExpansionManager _expansionManager;
-        private IModDataService _modDataService;
+        private static IModDataService _modDataService;
         private readonly string contextId_always_sunny = "prism99.advize.stardewrealty.always_sunny";
         private readonly string contextId_always_raining = "prism99.advize.stardewrealty.always_rain";
         private readonly string contextId_always_snowing = "prism99.advize.stardewrealty.always_snow";
-        public WeatherManager(ILoggerService olog, IUtilitiesService utilitiesService, Dictionary<int, string> mapGrid, IExpansionManager expansionManager, IModDataService modDataService)
+        public WeatherManager(ILoggerService olog, IUtilitiesService utilitiesService,  IExpansionManager expansionManager, IModDataService modDataService)
         {
-            config = utilitiesService.ConfigService.config;
             logger = olog;
-            MapGrid = mapGrid;
+            MapGrid = modDataService.MapGrid;
             locationWeather = new Dictionary<string, CurrentWeather>();
             weatherConditions = new Dictionary<string, IWeatherCondition> { };
             _expansionManager = expansionManager;
@@ -154,7 +152,7 @@ namespace SDV_Realty_Core.Framework.Weather
         #region "Event Handlers"
         private void HandleTickEvent(EventArgs e)
         {
-            if (Game1.IsMasterGame && config.UseCustomWeather)
+            if (Game1.IsMasterGame && _modDataService.Config.UseCustomWeather)
             {
                 foreach (string key in locationWeather.Keys)
                 {
@@ -175,7 +173,7 @@ namespace SDV_Realty_Core.Framework.Weather
             //
             //  set weather for all expansions
             //
-            if (Game1.IsMasterGame && config.UseCustomWeather)
+            if (Game1.IsMasterGame && _modDataService.Config.UseCustomWeather)
             {
                 locationWeather.Clear();
 
@@ -225,7 +223,7 @@ namespace SDV_Realty_Core.Framework.Weather
                     }
                 }
             }
-            if (config.ApplyWeatherFixes)
+            if (_modDataService.Config.ApplyWeatherFixes)
             {
                 //
                 //  add game weather fixes
@@ -274,7 +272,7 @@ namespace SDV_Realty_Core.Framework.Weather
         }
         private void HandleOneSecondUpdateTicked(EventArgs e)
         {
-            if (Game1.IsMasterGame && config.UseCustomWeather)
+            if (Game1.IsMasterGame && _modDataService.Config.UseCustomWeather)
             {
                 foreach (string key in locationWeather.Keys)
                 {
@@ -290,7 +288,7 @@ namespace SDV_Realty_Core.Framework.Weather
         }
         private void HandleTimeChanged(EventArgs e)
         {
-            if (Game1.IsMasterGame && config.UseCustomWeather)
+            if (Game1.IsMasterGame && _modDataService.Config.UseCustomWeather)
             {
                 //
                 //  check for location weather changes
@@ -355,7 +353,7 @@ namespace SDV_Realty_Core.Framework.Weather
         /// <param name="__instance"></param>
         private static void GetWeather(ref LocationWeather __result, GameLocation __instance)
         {
-            if (config.UseCustomWeather)
+            if (_modDataService.Config.UseCustomWeather)
             {
                 if (!string.IsNullOrEmpty(__result.Weather) && weatherConditions.ContainsKey(__result.Weather))
                 {
@@ -394,7 +392,7 @@ namespace SDV_Realty_Core.Framework.Weather
         #region "Harmony Patches"
         public static bool drawWeather_Prefix(GameTime time, RenderTarget2D target_screen, Game1 __instance)
         {
-            if (!config.UseCustomWeather)
+            if (!_modDataService.Config.UseCustomWeather)
                 return true;
 
             if (Game1.currentLocation != null && Game1.currentLocation.GetLocationContext() != null)
@@ -420,7 +418,7 @@ namespace SDV_Realty_Core.Framework.Weather
         }
         public static bool updateWeather_Prefix(GameTime time, Game1 __instance)
         {
-            if (!config.UseCustomWeather)
+            if (!_modDataService.Config.UseCustomWeather)
                 return true;
 
             if (Game1.currentLocation != null && Game1.currentLocation.GetLocationContext() != null)

@@ -66,7 +66,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.CustomEntities
                 }
                 else
                 {
-                    logger.Log($"Missing custom movie directory '{buildingRoot}'", LogLevel.Warn);
+                    logger.Log($"Missing custom movie directory '{buildingRoot}'", LogLevel.Debug);
                 }
                 // AddTestMovie(translations);
             }

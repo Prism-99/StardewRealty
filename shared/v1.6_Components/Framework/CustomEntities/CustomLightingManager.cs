@@ -7,6 +7,7 @@ using SDV_Realty_Core.Framework.CustomEntities.Buildings;
 using SDV_Realty_Core.Framework.Buildings;
 using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 namespace SDV_Realty_Core.Framework.CustomEntities
 {
     internal class CustomLightingManager
@@ -17,19 +18,23 @@ namespace SDV_Realty_Core.Framework.CustomEntities
         private float lightLevel = 1f;
         private ILoggerService logger;
         private Dictionary<string, List<NightLight>> vanillaLights;
-        private IUtilitiesService utilitiesService;
+         private IModDataService modDataService;
         private CustomBuildingManager _buildingManager;
+#if v169
+        private Dictionary<Guid, List<string>> addedLights = new();
+#else
         private Dictionary<Guid, List<int>> addedLights = new();
+#endif
         private string lightKey = "prism.advize.sdr.buidling.brightness";
-        public CustomLightingManager(ILoggerService oLog, IUtilitiesService utilitiesService, ICustomBuildingService customBuildingService)
+        public CustomLightingManager(ILoggerService oLog, IModDataService modDataService,  ICustomBuildingService customBuildingService)
         {
             logger = oLog;
-            this.utilitiesService = utilitiesService;
+            this.modDataService = modDataService;
             _buildingManager = customBuildingService.customBuildingManager;
             PopulateVanillaLights();
-            lightLevel = utilitiesService.ConfigService.config.LightLevel;
-            buildingEnabled = utilitiesService.ConfigService.config.EnableBuildingLights;
-            pondsEnabled= utilitiesService.ConfigService.config.AddFishPondLight;
+            lightLevel = modDataService.Config.LightLevel;
+            buildingEnabled = modDataService.Config.EnableBuildingLights;
+            pondsEnabled = modDataService.Config.AddFishPondLight;
         }
         internal void ReturnedToTitle()
         {
@@ -66,13 +71,13 @@ namespace SDV_Realty_Core.Framework.CustomEntities
             //
             //  check if custom buildings have changed
             //
-            if (buildingEnabled && !utilitiesService.ConfigService.config.EnableBuildingLights)
+            if (buildingEnabled && !modDataService.Config.EnableBuildingLights)
             {
                 // lights disabled, remove all active lights
                 buildingEnabled = false;
                 RemoveAllCustomBuildingLights();
             }
-            else if (!buildingEnabled && utilitiesService.ConfigService.config.EnableBuildingLights)
+            else if (!buildingEnabled && modDataService.Config.EnableBuildingLights)
             {
                 // lights enabled, add all active lights
                 buildingEnabled = true;
@@ -81,23 +86,23 @@ namespace SDV_Realty_Core.Framework.CustomEntities
             //
             //  check is fish ponds changed
             //
-            if (pondsEnabled && !utilitiesService.ConfigService.config.AddFishPondLight)
+            if (pondsEnabled && !modDataService.Config.AddFishPondLight)
             {
                 //  fish pond lights disabled, remove all active lights
                 pondsEnabled = false;
                 RemoveAllFishPondLights();
             }
-            else if (!pondsEnabled && utilitiesService.ConfigService.config.AddFishPondLight)
+            else if (!pondsEnabled && modDataService.Config.AddFishPondLight)
             {
                 // lights enabled, add all active lights
                 pondsEnabled = true;
                 AddAllPondLights();
             }
             // check for brightness level change
-            if (utilitiesService.ConfigService.config.LightLevel != lightLevel)
+            if (modDataService.Config.LightLevel != lightLevel)
             {
                 Utility.ForEachBuilding(CheckBuildingForChange, true);
-                lightLevel = utilitiesService.ConfigService.config.LightLevel;
+                lightLevel = modDataService.Config.LightLevel;
             }
         }
         private bool CheckBuildingForChange(Building building)
@@ -105,19 +110,19 @@ namespace SDV_Realty_Core.Framework.CustomEntities
             if (addedLights.ContainsKey(building.id.Value))
             {
                 if (!building.modData.ContainsKey(lightKey))
-                    SetBuildingBrightness(building, utilitiesService.ConfigService.config.LightLevel, false);
+                    SetBuildingBrightness(building, modDataService.Config.LightLevel, false);
             }
             return true;
         }
         /// <summary>
         /// Adds light source details for vanilla buildings
-        /// -Fish Pon
+        /// -Fish Pond
         /// </summary>
         private void PopulateVanillaLights()
         {
             vanillaLights = new Dictionary<string, List<NightLight>> { };
 
-            if (utilitiesService.ConfigService.config.AddFishPondLight)
+            if (modDataService.Config.AddFishPondLight)
                 //  add fish pond
                 vanillaLights.Add("Fish Pond", new List<NightLight> {
                     new NightLight
@@ -136,16 +141,6 @@ namespace SDV_Realty_Core.Framework.CustomEntities
         internal void World_BuildingListChanged(EventArgs eParam)
         {
             BuildingListChangedEventArgs e = (BuildingListChangedEventArgs)eParam;
-            if (e.Added != null)
-            {
-                foreach (Building buildingAdded in e.Added)
-                {
-                    if (HasNightLight(buildingAdded))
-                    {
-                        AddBuildingLightSource(buildingAdded);
-                    }
-                }
-            }
             if (e.Removed != null)
             {
                 foreach (Building buildingRemoved in e.Removed)
@@ -156,6 +151,21 @@ namespace SDV_Realty_Core.Framework.CustomEntities
                     }
                 }
             }
+            if (e.Added != null)
+            {
+                foreach (Building buildingAdded in e.Added)
+                {
+                    if (buildingAdded is FishPond && string.IsNullOrEmpty(buildingAdded.parentLocationName.Value))
+                    {
+                        buildingAdded.parentLocationName.Value = e.Location.NameOrUniqueName;
+                    }
+                    if (HasNightLight(buildingAdded))
+                    {
+                        AddBuildingLightSource(buildingAdded);
+                    }
+                }
+            }
+
         }
 
         /// <summary>
@@ -201,7 +211,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
             {
                 if (HasNightLight(building))
                 {
-                    if (building.buildingType.Value == "Fish Pond" )
+                    if (building.buildingType.Value == "Fish Pond")
                         return true;
 
                     // cleanup modData entry for custom building lightness level
@@ -268,12 +278,12 @@ namespace SDV_Realty_Core.Framework.CustomEntities
 
             if (_buildingManager.CustomBuildings.TryGetValue(building.buildingType.Value, out var buildingData))
             {
-                if (utilitiesService.ConfigService.config.EnableBuildingLights)
+                if (modDataService.Config.EnableBuildingLights)
                     AddLightSources(building, buildingData.NightLights, buildingBrightness);
             }
             else if (vanillaLights.TryGetValue(building.buildingType.Value, out var lightList))
             {
-                if (utilitiesService.ConfigService.config.AddFishPondLight)
+                if (modDataService.Config.AddFishPondLight)
                     AddLightSources(building, lightList, buildingBrightness);
             }
         }
@@ -335,6 +345,10 @@ namespace SDV_Realty_Core.Framework.CustomEntities
 
             return lightPosition;
         }
+        private string GetFormattedKey(int index)
+        {
+            return $"StardewRealty.{index}";
+        }
         /// <summary>
         /// Add lightSources to the parent location of the building
         /// </summary>
@@ -346,56 +360,93 @@ namespace SDV_Realty_Core.Framework.CustomEntities
             buildingBrightness = Math.Clamp(buildingBrightness, 0, 1);
 
             Color lightColor = Color.Black * Math.Clamp(buildingBrightness, 0, 1);
-            foreach (NightLight nightLight in nightLights)
+            if (building.GetParentLocation() != null)
             {
-                while (building.GetParentLocation().sharedLights.ContainsKey(lightSourceKey))
-                    lightSourceKey++;
-
-                float nightLightRadius = nightLight.NightLightRadius;
-                if (nightLightRadius == 0)
-                    nightLightRadius = Math.Max(building.tilesHigh.Value, building.tilesWide.Value) / 2F;
-
-                LightSource lightSource;
-                // 1 - normal level circular
-                // 2 - bright square
-                // 3 - invalid
-                // 4 - very bright circular
-                // 5 - bright circular with shadow ring
-                // 6 - bright oval with shadow ring
-                // 7 - spotlight facing up
-                // 8 - normal level rectangle
-
-                Vector2 lightPosition = GetLightPosition(building, nightLight);
-
-                if (!BuildingHasActiveLightSource(building, lightPosition))
+                foreach (NightLight nightLight in nightLights)
                 {
-                    lightSource = new LightSource
-                            (nightLight.NightLightType,
-                            lightPosition,
-                            nightLightRadius,
-                            lightColor,
-                            LightSource.LightContext.MapLight,
-                            0L);
-                    building.GetParentLocation().sharedLights.Add(lightSourceKey++, lightSource);
-                    if (addedLights.ContainsKey(building.id.Value))
+#if v169
+                    while (building.GetParentLocation().sharedLights.ContainsKey(GetFormattedKey(lightSourceKey)))
+#else
+ while (building.GetParentLocation().sharedLights.ContainsKey(lightSourceKey))
+#endif
+                        lightSourceKey++;
+
+                    float nightLightRadius = nightLight.NightLightRadius;
+                    if (nightLightRadius == 0)
+                        nightLightRadius = Math.Max(building.tilesHigh.Value, building.tilesWide.Value) / 2F;
+
+                    LightSource lightSource;
+                    // 1 - normal level circular
+                    // 2 - bright square
+                    // 3 - invalid
+                    // 4 - very bright circular
+                    // 5 - bright circular with shadow ring
+                    // 6 - bright oval with shadow ring
+                    // 7 - spotlight facing up (movie screen)
+                    // 8 - normal level rectangle
+
+                    Vector2 lightPosition = GetLightPosition(building, nightLight);
+
+                    if (!BuildingHasActiveLightSource(building, lightPosition))
                     {
-                        addedLights[building.id.Value].Add(lightSourceKey - 1);
-                    }
-                    else
-                    {
-                        addedLights.Add(building.id.Value, new() { { lightSourceKey - 1 } });
+#if v169
+                        string key = GetFormattedKey(lightSourceKey++);
+
+                        lightSource = new LightSource
+        (key,
+        nightLight.NightLightType,
+        lightPosition,
+        nightLightRadius,
+        lightColor,
+        LightSource.LightContext.MapLight,
+        0L);
+                        building.GetParentLocation().sharedLights.Add(key, lightSource);
+                        if (!building.modData.ContainsKey(lightKey))
+                            building.modData[lightKey] = key;
+
+                        if (addedLights.ContainsKey(building.id.Value))
+                        {
+
+                            addedLights[building.id.Value].Add(key);
+                        }
+                        else
+                        {
+                            addedLights.Add(building.id.Value, new() { { key } });
+                        }
+#else
+                        lightSource = new LightSource
+                                (nightLight.NightLightType,
+                                lightPosition,
+                                nightLightRadius,
+                                lightColor,
+                                LightSource.LightContext.MapLight,
+                                0L);
+                        building.GetParentLocation().sharedLights.Add(lightSourceKey++, lightSource);
+                        if (addedLights.ContainsKey(building.id.Value))
+                        {
+
+                            addedLights[building.id.Value].Add(lightSourceKey - 1);
+                        }
+                        else
+                        {
+                            addedLights.Add(building.id.Value, new() { { lightSourceKey - 1 } });
+                        }
+#endif
                     }
                 }
             }
-
+            else
+            {
+                logger.Log($"Building missing parent: {building.buildingType}, no lights added.", LogLevel.Warn);
+            }
         }
         private void AddAllPondLights()
         {
-            if (utilitiesService.ConfigService.config.AddFishPondLight)
+            if (modDataService.Config.AddFishPondLight)
             {
                 Utility.ForEachBuilding(building =>
                 {
-                    if (building.buildingType.Value != "Fish Pond")
+                    if (!building.buildingType.Value.Contains("Pond", StringComparison.CurrentCultureIgnoreCase))
                         return true;
 
                     if (HasNightLight(building))
@@ -413,7 +464,7 @@ namespace SDV_Realty_Core.Framework.CustomEntities
         /// </summary>
         private void AddAllCustomBuildingLights()
         {
-            if (utilitiesService.ConfigService.config.EnableBuildingLights)
+            if (modDataService.Config.EnableBuildingLights)
             {
                 Utility.ForEachBuilding(building =>
                 {

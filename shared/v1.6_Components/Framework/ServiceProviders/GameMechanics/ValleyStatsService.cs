@@ -4,6 +4,8 @@ using System;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Configuration;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
 using StardewModdingAPI.Events;
+using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+using SDV_Realty_Core.Framework.ServiceProviders.Utilities;
 
 
 namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
@@ -11,7 +13,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
     internal class ValleyStatsService : IValleyStatsService
     {
         //private ValleyStats ValleyStats;
-        private IConfigService configService;
+        private IModDataService modDataService;
+        private IUtilitiesService utilitiesService;
         //
         //  dummy object for locking stat records
         //
@@ -19,7 +22,8 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 
         public override Type[] InitArgs => new Type[]
         {
-            typeof(IConfigService),typeof(IGameEventsService)
+            typeof(IModDataService),typeof(IGameEventsService),
+            typeof(IUtilitiesService)
         };
 
         public override object ToType(Type conversionType, IFormatProvider provider)
@@ -33,9 +37,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
         internal override void Initialize(ILoggerService logger, object[] args)
         {
             this.logger = logger;
-            configService = (IConfigService)args[0];
+            modDataService = (IModDataService)args[0];
             IGameEventsService gameEventsService = (IGameEventsService)args[1];
-
+            utilitiesService= (IUtilitiesService)args[2];
             //ValleyStats = new ValleyStats(configService.config);
 
             gameEventsService.AddSubscription(new DayEndingEventArgs(), DayEnding);
@@ -43,7 +47,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
 
         public void DayEnding(EventArgs e)
         {
-            if (!configService.config.RealTimeMoney)
+            if (!modDataService.Config.RealTimeMoney)
             {
                 //
                 //  junimo costs are not applied in real time
@@ -51,6 +55,18 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.GameMechanics
                 //
                 Game1.MasterPlayer.Money -= JunimoTodayHarvestCost;
                 Game1.MasterPlayer.Money -= JunimoTodaySeedCost;
+                if(JunimoTodayHarvestCost>0 )
+                {
+                    string message = $"Junimo harvesting charge: {JunimoTodayHarvestCost:N0} for {JunimoTodayCropsHarvested} crops.";
+                    logger.Log(message,LogLevel.Debug);
+                    utilitiesService.PopMessage(message,0,5000);
+                }
+                if (  JunimoTodaySeedCost > 0)
+                {
+                    string message = $"Junimo seeding charge: {JunimoTodaySeedCost:N0} for {JunimoTodayCropsSeeded} seeds.";
+                    logger.Log(message, LogLevel.Debug);
+                    utilitiesService.PopMessage(message, 0, 5000);
+                }
             }
 
             JunimoTotalCropsHarvested += JunimoTodayCropsHarvested;
