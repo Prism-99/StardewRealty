@@ -80,6 +80,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Integrations\ICentralStationIntegrationService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Integrations\IGMCMIntergrationService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Integrations\ILocationTunerIntegrationService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\Integrations\﻿IQuickSaveIntegration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModData\IContentManagerService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModData\IContentPackService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModData\IExpansionManager.cs" />
@@ -90,6 +91,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\GameMechanics\CustomTrainService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Integrations\CentralStationIntegration.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\ModMechanics\FarmServicesService.cs" />
+    <Compile Include="..\shared\v1.6_Components\Framework\ServiceInterfaces\ModMechanics\IFarmServicesService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModMechanics\IGridManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModMechanics\ITreasureManager.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\ModMechanics\IWarproomService.cs" />
@@ -111,6 +113,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\GUI\MiniMapManagerService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Integrations\GMCMIntergrationService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Integrations\LocationTunerIntegrationService.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceProviders\Integrations\QuickSaveIntegration.cs" />
+    <Compile Include="..\shared\v1.6_Components\Framework\ServiceProviders\Integrations\GMCMIntergrationService.cs" />
+    <Compile Include="..\shared\v1.6_Components\Framework\ServiceInterfaces\Integrations\IGMCMIntergrationService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\IChatBoxCommandsService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\CustomEntities\ICustomBigCraftableService.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Framework\ServiceInterfaces\CustomEntities\ICustomBuildingService.cs" />

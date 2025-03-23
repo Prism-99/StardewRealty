@@ -34,6 +34,8 @@ namespace SDV_Realty_Core.Framework.Objects
         public string globalCondition { get; set; }
         // use a global price for all expansions
         public bool useGlobalPrice { get; set; } = false;
+        public string[] globalPriceModes = new string[] {"None","Flat Price","By Tile" };
+        public string globalPriceMode { get; set; } = "None";
         // global price for all expansions
         public int globalPrice { get; set; }
         public bool AddBridgeSeat { get; set; } = true;

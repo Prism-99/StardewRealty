@@ -384,7 +384,7 @@ namespace SDV_Realty_Core.Framework.Expansions
             utilitiesService.RepairAllLocationBuildingWarps(expansionLocation);
             if (modDataService.LandForSale.Contains(expansionName))
             {
-                landManager.LandBought(expansionName, false, 0);
+                landManager.LandBought(expansionName, false, 0,0);
             }
             else
             {

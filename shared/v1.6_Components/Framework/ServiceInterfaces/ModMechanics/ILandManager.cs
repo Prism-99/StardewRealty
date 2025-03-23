@@ -8,7 +8,7 @@ namespace SDV_Realty_Core.Framework.ServiceInterfaces.ModMechanics
 {
         public override Type ServiceType => typeof(ILandManager);
         internal abstract bool PurchaseLand(string expansionName, bool withPopup, long purchasedBy);
-        internal abstract void LandBought(string expansionName, bool withPopup, long purchasedBy);
+        internal abstract void LandBought(string expansionName, bool withPopup, long purchasedBy,int price);
         internal abstract void CheckIfCanBePutForSale(string expansionName);
         internal abstract void PopBuyingMenu();
         internal abstract void PopSellingMenu();

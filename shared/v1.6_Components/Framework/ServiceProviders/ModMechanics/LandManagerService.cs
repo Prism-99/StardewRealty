@@ -14,6 +14,7 @@ using System.Linq;
 using CustomMenuFramework.Menus;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
 using SDV_Realty_Core.Framework.Objects;
+using StardewModdingAPI;
 
 
 
@@ -153,10 +154,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                 //Game1.activeClickableMenu.exitFunction = ForSaleClosed;
 
                 ForSaleListingsMenu menu = new ForSaleListingsMenu(0, 0, Game1.uiViewport.Width - 20, Game1.uiViewport.Height - 20, LandBought, true, !Game1.options.gamepadControls, false);
-                if (modDataService.Config.useGlobalPrice)
-                {
-                    menu.SetGlobalPrice(modDataService.Config.globalPrice);
-                }
+                menu.SetGlobalPriceMode(modDataService.Config.globalPriceMode, modDataService.Config.globalPrice);
 
                 List<ExpansionPack> listings = new List<ExpansionPack>();
                 foreach (string forsale in modDataService.LandForSale)
@@ -178,10 +176,16 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                     gridManager.RemoveLocationFromGrid(selling.GridId);
                     selling.GridId = -1;
                 }
-                if (modDataService.Config.useGlobalPrice)
-                    Game1.player.Money += modDataService.Config.globalPrice;
+                int sellingPrice;
+                if (modDataService.expDetails[expansionName].PurchasePrice.HasValue)
+                {
+                    sellingPrice = modDataService.expDetails[expansionName].PurchasePrice.Value;
+                }
                 else
-                    Game1.player.Money += modDataService.validContents[selling.Name].Cost;
+                {
+                    sellingPrice = GetLandPrice(expansionName);
+                }
+                Game1.player.Money += sellingPrice;
 
                 modDataService.validContents[selling.Name].Added = false;
                 modDataService.validContents[selling.Name].Purchased = false;
@@ -210,13 +214,13 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                 Game1._locationLookup.Remove(expansionName);
 
                 utilitiesService.CustomEventsService.TriggerModEvent(ICustomEventsService.ModEvents.LandSold, new object[] { selling.Name });
-                utilitiesService.PopMessage(I18n.LandManagerLandSold(selling.DisplayName, modDataService.validContents[selling.Name].Cost));
+                utilitiesService.PopMessage(I18n.LandManagerLandSold(selling.DisplayName, sellingPrice));
             }
         }
         internal override void PopSellingMenu()
         {
             GenericPickListMenu pickProperty = new GenericPickListMenu();
-            List<KeyValuePair<string, string>> locations = modDataService.farmExpansions.Where(p => p.Value.Active).Select(p => new KeyValuePair<string, string>(p.Key, $"{p.Value.DisplayName} ({modDataService.validContents[p.Key].Cost:N0}g)")).ToList();
+            List<KeyValuePair<string, string>> locations = modDataService.farmExpansions.Where(p => p.Value.Active).Select(p => new KeyValuePair<string, string>(p.Key, $"{p.Value.DisplayName} ({modDataService.expDetails[p.Key]?.PurchasePrice ?? GetLandPrice(p.Key):N0}g)")).ToList();
 
             pickProperty.ShowPagedResponses(I18n.LandManagerSelling(), locations, delegate (string value)
             {
@@ -778,12 +782,9 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                             logger.Log("Sent purchase letter: " + oContent.MailId, LogLevel.Debug);
                             playerComms.SendPlayerMail(oContent.MailId, false, true);
                         }
-                        if (modDataService.Config.useGlobalPrice)
-                            Game1.player.Money -= modDataService.Config.globalPrice;
-                        else
-                            Game1.player.Money -= oContent?.Cost ?? 0;
+                        int sellingPrice = GetLandPrice(expansionName);
 
-                        LandBought(oContent.LocationName ?? "", withPopup, purchasedBy);
+                        LandBought(oContent.LocationName ?? "", withPopup, purchasedBy, sellingPrice);
                     }
                     else
                     {
@@ -805,6 +806,24 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             logger.Log($"Attempt to purchase unknown expansion '{expansionName}'", LogLevel.Error);
             return false;
         }
+        public int GetLandPrice(string expansionName)
+        {
+            switch (modDataService.Config.globalPriceMode)
+            {
+                case "Flat Price":
+                    return modDataService.Config.globalPrice;
+                case "By Tile":
+                    return (int)(modDataService.validContents[expansionName].MapSize.X * modDataService.validContents[expansionName].MapSize.Y * modDataService.Config.globalPrice);
+                default:
+                    return modDataService.validContents[expansionName]?.Cost ?? 0;
+            }
+            //if (modDataService.Config.useGlobalPrice)
+            //    return modDataService.Config.globalPrice;
+            //else
+            //{
+            //    return modDataService.validContents[expansionName]?.Cost ?? 0;
+            //}
+        }
         internal void LandBought(string expansionName)
         {
             if (!string.IsNullOrEmpty(expansionName))
@@ -815,7 +834,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
                 });
             }
         }
-        internal override void LandBought(string sExpansionName, bool withPopup, long purchasedBy)
+        internal override void LandBought(string sExpansionName, bool withPopup, long purchasedBy, int price)
         {
             if (!modDataService.validContents[sExpansionName].AllowMultipleInstances && modDataService.LandForSale.Contains(sExpansionName))
             {
@@ -829,7 +848,12 @@ namespace SDV_Realty_Core.Framework.ServiceProviders.ModMechanics
             if (purchasedBy != 0)
                 modDataService.expDetails[sExpansionName].PurchasedBy = purchasedBy;
 
+            modDataService.farmExpansions[sExpansionName].reloadMap();
+            modDataService.farmExpansions[sExpansionName].seasonUpdate(false);
+
             modDataService.expDetails[sExpansionName].PurchaseDate = Game1.Date.TotalDays;
+            modDataService.expDetails[sExpansionName].PurchasePrice = price;
+            Game1.player.Money -= price;
         }
         internal void AddLandForSale(string expansionName)
         {

@@ -374,7 +374,8 @@ namespace SDV_Realty_Core.ContentPackFramework.ContentPacks
                                 expansionPack.DisplayName = name.Substring(0, split);
                                 expansionPack.Description = name.Substring(split + 1);
                             }
-                            expansionPack.Cost = modDataService.Config.useGlobalPrice ? modDataService.Config.globalPrice : 100000;
+                            expansionPack.Cost = farmMap.DisplayHeight * farmMap.DisplayWidth * 10;
+                            //modDataService.Config.useGlobalPrice ? modDataService.Config.globalPrice : 100000;
                             expansionPack.Conditions = modDataService.Config.useGlobalCondition ? modDataService.Config.globalCondition : "";
                             expansionPack.WorldMapTexture = farm.WorldMapTexture ?? "SDR/images/no_world_map";
                             expansionPack.ForSaleImageName = farm.WorldMapTexture ?? "SDR/images/no_world_map";

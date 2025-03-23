@@ -75,7 +75,7 @@ namespace SDV_Realty_Core.Framework.Objects
             //
             servicesManager.AddService(new GMCMIntergrationService());
             servicesManager.AddService(new LocationTunerIntegrationService());
-            //servicesManager.AddService(new QuickSaveIntegration());
+            servicesManager.AddService(new QuickSaveIntegration());
             servicesManager.AddService(new CentralStationIntegration());
             //
             //  add utility services

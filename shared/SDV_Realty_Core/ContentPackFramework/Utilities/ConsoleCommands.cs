@@ -99,6 +99,7 @@ namespace SDV_Realty_Core.ContentPackFramework.Utilities
             else
                 WriteLine($"Could not purchase expansion '{args[0]}'");
         }
+        
         /// <summary>
         /// Dumps the configuration to the console
         /// </summary>

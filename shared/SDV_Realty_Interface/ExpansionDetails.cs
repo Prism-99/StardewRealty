@@ -52,6 +52,7 @@ namespace StardewRealty.SDV_Realty_Interface
         public bool ForSale { get; set; }
         public long PurchasedBy {  get; set; }
         public int PurchaseDate { get; set; }
+        public int? PurchasePrice { get; set; } = null;
         public List<ArtifactData> Artifacts { get; set; }
         public List<ForageData> ForageData { get; set; }
         public string SpringForage { get; set; }

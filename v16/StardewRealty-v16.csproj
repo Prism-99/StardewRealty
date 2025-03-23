@@ -91,12 +91,12 @@
 
   <Import Project="..\shared\v1.6_Components\v1.6_Components.projitems" Label="Shared" />
 
-  <Import Project="..\v1.6 Base Content Packs\v1.6 Base Content Packs.projitems" Label="Shared" />
+  <Import Project="..\shared\locationDataDisplay\locationDataDisplay.projitems" Label="Shared" />
 
-  <Import Project="..\CustomMenuFramework\CustomMenuFramework.projitems" Label="Shared" />
+  <Import Project="..\v1.6 Base Content Packs\v1.6 Base Content Packs.projitems" Label="Shared" />
 
   <Import Project="..\shared\SDV_MapRenderer\SDV_MapRenderer.projitems" Label="Shared" />
 
-  <Import Project="..\shared\locationDataDisplay\locationDataDisplay.projitems" Label="Shared" />
+  <Import Project="..\CustomMenuFramework\CustomMenuFramework.projitems" Label="Shared" />
 
 </Project>

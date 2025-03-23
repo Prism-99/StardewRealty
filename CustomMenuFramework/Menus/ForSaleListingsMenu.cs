@@ -22,12 +22,12 @@ namespace CustomMenuFramework.Menus
         //private float scrollBarPosition = 0;
         //private bool verticalScrollBar;
         //private int numberOfSlots = 0;
-        private bool useGlobalPrice = false;
+        private string globalPriceMode = "None";
         private int globalPrice;
         //private int displayIndex = 0;
         //private Action<string>? onClose = null;
         //private string expansionBought = "";
-        public ForSaleListingsMenu(int x, int y, int width, int height, Action<string>? onClose = null, bool center = false, bool showUpperRightCloseButton = false, bool verticalScroll = true) : base(x, y, width, height,onClose,center, showUpperRightCloseButton,verticalScroll)
+        public ForSaleListingsMenu(int x, int y, int width, int height, Action<string>? onClose = null, bool center = false, bool showUpperRightCloseButton = false, bool verticalScroll = true) : base(x, y, width, height, onClose, center, showUpperRightCloseButton, verticalScroll)
         {
             listingWidth = 350;
             //this.onClose = onClose;
@@ -39,9 +39,9 @@ namespace CustomMenuFramework.Menus
 
             //ResizeMenu();
         }
-        public void SetGlobalPrice(int price)
+        public void SetGlobalPriceMode(string mode, int price)
         {
-            useGlobalPrice = true;
+            globalPriceMode = mode;
             globalPrice = price;
         }
         public void SetListings(List<ExpansionPack> listings)
@@ -50,9 +50,15 @@ namespace CustomMenuFramework.Menus
             foreach (ExpansionPack pack in listings.OrderBy(p => p.DisplayName))
             {
                 RealEstateListing listing = new RealEstateListing(new Rectangle(0, 0, listingWidth, 500), "a", pack, LandBought);
-                if (useGlobalPrice)
-                    listing.SetCost(globalPrice);
-
+                switch (globalPriceMode)
+                {
+                    case "Flat Price":
+                        listing.SetCost(globalPrice);
+                        break;
+                    case "By Tile":
+                        listing.SetCost((int)(pack.MapSize.X * pack.MapSize.Y * globalPrice));
+                        break;
+                }
                 listing.myID = slotId++;
                 if (listing.myID > 2000)
                 {

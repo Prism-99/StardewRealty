@@ -1,5 +1,11 @@
-﻿2.0.1
--fixed a compatibility issue with PIF - Personal Rooms
+﻿2.0.2
+-fixed issue with CP throwing an error (Gummmmmm)
+-added purchase price tracking for resale value
+-change global pricing to None, By Tile, Flat Rate
+-fixed issue where newly purchased land does not have the correct seasonal tilesheets
+
+2.0.1
+-fixed a compatibility issue with PIF - Personal Rooms (Gummmmmm)
 
 2.0.0
 -added junimo fee schedule letter sent when first Junimo Hut is built

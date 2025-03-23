@@ -11,6 +11,8 @@ using System.Linq;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using Microsoft.Xna.Framework.Graphics;
+using StardewModdingAPI.Events;
+using System.Threading;
 
 namespace SDV_Realty_Core.Framework.AssetUtils
 {
@@ -34,6 +36,10 @@ namespace SDV_Realty_Core.Framework.AssetUtils
         public Dictionary<string, Map> Maps = new();
         private IModDataService modDataService;
         private IUtilitiesService utilitiesService;
+        private Dictionary<int, string> CPRequests = new();
+        private object CPReqLock = new object();
+        private Dictionary<int, object> CPReturns = new();
+        private object CPReturnLock = new object();
         //internal LocalizationStrings localizationStrings;
         internal IStringService stringService;
         public SDRContentManager(IUtilitiesService utilitiesService, IModDataService modDataService)
@@ -44,8 +50,86 @@ namespace SDV_Realty_Core.Framework.AssetUtils
             this.modDataService = modDataService;
             Maps = modDataService.BuildingMaps;
             stringFromMaps = modDataService.stringFromMaps;
+            utilitiesService.GameEventsService.AddSubscription(new UpdateTickedEventArgs(), GameLoop_UpdateTicked);
             //Initialize();
         }
+        private int GetCPContentIndex = 0;
+        /// <summary>
+        /// Get Game content, ensuring it is on the UI Thread in case
+        /// CP kicks in
+        /// </summary>
+        /// <param name="path">asset path to load</param>
+        /// <returns>Texture2D asset</returns>
+        private Texture2D? GetCPContent(string path)
+        {
+            if (Game1.IsOnMainThread())
+            {
+                return utilitiesService.ModHelperService.modHelper.GameContent.Load<Texture2D>(path);
+            }
+            else
+            {
+                int requestId = GetCPContentIndex++;
+                if (GetCPContentIndex > 10000)
+                    GetCPContentIndex = 0;
+
+                lock (CPReqLock)
+                {
+                    CPRequests.Add(requestId, path);
+#if DEBUG
+                    logger.Log($"GetCPContent: {requestId}-{path}",LogLevel.Debug);
+#endif
+                }
+                int waitTime = 30;
+                while (waitTime > 0)
+                {
+                    Thread.Sleep(100);
+                    lock (CPReturns)
+                    {
+                        if (CPReturns.ContainsKey(requestId))
+                        {
+                            Texture2D asset = (Texture2D)CPReturns[requestId];
+#if DEBUG
+                            logger.Log($"GetCPContent returning {requestId}", LogLevel.Debug);
+#endif
+                            CPReturns.Remove(requestId);
+                            return asset;
+                        }
+                    }
+                    waitTime--;
+#if DEBUG
+                    logger.Log($"  GetCPContent waitTime: {waitTime} ({CPRequests[requestId]})");
+#endif
+                }
+#if DEBUG
+                logger.Log($"  GetCPContent timed out ({CPRequests[requestId]})", LogLevel.Debug);
+#endif
+                lock (CPReqLock)
+                {
+                    CPRequests.Remove(requestId);
+                }
+                return null;
+            }
+        }
+        /// <summary>
+        /// Handle Game content requests queue in the UI Thread
+        /// Load any CPRequests assets into CPReturns
+        /// </summary>
+        /// <param name="e">Not Required</param>
+        private void GameLoop_UpdateTicked(EventArgs e)
+        {
+            lock (CPReqLock)
+            {
+                foreach (int request in CPRequests.Keys)
+                {
+                    lock (CPReturnLock)
+                    {
+                        CPReturns.Add(request, utilitiesService.ModHelperService.modHelper.GameContent.Load<Texture2D>(CPRequests[request]));
+                    }
+                }
+                CPRequests.Clear();
+            }
+        }
+
         //public void Initialize()
         //{
         //    localizationStrings = new LocalizationStrings();
@@ -77,7 +161,10 @@ namespace SDV_Realty_Core.Framework.AssetUtils
                         {
                             try
                             {
-                                modDataService.ExternalReferences.Add(worldMap, utilitiesService.ModHelperService.modHelper.GameContent.Load<Texture2D>(modDataService.validContents[expansionKey].WorldMapTexture));
+                                // CP breaks because not on UI Thread
+                                //modDataService.ExternalReferences.Add(worldMap, utilitiesService.ModHelperService.modHelper.GameContent.Load<Texture2D>(modDataService.validContents[expansionKey].WorldMapTexture));
+                                //GetCPContent
+                                modDataService.ExternalReferences.Add(worldMap, GetCPContent(modDataService.validContents[expansionKey].WorldMapTexture));
                             }
                             catch
                             {

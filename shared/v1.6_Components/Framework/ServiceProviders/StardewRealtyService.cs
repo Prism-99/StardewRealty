@@ -49,8 +49,7 @@ namespace SDV_Realty_Core.Framework.ServiceProviders
             // integration services
             typeof(ICentralStationIntegrationService),
             typeof(ILocationTunerIntegrationService),
-            //typeof(IQuickSaveIntegration),
-            typeof(IGMCMIntergrationService),
+            typeof(IQuickSaveIntegration),typeof(IGMCMIntergrationService),
             // game mechanics
             typeof(IMiniMapService),
             typeof(ICustomTrainService),typeof(IAutoGrabberService),

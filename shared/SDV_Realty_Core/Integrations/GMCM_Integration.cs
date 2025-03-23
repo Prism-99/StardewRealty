@@ -4,6 +4,7 @@ using SDV_Realty_Core.Framework.ServiceInterfaces.Utilities;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Game;
 using SDV_Realty_Core.Framework.ServiceInterfaces.Configuration;
 using SDV_Realty_Core.Framework.ServiceInterfaces.ModData;
+using SDV_Realty_Core.Framework.Objects;
 
 
 
@@ -223,14 +224,21 @@ namespace SDV_Realty_Core.Framework.Integrations
                tooltip: () => I18n.GMCM_GlobalCond_TT(),
                getValue: () => _modDataService.Config.globalCondition ?? "",
                setValue: value => _modDataService.Config.globalCondition = value
-           );
-            configMenu.AddBoolOption(
-           mod: _manifest,
-           name: () => I18n.GMCM_UseGlobalPrice(),
-           tooltip: () => I18n.GMCM_UseGlobalPrice_TT(),
-           getValue: () => _modDataService.Config.useGlobalPrice,
-           setValue: value => _modDataService.Config.useGlobalPrice = value
-       );
+            );
+
+            configMenu.AddTextOption(_manifest, () => _modDataService.Config.globalPriceMode
+            , delegate (string v)
+            {
+                _modDataService.Config.globalPriceMode = v;
+            }, () =>"Global Price Mode", () => "", _modDataService.Config.globalPriceModes);
+
+       //     configMenu.AddBoolOption(
+       //    mod: _manifest,
+       //    name: () => I18n.GMCM_UseGlobalPrice(),
+       //    tooltip: () => I18n.GMCM_UseGlobalPrice_TT(),
+       //    getValue: () => _modDataService.Config.useGlobalPrice,
+       //    setValue: value => _modDataService.Config.useGlobalPrice = value
+       //);
             configMenu.AddNumberOption(
              mod: _manifest,
              name: () => I18n.GMCM_GlobalPrice(),

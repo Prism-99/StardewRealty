@@ -811,7 +811,7 @@ namespace SDV_Realty_Core.Framework.Expansions
             //{
             debris.RemoveWhere((Debris d) => d.item == null && d.itemId.Value == null);
             //}
-            if (map != null && (isOutdoors.Value || map.Properties.ContainsKey("ForceSpawnForageables")) && !map.Properties.ContainsKey("skipWeedGrowth"))
+            if (false && map != null && (isOutdoors.Value || map.Properties.ContainsKey("ForceSpawnForageables")) && !map.Properties.ContainsKey("skipWeedGrowth"))
             {
                 //if (Game1.dayOfMonth % 7 == 0 && !(this is Farm))
                 //{
