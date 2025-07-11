@@ -1,4 +1,19 @@
-﻿2.0.2
+﻿2.0.5 (released 05-july-2025)
+-fixed issue with fish areas with no name throwing error (LtDarkstar)
+-fixed issue with fish area details applet not scrolling fish list (ZeldaManiac23)
+-fixed issue with not being able to enter Coops and Barns in expansions (ZeldaManiac23,azhorsegirl8,earharted,solizangelasoliz)
+-fixed issue with some purchased land being lost after reloading the save (ZeldaManiac23)
+
+2.0.4 (released 21-june-2025)
+-fixed error in crop planting code (posty47)
+-added configuration option to enable/disable night monsters on expansions (Zultec)
+-fixed issue with ponds not having any fish stock
+-added fish area detail viewer.  Press right mouse button over fishing area to activate
+
+2.0.3
+-fixed issue with game not being able to create stardewmeadows (Woadens, R3FL3X24)
+
+2.0.2
 -fixed issue with CP throwing an error (Gummmmmm)
 -added purchase price tracking for resale value
 -change global pricing to None, By Tile, Flat Rate

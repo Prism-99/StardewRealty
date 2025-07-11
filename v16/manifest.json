@@ -1,7 +1,7 @@
 {
   "Name": "Stardew Realty Framework",
   "Author": "Prism 99-Advize",
-  "Version": "2.0.2",
+  "Version": "2.0.5",
   "Description": "A framework to add the ability to sell additonal land expansions to the Farmer.",
   "UniqueID": "prism99.advize.stardewrealty",
   "EntryDll": "StardewRealty.dll",

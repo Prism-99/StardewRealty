@@ -1,4 +1,16 @@
 ﻿{
+  "$schema": "https://smapi.io/schemas/i18n.json", 
+  //
+  // 2.0.6 additions
+  //
+  "sdr.treegreenhouse.displayname": "SDR Tree Greenhouse",
+  "sdr.treegreenhouse.description": "A very large Greenhouse for tree growing.",
+  "sdr.fruittreegreenhouse.displayname": "SDR Fruit Tree Greenhouse",
+  "sdr.fruittreegreenhouse.description": "A very large Greenhouse for fruit tree growing.",
+  //
+  //  2.0.4 additions
+  //
+  "gmcm.expan.monsters": "Enable Night Monsters",
   //
   //  2.0.0 additions  
   //

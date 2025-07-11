@@ -13,6 +13,10 @@ using StardewRealty.SDV_Realty_Interface;
 using Newtonsoft.Json;
 using SDV_Realty_Core.Framework.AssetUtils;
 using SDV_Realty_Core.Framework.ServiceInterfaces;
+using SDV_Realty_Core.Framework.ServiceInterfaces.CustomEntities;
+using SDV_Realty_Core.Framework.ServiceInterfaces.Events;
+using StardewValley.GameData.Buildings;
+using StardewValley.GameData.Locations;
 
 
 namespace SDV_Realty_Core.Framework.Objects
@@ -34,11 +38,26 @@ namespace SDV_Realty_Core.Framework.Objects
         private CustomBuildingManager _customBuildingManager = null;
         private IExpansionManager expansionManager;
         //private IContentPackService contentPackService;
-        private IWarproomService warproomService;
+        private IWarproomService warproomService; 
+        private IModDataService _modDataService;
+        private ICustomEntitiesServices _customEntitiesServices;
+        private ICustomEventsService _eventsService;
         //private IExpansionCustomizationService expansionCustomizationService;
         /********* 
              ** Public methods
              *********/
+        internal ModApi(ILoggerService olog, SDRContentManager cMan, ICustomEntitiesServices customEntitiesServices, IModDataService modDataService, ICustomEventsService eventsService)
+        {
+            //Framework = framework;
+            //content = ocontent;
+            logger = olog;
+            contentManager = cMan;
+            _customEntitiesServices = customEntitiesServices;
+            _customBuildingManager = customEntitiesServices.customBuildingService.customBuildingManager;
+            _modDataService = modDataService;
+            _eventsService = eventsService;
+        }
+
         /// <summary>Construct an instance.</summary>
         /// <param name="framework">The Farm Expansion core framework.</param>
         internal ModApi(SDRContentManager cMan, ILoggerService olog, IExpansionManager expansionManager, IContentPackService contentPackService, IWarproomService warproomService, IExpansionCustomizationService expansionCustomizationService)
@@ -68,6 +87,63 @@ namespace SDV_Realty_Core.Framework.Objects
             return null;
 
         }
+        public bool IsSDRMachine(string machineName)
+        {
+            if (machineName.StartsWith("(BC)"))
+            {
+                return _customEntitiesServices.customMachineDataService.Machines.ContainsKey(machineName);
+            }
+            else
+            {
+                return _customEntitiesServices.customMachineDataService.Machines.ContainsKey($"(BC){machineName}");
+            }
+        }
+        public List<SpawnFishData> GetFishData(string expansionName, string fishAreaId)
+        {
+            if (_modDataService.validContents.ContainsKey(expansionName))
+            {
+                if (_modDataService.validContents[expansionName].FishData.ContainsKey(fishAreaId))
+                {
+                    return _modDataService.validContents[expansionName].FishData[fishAreaId];
+                }
+
+            }
+
+            return null;
+        }
+
+        /// <summary>Add a blueprint to all future carpenter menus for the farm area.</summary>
+        /// <param name="blueprint">The blueprint to add.</param>
+        public void AddFarmBluePrint(BuildingData blueprint)
+        {
+
+        }
+
+        /// <summary>Add a blueprint to all future carpenter menus for the expansion area.</summary>
+        /// <param name="blueprint">The blueprint to add.</param>
+        public void AddExpansionBluePrint(BuildingData blueprint)
+        {
+
+        }
+        public bool AddBuilding(string locationName, BuildingData structureForPlacement, Vector2 tileLocation, Farmer who, bool complete)
+        {
+
+            return false;
+        }
+
+        public void SetExpansionSeasonOverride(string sExpName, string seasonOverride)
+        {
+            if (!_modDataService.CustomDefinitions.ContainsKey(sExpName))
+            {
+                AddCustomizationEntry(sExpName);
+            }
+
+            _modDataService.CustomDefinitions[sExpName].SeasonOverride = seasonOverride;
+            _modDataService.farmExpansions[sExpName].seasonUpdate();
+            _modDataService.farmExpansions[sExpName].updateSeasonalTileSheets();
+            _eventsService.TriggerCustomEvent("SaveExpansionCustomizations", new object[] { });
+        }
+
         public Dictionary<string, string> GetCustomBuildingList()
         {
             return _customBuildingManager.CustomBuildings.Select(p => new KeyValuePair<string, string>(p.Key, p.Value.DisplayName)).ToDictionary(x => x.Key, x => x.Value);
@@ -138,7 +214,7 @@ namespace SDV_Realty_Core.Framework.Objects
                     //
                     //  verify area exists
                     //
-                    if (expansionManager.expansionManager.farmExpansions[expansionName].FishAreas.ContainsKey(areaId))
+                    if (_modDataService.validContents[expansionName].FishAreas.ContainsKey(areaId))
                     {
                         //
                         //  check for area customization

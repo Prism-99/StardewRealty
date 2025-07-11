@@ -246,6 +246,15 @@ namespace SDV_Realty_Core.Framework.Integrations
              getValue: () => _modDataService.Config.globalPrice,
              setValue: value => _modDataService.Config.globalPrice = value
          );
+
+            configMenu.AddBoolOption(
+                  mod: _manifest,
+                  name: () => I18n.GMCM_Monsters(),
+                  tooltip: () => "",
+                  getValue: () => _modDataService.Config.enableNightMonsters,
+                  setValue: value => _modDataService.Config.enableNightMonsters = value
+              );
+
             #endregion
             //
             //  Custom Junimo Options

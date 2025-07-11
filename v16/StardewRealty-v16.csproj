@@ -61,13 +61,11 @@
   <ItemGroup>
   
     <Reference Include="Newtonsoft.Json">
-      <HintPath>T:\smapi-internal\Newtonsoft.Json.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>D:\Steam\steamapps\common\Stardew Valley\smapi-internal\Newtonsoft.Json.dll</HintPath>
     </Reference>
   
     <Reference Include="SkiaSharp">
-      <HintPath>T:\SkiaSharp.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>D:\Steam\steamapps\common\Stardew Valley\SkiaSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -89,14 +87,12 @@
 
   <Import Project="..\shared\SDV_Prism99_Core\Prism99_Core.projitems" Label="Shared" />
 
-  <Import Project="..\shared\v1.6_Components\v1.6_Components.projitems" Label="Shared" />
-
   <Import Project="..\shared\locationDataDisplay\locationDataDisplay.projitems" Label="Shared" />
 
-  <Import Project="..\v1.6 Base Content Packs\v1.6 Base Content Packs.projitems" Label="Shared" />
+  <Import Project="..\Base Content Packs\Base Content Packs.projitems" Label="Shared" />
 
   <Import Project="..\shared\SDV_MapRenderer\SDV_MapRenderer.projitems" Label="Shared" />
 
-  <Import Project="..\CustomMenuFramework\CustomMenuFramework.projitems" Label="Shared" />
+  <Import Project="..\shared\CustomMenuFramework\CustomMenuFramework.projitems" Label="Shared" />
 
 </Project>

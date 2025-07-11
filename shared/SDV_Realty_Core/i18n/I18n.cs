@@ -11,6 +11,10 @@ namespace SDV_Realty_Core
         {
             Translations = translations;
         }
+        public static string GMCM_Monsters()
+        {
+            return GetByKey("gmcm.expan.monsters");
+        }
         public static string WF_Total(int totalWeeds, int price)
         {
             return GetByKey("wf.total", new {weeds=$"{totalWeeds:N0}",total=$"{price:N0}"});

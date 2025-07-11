@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>5f074b9f-4773-44e3-8ec5-8b46675dc62d</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>CustomMenuFramework</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\ButtonOption.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\DropDownOption.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\ICustomOption.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\IScrollingControl.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\LabelOption.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\RealEstateListing.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Controls\TextEntryOption.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Menus\CustomMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Menus\ForSaleListingsMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Menus\GenericListMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Menus\InputBoxMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Menus\IScrollingMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Menus\GenericPickListMenu.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Menus\PickLocationMenu.cs" />
+  </ItemGroup>
+</Project>

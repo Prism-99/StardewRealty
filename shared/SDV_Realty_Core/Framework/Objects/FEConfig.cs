@@ -15,6 +15,7 @@ namespace SDV_Realty_Core.Framework.Objects
         public bool UseWarpRing { get; set; } = true;
         public bool UseSignPosts { get; set; } = true;
         public bool UseMapWarps { get; set; } = true;
+        public bool ShowFishAreaDetails { get; set; } = true;
         public bool UseAdditionalFarms { get; set; } = true;
         /// <summary>Determines whether crows can spawn on the farm expansion.</summary>
         public bool enableCrows { get; set; } = true;

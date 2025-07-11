@@ -365,6 +365,12 @@ namespace SDV_Realty_Core.Framework.Menus
             }
 
         }
+        /// <summary>
+        /// Handle left click of SDR WorldMapMenu
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="playSound"></param>
         public override void receiveLeftClick(int x, int y, bool playSound = true)
         {
             if (modDataService.Config.UseMapWarps)
